@@ -1,20 +1,82 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnerPending() {
+      return isSignedIn()
+        && resource.data.status == 'pending'
+        && resource.data.ownerUid == request.auth.uid;
+    }
+
     match /pages/{pageId} {
-      // Anyone can read an active page (for recipients)
-      allow read: if resource.data.status == 'active';
+      // Anyone can read active pages (recipient view).
+      // Pending drafts are private to their owner.
+      allow read: if resource.data.status == 'active' || isOwnerPending();
 
-      // Anyone can create a new draft
-      allow create: if request.resource.data.status == 'pending'
-                    && request.resource.data.keys().hasAll(['id', 'templateId', 'status', 'createdAt', 'expiresAt']);
+      // Signed-in users can create only their own pending draft records.
+      allow create: if isSignedIn()
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.id == pageId
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.keys().hasOnly([
+                      'id',
+                      'status',
+                      'templateId',
+                      'recipientName',
+                      'senderName',
+                      'showSenderName',
+                      'showFooter',
+                      'palette',
+                      'font',
+                      'scenes',
+                      'reasons',
+                      'musicEnabled',
+                      'musicUrl',
+                      'stripeSessionId',
+                      'ownerUid',
+                      'ownerEmail',
+                      'createdAt',
+                      'expiresAt'
+                    ]);
 
-      // Anyone can update a pending draft (builder auto-save)
-      // Cannot change status or id via client
-      allow update: if resource.data.status == 'pending'
+      // Owners can edit only mutable draft fields while status is pending.
+      allow update: if isOwnerPending()
                     && request.resource.data.status == 'pending'
                     && request.resource.data.id == resource.data.id
-                    && request.resource.data.templateId == resource.data.templateId;
+                    && request.resource.data.templateId == resource.data.templateId
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && request.resource.data.ownerEmail == resource.data.ownerEmail
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.expiresAt == resource.data.expiresAt
+                    && request.resource.data.checkoutOwnerUid == resource.data.checkoutOwnerUid
+                    && request.resource.data.checkoutOwnerEmail == resource.data.checkoutOwnerEmail
+                    && request.resource.data.checkoutStartedAt == resource.data.checkoutStartedAt
+                    && request.resource.data.keys().hasOnly([
+                      'id',
+                      'status',
+                      'templateId',
+                      'recipientName',
+                      'senderName',
+                      'showSenderName',
+                      'showFooter',
+                      'palette',
+                      'font',
+                      'scenes',
+                      'reasons',
+                      'musicEnabled',
+                      'musicUrl',
+                      'stripeSessionId',
+                      'ownerUid',
+                      'ownerEmail',
+                      'createdAt',
+                      'expiresAt',
+                      'checkoutOwnerUid',
+                      'checkoutOwnerEmail',
+                      'checkoutStartedAt'
+                    ]);
 
       // Only Cloud Functions (admin SDK) can set status to 'active'
     }

@@ -5,10 +5,17 @@ const stripe = require('stripe')(functions.config().stripe.secret)
 admin.initializeApp()
 
 const APP_URL = functions.config().app?.url || 'https://lovepage.app'
+const BASE_PRICE_CENTS = 1200
+const DISCOUNT_CODE = 'love123'
+const DISCOUNT_PERCENT = 50
 
 // ─── Create Stripe Checkout Session ───────────────────────────────────────────
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
-  const { draftId } = data
+  const { draftId, discountCode = '' } = data
+
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to continue to payment')
+  }
 
   if (!draftId) {
     throw new functions.https.HttpsError('invalid-argument', 'draftId is required')
@@ -20,6 +27,21 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
   if (!draft.exists || draft.data().status !== 'pending') {
     throw new functions.https.HttpsError('not-found', 'Draft not found or already published')
   }
+  if (draft.data().ownerUid !== context.auth.uid) {
+    throw new functions.https.HttpsError('permission-denied', 'You can only pay for your own draft')
+  }
+
+  await draftRef.update({
+    checkoutOwnerUid: context.auth.uid,
+    checkoutOwnerEmail: context.auth.token.email || '',
+    checkoutStartedAt: admin.firestore.Timestamp.now(),
+  })
+
+  const normalizedCode = String(discountCode).trim().toLowerCase()
+  const discountApplied = normalizedCode === DISCOUNT_CODE
+  const unitAmount = discountApplied
+    ? Math.round(BASE_PRICE_CENTS * (1 - DISCOUNT_PERCENT / 100))
+    : BASE_PRICE_CENTS
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -31,14 +53,19 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
           description: 'Lifetime access to your personalized love page. Share via link or QR code.',
           images: [`${APP_URL}/og-preview.png`],
         },
-        unit_amount: 1200, // $12.00 in cents
+        unit_amount: unitAmount,
       },
       quantity: 1,
     }],
     mode: 'payment',
     success_url: `${APP_URL}/success?session_id={CHECKOUT_SESSION_ID}&draft=${draftId}`,
     cancel_url: `${APP_URL}/preview/${draftId}`,
-    metadata: { draftId },
+    metadata: {
+      draftId,
+      userId: context.auth.uid,
+      discountCode: discountApplied ? DISCOUNT_CODE : '',
+      discountPercent: discountApplied ? String(DISCOUNT_PERCENT) : '0',
+    },
   })
 
   return { url: session.url }
@@ -48,8 +75,31 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
 exports.verifyPayment = functions.https.onCall(async (data, context) => {
   const { sessionId, draftId } = data
 
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to verify payment')
+  }
+
   if (!sessionId || !draftId) {
     throw new functions.https.HttpsError('invalid-argument', 'sessionId and draftId are required')
+  }
+
+  const draftRef = admin.firestore().collection('pages').doc(draftId)
+  const draft = await draftRef.get()
+  if (!draft.exists) {
+    throw new functions.https.HttpsError('not-found', 'Draft not found')
+  }
+
+  const draftData = draft.data()
+  if (draftData.ownerUid !== context.auth.uid) {
+    throw new functions.https.HttpsError('permission-denied', 'You can only verify your own draft')
+  }
+
+  // Check if already active (idempotent)
+  if (draftData.status === 'active') {
+    return { success: true, alreadyActive: true }
+  }
+  if (draftData.status !== 'pending') {
+    throw new functions.https.HttpsError('failed-precondition', 'Draft is not pending')
   }
 
   const session = await stripe.checkout.sessions.retrieve(sessionId)
@@ -62,11 +112,8 @@ exports.verifyPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('permission-denied', 'Draft ID mismatch')
   }
 
-  // Check if already active (idempotent)
-  const draftRef = admin.firestore().collection('pages').doc(draftId)
-  const draft = await draftRef.get()
-  if (draft.exists && draft.data().status === 'active') {
-    return { success: true, alreadyActive: true }
+  if (session.metadata.userId !== context.auth.uid) {
+    throw new functions.https.HttpsError('permission-denied', 'User mismatch')
   }
 
   await draftRef.update({

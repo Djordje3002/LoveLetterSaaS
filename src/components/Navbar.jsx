@@ -2,10 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './AuthModal';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
+  const { user } = useAuth();
+
+  const openAuth = (mode) => {
+    setAuthMode(mode);
+    setAuthOpen(true);
+  };
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -16,6 +26,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Templates', href: '/templates' },
+    { name: 'Dashboard', href: '/dashboard' },
     { name: 'How it works', href: '/#how-it-works', type: 'anchor' },
   ];
 
@@ -54,7 +65,17 @@ const Navbar = () => {
         </div>
 
         {/* Desktop CTA */}
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="text-xs text-secondary font-medium max-w-[160px] truncate">{user.email}</span>
+            </>
+          ) : (
+            <>
+              <button onClick={() => openAuth('signin')} className="btn-outline py-2 px-4 text-sm">Sign in</button>
+              <button onClick={() => openAuth('signup')} className="btn-primary py-2 px-4 text-sm">Sign up</button>
+            </>
+          )}
           <Link to="/templates" className="btn-primary">
             Create yours →
           </Link>
@@ -100,6 +121,32 @@ const Navbar = () => {
                   </Link>
                 )
               ))}
+              {user ? (
+                null
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn-outline w-full"
+                    onClick={() => {
+                      openAuth('signin');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary w-full"
+                    onClick={() => {
+                      openAuth('signup');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign up
+                  </button>
+                </>
+              )}
               <Link 
                 to="/templates" 
                 className="btn-primary w-full"
@@ -111,6 +158,12 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        initialMode={authMode}
+        title={authMode === 'signup' ? 'Create your account' : 'Welcome back'}
+      />
     </nav>
   );
 };

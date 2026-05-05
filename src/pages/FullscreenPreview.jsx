@@ -6,6 +6,8 @@ import HeartParticles from '../components/HeartParticles';
 import { db, functions } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from '../components/AuthModal';
 
 const FullscreenPreview = () => {
   const { draftId } = useParams();
@@ -14,6 +16,15 @@ const FullscreenPreview = () => {
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const { user } = useAuth();
+  const [discountCode, setDiscountCode] = useState('');
+  const [previewOpened, setPreviewOpened] = useState(false);
+  const [showCheckoutDetails, setShowCheckoutDetails] = useState(false);
+
+  const normalizedCode = discountCode.trim().toLowerCase();
+  const hasValidDiscount = normalizedCode === 'love123';
+  const displayPrice = hasValidDiscount ? '$6' : '$12';
 
   useEffect(() => {
     if (!draftId) { navigate('/templates'); return; }
@@ -38,11 +49,21 @@ const FullscreenPreview = () => {
   }, [draftId, navigate]);
 
   const handlePublish = async () => {
+    if (!user) {
+      setError('Please sign in or create an account before payment.');
+      setAuthOpen(true);
+      return;
+    }
+    if (!showCheckoutDetails) {
+      setError(null);
+      setShowCheckoutDetails(true);
+      return;
+    }
     setPublishing(true);
     setError(null);
     try {
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
-      const result = await createCheckoutSession({ draftId });
+      const result = await createCheckoutSession({ draftId, discountCode: normalizedCode });
       window.location.href = result.data.url;
     } catch (err) {
       console.error(err);
@@ -83,11 +104,22 @@ const FullscreenPreview = () => {
           animate={{ scale: 1, opacity: 1 }}
           className="relative mb-12"
         >
-          <div className="w-64 h-44 bg-white rounded-2xl shadow-2xl border border-primary-light flex items-center justify-center relative transform hover:scale-105 transition-transform cursor-pointer">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-primary-pink rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg text-2xl">
-              ❤️
-            </div>
-            <div className="absolute top-0 left-0 w-full h-full border-t-[80px] border-t-primary-light border-x-[128px] border-x-transparent"></div>
+          <div
+            onClick={() => setPreviewOpened((v) => !v)}
+            className="w-64 h-44 bg-white rounded-2xl shadow-2xl border border-primary-light flex items-center justify-center relative transform hover:scale-105 transition-transform cursor-pointer"
+          >
+            {!previewOpened ? (
+              <>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-primary-pink rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg text-2xl">
+                  ❤️
+                </div>
+                <div className="absolute top-0 left-0 w-full h-full border-t-[80px] border-t-primary-light border-x-[128px] border-x-transparent"></div>
+              </>
+            ) : (
+              <p className="px-6 text-center text-primary-pink font-medium">
+                {pageData?.scenes?.scene2Header || 'A little preview from your letter...'}
+              </p>
+            )}
           </div>
           <span className="absolute -top-10 -left-10 text-5xl">🌸</span>
           <span className="absolute -top-10 -right-10 text-5xl">🎀</span>
@@ -95,7 +127,7 @@ const FullscreenPreview = () => {
         </motion.div>
 
         <h2 className="font-dancing text-3xl text-primary-pink">
-          {pageData?.scenes?.hint || 'Tap seal to open ♥'}
+          {previewOpened ? 'Nice! Now publish to share it ✨' : (pageData?.scenes?.hint || 'Tap seal to open ♥')}
         </h2>
         {pageData?.recipientName && (
           <p className="text-primary-pink/70 mt-2 font-medium">For {pageData.recipientName}</p>
@@ -123,13 +155,35 @@ const FullscreenPreview = () => {
           <div className="flex items-center gap-1.5"><Headphones size={14} className="text-primary-pink" /> 24/7 Support</div>
         </div>
         {/* Action Bar */}
-        <div className="h-24 bg-white border-t border-card shadow-[0_-8px_30px_rgba(0,0,0,0.1)] px-6 md:px-12 flex items-center justify-between">
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-dark">$12</span>
-              <span className="text-secondary text-sm font-bold">one-time</span>
-            </div>
-            <p className="text-[10px] font-bold text-primary-pink uppercase tracking-widest mt-0.5">Forever live · Share anywhere</p>
+        <div className="min-h-24 bg-white border-t border-card shadow-[0_-8px_30px_rgba(0,0,0,0.1)] px-6 md:px-12 py-4 flex items-center justify-between gap-4">
+          <div className="max-w-[360px]">
+            {showCheckoutDetails ? (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    placeholder="Discount code"
+                    className="w-40 px-3 py-1.5 text-xs border border-card rounded-lg focus:outline-none focus:border-primary-pink uppercase"
+                  />
+                  {hasValidDiscount && (
+                    <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">
+                      LOVE123 applied
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-dark">{displayPrice}</span>
+                  <span className="text-secondary text-sm font-bold">one-time</span>
+                </div>
+                <p className="text-[10px] font-bold text-primary-pink uppercase tracking-widest mt-0.5">Forever live · Share anywhere</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-bold text-dark">Ready to make it live?</p>
+                <p className="text-xs text-secondary">Click publish to reveal final checkout details and price.</p>
+              </>
+            )}
           </div>
           <button
             onClick={handlePublish}
@@ -139,11 +193,21 @@ const FullscreenPreview = () => {
             {publishing ? (
               <><Loader2 size={20} className="animate-spin" /> Processing...</>
             ) : (
-              'Publish & Share Page →'
+              !user
+                ? 'Sign In To Continue →'
+                : showCheckoutDetails
+                  ? 'Continue To Payment →'
+                  : 'Publish & Share Page →'
             )}
           </button>
         </div>
       </div>
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        initialMode="signin"
+        title="Sign in before payment"
+      />
     </div>
   );
 };

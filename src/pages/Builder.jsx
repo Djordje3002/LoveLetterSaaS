@@ -104,6 +104,9 @@ const Builder = () => {
       'dark-romance': 'Dark Romance',
       'our-story': 'Our Story',
       'midnight-love': 'Midnight Love',
+      'rose-whisper': 'Rose Whisper',
+      'golden-promise': 'Golden Promise',
+      'date-invite': 'Date Invitation',
     };
     return names[id] || id;
   }

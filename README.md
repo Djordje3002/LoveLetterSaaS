@@ -56,7 +56,7 @@ firestore.rules
 
 ## Environment Variables
 
-Create `.env` in project root:
+Copy `.env.example` to `.env` in project root and fill values:
 
 ```env
 VITE_FIREBASE_API_KEY=

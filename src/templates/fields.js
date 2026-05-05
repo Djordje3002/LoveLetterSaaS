@@ -40,4 +40,27 @@ export const templateFields = {
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Under a thousand stars...' },
     { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'Yours under every star ✨' },
   ],
+  'rose-whisper': [
+    { key: 'hint', label: 'Envelope Hint', type: 'input', placeholder: 'A soft note just for you...' },
+    { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your letter here...' },
+    { key: 'scene2Header', label: 'Letter Header', type: 'input', placeholder: 'My Rose Whisper...' },
+    { key: 'scene3Header', label: 'Memories Header', type: 'input', placeholder: 'Little moments of us' },
+    { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'Forever in bloom ♥' },
+  ],
+  'golden-promise': [
+    { key: 'hint', label: 'Envelope Hint', type: 'input', placeholder: 'Open to read a golden promise ✨' },
+    { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your promise here...' },
+    { key: 'scene2Header', label: 'Letter Header', type: 'input', placeholder: 'A promise from my heart' },
+    { key: 'scene3Header', label: 'Memories Header', type: 'input', placeholder: 'Memories I treasure' },
+    { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'You are my always.' },
+  ],
+  'date-invite': [
+    { key: 'inviteHeadline', label: 'Invite Headline', type: 'input', placeholder: 'Will you go on a date with me?' },
+    { key: 'inviteMessage', label: 'Invite Message', type: 'textarea', placeholder: 'I have a little plan for us...' },
+    { key: 'dateWhen', label: 'Date & Time', type: 'input', placeholder: 'Saturday, 7:00 PM' },
+    { key: 'dateWhere', label: 'Location', type: 'input', placeholder: 'Our favorite place' },
+    { key: 'dressCode', label: 'Dress Code', type: 'input', placeholder: 'Come exactly as you are' },
+    { key: 'rsvpContact', label: 'RSVP Note', type: 'input', placeholder: "Text me yes when you're ready 💌" },
+    { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: "I'd love to spend this evening with you." },
+  ],
 }

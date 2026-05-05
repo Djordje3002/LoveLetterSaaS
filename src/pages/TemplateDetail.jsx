@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smartphone, ShieldCheck, ThumbsUp, Loader2 } from 'lucide-react';
 import Layout from '../components/Layout';
 import { createDraft } from '../utils/createDraft';
+import { useAuth } from '../context/AuthContext';
 
 const TemplateDetail = () => {
   const navigate = useNavigate();
@@ -10,9 +11,14 @@ const TemplateDetail = () => {
   const [creatingPreview, setCreatingPreview] = useState(false);
   const [createError, setCreateError] = useState('');
   const { templateId } = useParams();
+  const { user } = useAuth();
 
   const createDraftAndNavigate = async (target) => {
     if (creatingEditor || creatingPreview) return;
+    if (!user) {
+      navigate(`/auth?mode=signup&next=${encodeURIComponent(`/templates/${templateId}`)}`);
+      return;
+    }
     setCreateError('');
     target === 'editor' ? setCreatingEditor(true) : setCreatingPreview(true);
     try {
@@ -24,7 +30,7 @@ const TemplateDetail = () => {
       navigate(`/create/${templateId}?draft=${draftId}`);
     } catch (err) {
       console.error('Failed to create draft:', err);
-      setCreateError('Could not create your draft. Please check your connection and try again.');
+      setCreateError(err?.message || 'Could not create your draft. Please check your connection and try again.');
     } finally {
       setCreatingEditor(false);
       setCreatingPreview(false);
@@ -68,6 +74,24 @@ const TemplateDetail = () => {
       emoji: '🌙',
       color: 'bg-gradient-to-br from-[#0D1B3E] to-[#1A0533]',
     },
+    'rose-whisper': {
+      name: 'Rose Whisper',
+      description: 'A gentle romantic style built on our signature letter flow, with softer elegant tones and refined typography.',
+      emoji: '🌹',
+      color: 'bg-gradient-to-br from-rose-200 to-pink-200',
+    },
+    'golden-promise': {
+      name: 'Golden Promise',
+      description: 'A warm golden variation of the love letter experience, perfect for heartfelt promises and anniversary notes.',
+      emoji: '✨',
+      color: 'bg-gradient-to-br from-amber-200 to-yellow-100',
+    },
+    'date-invite': {
+      name: 'Date Invitation',
+      description: 'A dedicated date-invite letter template that helps you ask someone out with style, details, and interactive response buttons.',
+      emoji: '📅',
+      color: 'bg-gradient-to-br from-pink-200 to-violet-200',
+    },
   };
 
   const template = templateData[templateId] || templateData['kawaii-letter'];
@@ -103,7 +127,10 @@ const TemplateDetail = () => {
           {/* Left Column */}
           <div className="lg:col-span-7">
             {/* Video Placeholder */}
-            <div className="card-white p-0 overflow-hidden relative group cursor-pointer mb-8">
+            <div
+              onClick={() => createDraftAndNavigate('preview')}
+              className="card-white p-0 overflow-hidden relative group cursor-pointer mb-8"
+            >
               <div className={`aspect-video ${template.color} flex flex-col items-center justify-center text-white relative`}>
                 <div className="absolute top-4 left-4 bg-dark/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                   Template Demo

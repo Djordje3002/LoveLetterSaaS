@@ -3,14 +3,20 @@ import { motion } from 'framer-motion';
 import { Star, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createDraft } from '../utils/createDraft';
+import { useAuth } from '../context/AuthContext';
 
 const TemplateCard = ({ template, index }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
   const handleUse = async (e) => {
     e.preventDefault();
+    if (!user) {
+      navigate(`/auth?mode=signup&next=${encodeURIComponent(`/templates/${template.id}`)}`);
+      return;
+    }
     setCreateError('');
     setCreating(true);
     try {
@@ -18,7 +24,7 @@ const TemplateCard = ({ template, index }) => {
       navigate(`/create/${template.id}?draft=${draftId}`);
     } catch (err) {
       console.error(err);
-      setCreateError('Could not create draft. Please check your connection and try again.');
+      setCreateError(err?.message || 'Could not create draft. Please check your connection and try again.');
       setCreating(false);
     }
   };
@@ -150,6 +156,40 @@ const TemplateCard = ({ template, index }) => {
              >
                Sofia
              </motion.span>
+          </div>
+        );
+
+      case 'rose-whisper':
+        return (
+          <div className="w-full h-full bg-gradient-to-br from-rose-100 to-pink-200 flex items-center justify-center relative overflow-hidden">
+            <div className="absolute top-2 left-3 text-lg">🌹</div>
+            <div className="absolute bottom-2 right-3 text-lg">💌</div>
+            <motion.div className="w-24 h-16 bg-white rounded-md shadow-md border border-rose-200 flex items-center justify-center">
+              <span className="font-playfair text-rose-500 italic">Whisper</span>
+            </motion.div>
+          </div>
+        );
+
+      case 'golden-promise':
+        return (
+          <div className="w-full h-full bg-gradient-to-br from-amber-100 to-yellow-200 flex items-center justify-center relative overflow-hidden">
+            <div className="absolute top-2 right-3 text-lg">✨</div>
+            <div className="absolute bottom-2 left-3 text-lg">🕊️</div>
+            <motion.div className="w-24 h-16 bg-white rounded-md shadow-md border border-amber-200 flex items-center justify-center">
+              <span className="font-playfair text-amber-600 italic">Promise</span>
+            </motion.div>
+          </div>
+        );
+
+      case 'date-invite':
+        return (
+          <div className="w-full h-full bg-gradient-to-br from-pink-100 to-violet-200 flex items-center justify-center relative overflow-hidden">
+            <div className="absolute top-2 left-3 text-lg">📅</div>
+            <div className="absolute bottom-2 right-3 text-lg">🌙</div>
+            <motion.div className="w-28 h-20 bg-white rounded-lg shadow-md border border-violet-200 flex flex-col items-center justify-center">
+              <span className="text-[10px] uppercase tracking-wider text-violet-400 font-bold">Date Invite</span>
+              <span className="text-xs font-bold text-violet-700 mt-1">Saturday 7PM?</span>
+            </motion.div>
           </div>
         );
 

@@ -9,6 +9,9 @@ import OurGallery from '../templates/OurGallery';
 import DarkRomance from '../templates/DarkRomance';
 import OurStory from '../templates/OurStory';
 import MidnightLove from '../templates/MidnightLove';
+import RoseWhisper from '../templates/RoseWhisper';
+import GoldenPromise from '../templates/GoldenPromise';
+import DateInviteLetter from '../templates/DateInviteLetter';
 
 const TEMPLATES = {
   'kawaii-letter': KawaiiLetter,
@@ -17,6 +20,9 @@ const TEMPLATES = {
   'dark-romance': DarkRomance,
   'our-story': OurStory,
   'midnight-love': MidnightLove,
+  'rose-whisper': RoseWhisper,
+  'golden-promise': GoldenPromise,
+  'date-invite': DateInviteLetter,
 };
 
 const RecipientPage = () => {

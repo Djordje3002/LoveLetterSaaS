@@ -10,10 +10,12 @@ const StatCounter = ({ value, label }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
   
-  const numericValue = parseInt(value.replace(/[^0-9]/g, '')) || 0;
+  const hasDigits = /[0-9]/.test(value);
+  const numericValue = hasDigits ? parseInt(value.replace(/[^0-9]/g, ''), 10) : 0;
   const suffix = value.replace(/[0-9]/g, '');
 
   useEffect(() => {
+    if (!hasDigits) return;
     if (isInView) {
       let start = 0;
       const end = numericValue;
@@ -32,7 +34,7 @@ const StatCounter = ({ value, label }) => {
       
       return () => clearInterval(timer);
     }
-  }, [isInView, numericValue]);
+  }, [isInView, numericValue, hasDigits]);
 
   return (
     <motion.div
@@ -42,7 +44,7 @@ const StatCounter = ({ value, label }) => {
       className="card-white text-center p-8"
     >
       <div className="text-3xl md:text-4xl font-bold text-primary-pink mb-2">
-        {count}{suffix}
+        {hasDigits ? `${count}${suffix}` : value}
       </div>
       <div className="text-secondary text-sm font-medium">{label}</div>
     </motion.div>
@@ -51,10 +53,10 @@ const StatCounter = ({ value, label }) => {
 
 const LandingPage = () => {
   const stats = [
-    { value: '10+', label: 'Gift Templates' },
+    { value: '9+', label: 'Gift Templates' },
     { value: '100%', label: 'Customizable' },
     { value: '∞', label: 'Unlimited Sharing' },
-    { value: '500+', label: 'Happy Customers' },
+    { value: '200', label: 'Happy Customers' },
   ];
 
   const steps = [
@@ -85,6 +87,9 @@ const LandingPage = () => {
     { id: 'dark-romance', name: 'Dark Romance', tags: ['Elegant', 'Letter'] },
     { id: 'our-story', name: 'Our Story', tags: ['Story', 'Timeline'] },
     { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
+    { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
+    { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
+    { id: 'date-invite', name: 'Date Invitation', tags: ['Date', 'Love'] },
   ];
 
   const testimonials = [
@@ -105,8 +110,39 @@ const LandingPage = () => {
       name: "Keith W.",
       occasion: "Anniversary Gift",
       initials: "KW"
+    },
+    {
+      text: "I used the Date Invitation template and she said yes in five minutes. The reveal animation is genius.",
+      name: "Marko T.",
+      occasion: "First Date Invite",
+      initials: "MT"
+    },
+    {
+      text: "The editor is simple but the final result looks premium. I shared the link and everyone asked how I built it.",
+      name: "Ana P.",
+      occasion: "Birthday Surprise",
+      initials: "AP"
+    },
+    {
+      text: "Finally a gift that feels personal and modern. I added our photos and music and it looked magical.",
+      name: "Luka V.",
+      occasion: "Relationship Milestone",
+      initials: "LV"
+    },
+    {
+      text: "I made one at midnight and published before sleeping. Super smooth flow from template to live page.",
+      name: "Ivana R.",
+      occasion: "Late-night Love Note",
+      initials: "IR"
+    },
+    {
+      text: "Worth every cent. My partner keeps reopening the page and showing it to friends.",
+      name: "Petar N.",
+      occasion: "Valentine's Gift",
+      initials: "PN"
     }
   ];
+  const slidingTestimonials = [...testimonials, ...testimonials];
 
   return (
     <Layout>
@@ -241,22 +277,31 @@ const LandingPage = () => {
             <p className="text-secondary text-lg">See what people are saying about their experience</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <div key={i} className="card-white relative bg-white">
-                <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
-                <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="font-bold text-dark text-sm">{t.name}</p>
-                    <p className="text-secondary text-xs">{t.occasion}</p>
+          <div className="relative overflow-hidden">
+            <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-primary-light/30 to-transparent"></div>
+            <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-primary-light/30 to-transparent"></div>
+
+            <motion.div
+              className="flex w-max gap-6"
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+            >
+              {slidingTestimonials.map((t, i) => (
+                <div key={`${t.initials}-${i}`} className="card-white relative w-[300px] shrink-0 bg-white md:w-[360px]">
+                  <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
+                  <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
+                      {t.initials}
+                    </div>
+                    <div>
+                      <p className="font-bold text-dark text-sm">{t.name}</p>
+                      <p className="text-secondary text-xs">{t.occasion}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </motion.div>
           </div>
         </div>
       </section>
@@ -281,9 +326,14 @@ const LandingPage = () => {
           <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto mb-10">
             Join hundreds of people who have made their loved ones smile.
           </p>
-          <Link to="/templates" className="bg-white text-primary-pink px-10 py-4 rounded-pill font-bold text-lg shadow-xl hover:scale-105 transition-transform inline-block btn-shimmer">
-            ✦ Create yours now →
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/templates" className="bg-white text-primary-pink px-10 py-4 rounded-pill font-bold text-lg shadow-xl hover:scale-105 transition-transform inline-block btn-shimmer">
+              ✦ Create yours now →
+            </Link>
+            <Link to="/dashboard" className="border-2 border-white/70 text-white px-10 py-4 rounded-pill font-bold text-lg bg-white/10 backdrop-blur hover:bg-white/20 transition-colors inline-block">
+              My Dashboard
+            </Link>
+          </div>
         </motion.div>
       </section>
     </Layout>
