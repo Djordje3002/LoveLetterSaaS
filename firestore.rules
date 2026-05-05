@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pages/{pageId} {
+      // Anyone can read an active page (for recipients)
+      allow read: if resource.data.status == 'active';
+
+      // Anyone can create a new draft
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.keys().hasAll(['id', 'templateId', 'status', 'createdAt', 'expiresAt']);
+
+      // Anyone can update a pending draft (builder auto-save)
+      // Cannot change status or id via client
+      allow update: if resource.data.status == 'pending'
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.id == resource.data.id
+                    && request.resource.data.templateId == resource.data.templateId;
+
+      // Only Cloud Functions (admin SDK) can set status to 'active'
+    }
+  }
+}
