@@ -24,8 +24,7 @@ const Footer = () => {
             <h4 className="font-bold text-dark mb-4">Product</h4>
             <ul className="space-y-2 text-secondary text-sm">
               <li><Link to="/templates" className="hover:text-primary-pink transition-colors">Templates</Link></li>
-              <li><a href="#how-it-works" className="hover:text-primary-pink transition-colors">How it works</a></li>
-              <li><a href="#pricing" className="hover:text-primary-pink transition-colors">Pricing</a></li>
+              <li><a href="/#how-it-works" className="hover:text-primary-pink transition-colors">How it works</a></li>
             </ul>
           </div>
 

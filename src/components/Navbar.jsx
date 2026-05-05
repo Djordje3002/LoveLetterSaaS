@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -18,8 +16,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Templates', href: '/templates' },
-    { name: 'How it works', href: '#how-it-works' },
-    { name: 'Pricing', href: '#pricing' },
+    { name: 'How it works', href: '/#how-it-works', type: 'anchor' },
   ];
 
   return (
@@ -36,13 +33,23 @@ const Navbar = () => {
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-10">
           {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.href}
-              className="text-dark font-medium hover:text-primary-pink transition-colors"
-            >
-              {link.name}
-            </Link>
+            link.type === 'anchor' ? (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-dark font-medium hover:text-primary-pink transition-colors"
+              >
+                {link.name}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.href}
+                className="text-dark font-medium hover:text-primary-pink transition-colors"
+              >
+                {link.name}
+              </Link>
+            )
           ))}
         </div>
 
@@ -73,14 +80,25 @@ const Navbar = () => {
           >
             <div className="flex flex-col gap-6 items-center text-center">
               {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-lg font-medium text-dark"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
+                link.type === 'anchor' ? (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-lg font-medium text-dark"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="text-lg font-medium text-dark"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                )
               ))}
               <Link 
                 to="/templates" 
