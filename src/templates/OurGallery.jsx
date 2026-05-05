@@ -22,6 +22,7 @@ const OurGallery = ({
   const photos = [1,2,3,4,5].map((i) => ({
     id: i,
     caption: scenes[`polaroidCaption${i}`] || `Memory ${i}`,
+    imageUrl: scenes[`photo${i}Url`] || '',
     color: PLACEHOLDER_COLORS[i - 1],
   }));
   const [current, setCurrent] = useState(0);
@@ -45,14 +46,24 @@ const OurGallery = ({
           className="text-white text-2xl md:text-4xl font-bold drop-shadow-xl" style={{ fontFamily: fnt.heading }}>
           {scenes.galleryTitle || 'Our Story in Photos'}
         </motion.h1>
+        {recipientName && (
+          <p className="text-white/80 text-sm mt-2 font-medium tracking-wide">For {recipientName}</p>
+        )}
+        {scenes.introText && (
+          <p className="text-white/75 text-xs md:text-sm mt-2 max-w-xl mx-auto px-6">{scenes.introText}</p>
+        )}
       </div>
       <div className="flex-grow relative flex items-center justify-center overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div key={current} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }} className="absolute inset-0">
-            <div className={`w-full h-full bg-gradient-to-br ${photos[current].color} flex items-center justify-center`}>
-              <p className="text-white/30 text-8xl font-black">📷</p>
-            </div>
+            {photos[current].imageUrl ? (
+              <img src={photos[current].imageUrl} alt={photos[current].caption} className="w-full h-full object-cover" />
+            ) : (
+              <div className={`w-full h-full bg-gradient-to-br ${photos[current].color} flex items-center justify-center`}>
+                <p className="text-white/30 text-8xl font-black">📷</p>
+              </div>
+            )}
             <div className="absolute inset-0 bg-black/30" />
           </motion.div>
         </AnimatePresence>
@@ -72,7 +83,8 @@ const OurGallery = ({
       <div className="shrink-0 bg-black/70 backdrop-blur-md px-8 py-6 text-center border-t border-white/10">
         <AnimatePresence mode="wait">
           <motion.p key={current} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-            className="text-white font-dancing text-2xl">
+            className="font-dancing text-2xl"
+            style={{ color: pal.accent }}>
             {photos[current].caption}
           </motion.p>
         </AnimatePresence>

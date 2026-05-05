@@ -18,6 +18,11 @@ export const templateFields = {
   'our-gallery': [
     { key: 'galleryTitle', label: 'Gallery Title', type: 'input', placeholder: 'Our Story in Photos' },
     { key: 'introText', label: 'Intro Message', type: 'textarea', placeholder: 'Every photo is a memory I treasure...' },
+    { key: 'polaroidCaption1', label: 'Caption 1', type: 'input', placeholder: 'First memory ✨' },
+    { key: 'polaroidCaption2', label: 'Caption 2', type: 'input', placeholder: 'That perfect day 🌟' },
+    { key: 'polaroidCaption3', label: 'Caption 3', type: 'input', placeholder: 'Us always 💕' },
+    { key: 'polaroidCaption4', label: 'Caption 4', type: 'input', placeholder: 'Golden hour 🌅' },
+    { key: 'polaroidCaption5', label: 'Caption 5', type: 'input', placeholder: 'My favorite smile 😊' },
   ],
   'dark-romance': [
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your letter here...' },

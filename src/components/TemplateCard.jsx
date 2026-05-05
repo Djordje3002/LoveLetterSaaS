@@ -7,15 +7,18 @@ import { createDraft } from '../utils/createDraft';
 const TemplateCard = ({ template, index }) => {
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const handleUse = async (e) => {
     e.preventDefault();
+    setCreateError('');
     setCreating(true);
     try {
       const draftId = await createDraft(template.id);
       navigate(`/create/${template.id}?draft=${draftId}`);
     } catch (err) {
       console.error(err);
+      setCreateError('Could not create draft. Please check your connection and try again.');
       setCreating(false);
     }
   };
@@ -194,6 +197,9 @@ const TemplateCard = ({ template, index }) => {
               {creating ? 'Creating...' : <><span>Use template</span> <motion.span variants={{ hover: { x: 3 } }}>→</motion.span></>}
             </button>
           </div>
+          {createError && (
+            <p className="mt-3 text-[11px] text-red-500 font-medium">{createError}</p>
+          )}
         </div>
       </Link>
     </motion.div>

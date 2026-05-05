@@ -6,19 +6,30 @@ import { createDraft } from '../utils/createDraft';
 
 const TemplateDetail = () => {
   const navigate = useNavigate();
-  const [creating, setCreating] = useState(false);
+  const [creatingEditor, setCreatingEditor] = useState(false);
+  const [creatingPreview, setCreatingPreview] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const { templateId } = useParams();
 
-  const handleCreate = async () => {
-    setCreating(true);
+  const createDraftAndNavigate = async (target) => {
+    if (creatingEditor || creatingPreview) return;
+    setCreateError('');
+    target === 'editor' ? setCreatingEditor(true) : setCreatingPreview(true);
     try {
       const draftId = await createDraft(templateId);
+      if (target === 'preview') {
+        navigate(`/preview/${draftId}`);
+        return;
+      }
       navigate(`/create/${templateId}?draft=${draftId}`);
     } catch (err) {
       console.error('Failed to create draft:', err);
-      setCreating(false);
+      setCreateError('Could not create your draft. Please check your connection and try again.');
+    } finally {
+      setCreatingEditor(false);
+      setCreatingPreview(false);
     }
   };
-  const { templateId } = useParams();
 
   const templateData = {
     'kawaii-letter': {
@@ -26,7 +37,37 @@ const TemplateDetail = () => {
       description: 'A kawaii digital letter experience featuring an interactive envelope, a heartfelt letter, draggable polaroid memories, a retro TV music player, and a flower explosion finale. All text and photos are fully customizable.',
       emoji: '✉️',
       color: 'bg-[#FFD1DC]',
-    }
+    },
+    '100-reasons': {
+      name: '100 Reasons',
+      description: 'Flip beautifully animated cards revealing all the reasons you love someone. Includes confetti finale and playful interactions.',
+      emoji: '💯',
+      color: 'bg-gradient-to-br from-violet-200 to-rose-200',
+    },
+    'our-gallery': {
+      name: 'Our Gallery',
+      description: 'A cinematic gallery-style experience for your memories with smooth transitions, captions, and romantic atmosphere.',
+      emoji: '🖼️',
+      color: 'bg-gradient-to-br from-amber-200 to-orange-200',
+    },
+    'dark-romance': {
+      name: 'Dark Romance',
+      description: 'A dramatic, elegant letter template with ember effects and moody visuals for a timeless romantic vibe.',
+      emoji: '🕯️',
+      color: 'bg-gradient-to-br from-[#1C1007] to-[#2D1A0E]',
+    },
+    'our-story': {
+      name: 'Our Story',
+      description: 'Tell your relationship story chapter by chapter, with date highlights and a narrative layout that feels like a keepsake.',
+      emoji: '📖',
+      color: 'bg-[#F5ECD7]',
+    },
+    'midnight-love': {
+      name: 'Midnight Love',
+      description: 'A starry night template with a typewriter-style reveal and dreamy motion effects for heartfelt long-form letters.',
+      emoji: '🌙',
+      color: 'bg-gradient-to-br from-[#0D1B3E] to-[#1A0533]',
+    },
   };
 
   const template = templateData[templateId] || templateData['kawaii-letter'];
@@ -76,8 +117,13 @@ const TemplateDetail = () => {
               </div>
             </div>
 
-            <button className="w-full btn-outline flex items-center justify-center gap-2 mb-12">
-              <Smartphone size={20} /> Open Full-Screen Live Preview
+            <button
+              onClick={() => createDraftAndNavigate('preview')}
+              disabled={creatingEditor || creatingPreview}
+              className="w-full btn-outline flex items-center justify-center gap-2 mb-12 disabled:opacity-70"
+            >
+              {creatingPreview ? <Loader2 size={18} className="animate-spin" /> : <Smartphone size={20} />}
+              {creatingPreview ? 'Preparing preview...' : 'Open Full-Screen Live Preview'}
             </button>
 
             {/* Inclusions */}
@@ -108,10 +154,13 @@ const TemplateDetail = () => {
               <div className="border-t border-card pt-8 mb-8">
                 <h4 className="font-bold text-dark mb-1">Customize template</h4>
                 <p className="text-secondary text-sm mb-6">Try the full editor for free. Pay only when you publish.</p>
-                <button onClick={handleCreate} disabled={creating}
+                <button onClick={() => createDraftAndNavigate('editor')} disabled={creatingEditor || creatingPreview}
                   className="w-full btn-primary btn-shimmer py-5 text-xl flex items-center justify-center gap-2 mb-4 uppercase tracking-wide disabled:opacity-70">
-                  {creating ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE FOR FREE!'}
+                  {creatingEditor ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE FOR FREE!'}
                 </button>
+                {createError && (
+                  <p className="text-sm text-red-500 font-medium mb-4">{createError}</p>
+                )}
                 
                 <div className="flex justify-between items-center px-2">
                    {[

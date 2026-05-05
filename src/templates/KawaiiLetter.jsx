@@ -16,6 +16,7 @@ const KawaiiLetter = ({
   const letterParagraphs = (scenes.letterText || '').split('\n').filter(Boolean);
   const polaroids = [1, 2, 3, 4, 5].map(i => ({
     caption: scenes[`polaroidCaption${i}`] || `Memory ${i}`,
+    imageUrl: scenes[`photo${i}Url`] || '',
     color: ['bg-rose-200', 'bg-sky-200', 'bg-amber-200', 'bg-emerald-200', 'bg-violet-200'][i - 1],
   }));
 
@@ -128,6 +129,13 @@ const KawaiiLetter = ({
                   className="flex-shrink-0 w-[300px] snap-center cursor-pointer">
                   <div className="bg-white p-4 shadow-xl rounded-sm border border-card">
                     <div className={`aspect-square ${photo.color} rounded-sm relative overflow-hidden mb-6`}>
+                      {photo.imageUrl && (
+                        <img
+                          src={photo.imageUrl}
+                          alt={photo.caption}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
                       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-8 bg-white/40 backdrop-blur-sm -rotate-2" />
                     </div>
                     <p className="font-dancing text-2xl text-dark/70 text-center">{photo.caption}</p>

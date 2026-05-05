@@ -6,6 +6,11 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { templateFields } from '../templates/fields';
 
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
 const Builder = () => {
   const { templateId } = useParams();
   const [searchParams] = useSearchParams();
@@ -31,6 +36,10 @@ const Builder = () => {
   });
   const [templateName, setTemplateName] = useState('');
   const debounceRef = useRef(null);
+  const expiryIntervalRef = useRef(null);
+  const fileInputRefs = useRef({});
+  const [uploadingBySlot, setUploadingBySlot] = useState({});
+  const [uploadError, setUploadError] = useState('');
 
   // Load draft from Firestore
   useEffect(() => {
@@ -58,9 +67,7 @@ const Builder = () => {
         });
         setTemplateName(formatTemplateName(data.templateId));
         // Expiry countdown
-        if (data.expiresAt) {
-          updateExpiry(data.expiresAt.toDate());
-        }
+        if (data.expiresAt) startExpiryTimer(data.expiresAt.toDate());
       } catch (err) {
         console.error('Failed to load draft:', err);
         navigate('/templates');
@@ -72,7 +79,8 @@ const Builder = () => {
   }, [draftId, navigate]);
 
   // Expiry countdown
-  function updateExpiry(expiresAtDate) {
+  function startExpiryTimer(expiresAtDate) {
+    if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
     const tick = () => {
       const diff = expiresAtDate - Date.now();
       if (diff <= 0) { setExpiryLabel('Expired'); return; }
@@ -81,9 +89,12 @@ const Builder = () => {
       setExpiryLabel(`${h}h ${m}m`);
     };
     tick();
-    const interval = setInterval(tick, 60000);
-    return () => clearInterval(interval);
+    expiryIntervalRef.current = setInterval(tick, 60000);
   }
+
+  useEffect(() => () => {
+    if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
+  }, []);
 
   function formatTemplateName(id) {
     const names = {
@@ -161,6 +172,69 @@ const Builder = () => {
   };
   const removeReason = (i) => {
     setFormData(prev => ({ ...prev, reasons: prev.reasons.filter((_, idx) => idx !== i) }));
+  };
+
+  const triggerPhotoPicker = (slot) => {
+    const input = fileInputRefs.current[slot];
+    if (input) input.click();
+  };
+
+  const setPhotoUrl = (slot, url) => {
+    const key = `photo${slot}Url`;
+    setFormData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: url } }));
+  };
+
+  const removePhoto = (slot) => {
+    setUploadError('');
+    setPhotoUrl(slot, '');
+  };
+
+  const handlePhotoSelected = async (slot, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !draftId) return;
+
+    if (!IMAGE_TYPES.includes(file.type)) {
+      setUploadError('Please upload a JPG, PNG, or WEBP image.');
+      return;
+    }
+
+    if (file.size > IMAGE_MAX_BYTES) {
+      setUploadError('Image is too large. Max size is 5MB.');
+      return;
+    }
+
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      setUploadError('Cloudinary is not configured. Add cloud name and upload preset to .env.');
+      return;
+    }
+
+    setUploadError('');
+    setUploadingBySlot(prev => ({ ...prev, [slot]: true }));
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      form.append('folder', `loveletters/drafts/${draftId}`);
+      form.append('public_id', `photo${slot}-${Date.now()}`);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: form,
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload.secure_url) {
+        throw new Error(payload?.error?.message || 'Cloudinary upload failed');
+      }
+
+      setPhotoUrl(slot, payload.secure_url);
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setUploadError('Upload failed. Check Cloudinary setup and try again.');
+    } finally {
+      setUploadingBySlot(prev => ({ ...prev, [slot]: false }));
+    }
   };
 
   const tabs = [
@@ -321,16 +395,64 @@ const Builder = () => {
                   {[1, 2, 3, 4, 5].map(i => (
                     <div key={i} className="space-y-2">
                       <label className="text-xs font-bold text-secondary uppercase tracking-wider">Photo {i}</label>
-                      <div className="aspect-video rounded-xl border-2 border-dashed border-card flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary-pink hover:bg-primary-light/30 transition-all group">
-                        <Upload className="text-secondary group-hover:text-primary-pink" size={24} />
-                        <div className="text-center">
-                          <p className="text-[10px] font-bold text-dark">Click to upload or drag & drop</p>
-                          <p className="text-[10px] text-secondary">PNG, JPG up to 5MB</p>
-                        </div>
+                      <input
+                        ref={(el) => { fileInputRefs.current[i] = el; }}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => handlePhotoSelected(i, e)}
+                      />
+                      <div
+                        onClick={() => !uploadingBySlot[i] && triggerPhotoPicker(i)}
+                        className="aspect-video rounded-xl border-2 border-dashed border-card flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary-pink hover:bg-primary-light/30 transition-all group relative overflow-hidden"
+                      >
+                        {formData.scenes[`photo${i}Url`] ? (
+                          <>
+                            <img
+                              src={formData.scenes[`photo${i}Url`]}
+                              alt={`Uploaded memory ${i}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-2 left-2 right-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); triggerPhotoPicker(i); }}
+                                className="flex-1 bg-white/95 text-dark text-[10px] font-bold rounded-lg py-1.5"
+                              >
+                                Replace
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
+                                className="w-9 bg-white/95 text-red-500 rounded-lg flex items-center justify-center"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {uploadingBySlot[i] ? (
+                              <Loader2 className="text-primary-pink animate-spin" size={24} />
+                            ) : (
+                              <Upload className="text-secondary group-hover:text-primary-pink" size={24} />
+                            )}
+                            <div className="text-center">
+                              <p className="text-[10px] font-bold text-dark">
+                                {uploadingBySlot[i] ? 'Uploading...' : 'Click to upload'}
+                              </p>
+                              <p className="text-[10px] text-secondary">PNG, JPG, WEBP up to 5MB</p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
-                  <p className="text-[10px] text-secondary italic text-center">Photo uploads require Firebase Storage setup</p>
+                  {uploadError && (
+                    <p className="text-[11px] text-red-500 text-center font-medium">{uploadError}</p>
+                  )}
+                  <p className="text-[10px] text-secondary italic text-center">Uploads are hosted on Cloudinary and saved to your draft automatically.</p>
                 </motion.div>
               )}
 

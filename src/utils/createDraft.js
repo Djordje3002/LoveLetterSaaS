@@ -26,6 +26,12 @@ export async function createDraft(templateId) {
   }
 
   await setDoc(doc(db, 'pages', id), draftData)
-  localStorage.setItem('currentDraftId', id)
+  // localStorage can fail in private/restricted browser contexts.
+  // Draft creation should still succeed even if persistence is unavailable.
+  try {
+    localStorage.setItem('currentDraftId', id)
+  } catch (err) {
+    console.warn('Unable to persist draft ID in localStorage:', err)
+  }
   return id
 }
