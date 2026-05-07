@@ -17,6 +17,5 @@
     "firebase-functions": "^4.0.0",
     "stripe": "^14.0.0"
   },
-  "devDependencies": {},
   "private": true
 }

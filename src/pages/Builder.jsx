@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Maximize, RefreshCw, Volume2, Plus, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -10,6 +10,7 @@ const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+const AI_SUGGEST_ENDPOINT = import.meta.env.VITE_AI_SUGGEST_ENDPOINT || '/api/generate-message-suggestion';
 
 const Builder = () => {
   const { templateId } = useParams();
@@ -40,6 +41,9 @@ const Builder = () => {
   const fileInputRefs = useRef({});
   const [uploadingBySlot, setUploadingBySlot] = useState({});
   const [uploadError, setUploadError] = useState('');
+  const [livePreviewOpened, setLivePreviewOpened] = useState(false);
+  const [generatingByField, setGeneratingByField] = useState({});
+  const [aiErrorByField, setAiErrorByField] = useState({});
 
   // Load draft from Firestore
   useEffect(() => {
@@ -96,6 +100,10 @@ const Builder = () => {
     if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
   }, []);
 
+  useEffect(() => {
+    setLivePreviewOpened(false);
+  }, [draftId]);
+
   function formatTemplateName(id) {
     const names = {
       'kawaii-letter': 'Kawaii Digital Letter',
@@ -151,6 +159,48 @@ const Builder = () => {
 
   const handleSceneInput = (key, value) => {
     setFormData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: value } }));
+  };
+
+  const handleGenerateSuggestion = async (field) => {
+    if (!draftId) return;
+    setAiErrorByField(prev => ({ ...prev, [field.key]: '' }));
+    setGeneratingByField(prev => ({ ...prev, [field.key]: true }));
+    try {
+      const response = await fetch(AI_SUGGEST_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fieldType: field.type,
+          draftId,
+          fieldKey: field.key,
+          fieldLabel: field.label,
+          currentValue: formData.scenes[field.key] || '',
+          recipientName: formData.recipientName || '',
+          senderName: formData.senderName || '',
+          templateId,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 404 && AI_SUGGEST_ENDPOINT.startsWith('/api/')) {
+          throw new Error('Set VITE_AI_SUGGEST_ENDPOINT to your deployed Vercel API URL.');
+        }
+        throw new Error(payload?.error || 'AI request failed');
+      }
+
+      const suggestion = payload?.suggestion || '';
+      if (!suggestion) throw new Error('No suggestion returned');
+      handleSceneInput(field.key, suggestion);
+    } catch (err) {
+      console.error('Suggestion generation failed:', err);
+      const message = err?.message?.includes('AI endpoint is not configured')
+        ? 'AI endpoint is not configured yet.'
+        : err?.message || 'AI suggestion failed. Please try again.';
+      setAiErrorByField(prev => ({ ...prev, [field.key]: message }));
+    } finally {
+      setGeneratingByField(prev => ({ ...prev, [field.key]: false }));
+    }
   };
 
   const handleSaveNow = async () => {
@@ -333,7 +383,22 @@ const Builder = () => {
 
                   {fields.map((field) => (
                     <div key={field.key} className="space-y-1.5">
-                      <label className="text-xs font-bold text-secondary uppercase tracking-wider">{field.label}</label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs font-bold text-secondary uppercase tracking-wider">{field.label}</label>
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateSuggestion(field)}
+                          disabled={Boolean(generatingByField[field.key])}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-primary-pink/35 bg-primary-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-pink hover:bg-primary-pink/15 disabled:opacity-60"
+                        >
+                          {generatingByField[field.key] ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles size={12} />
+                          )}
+                          AI Suggest
+                        </button>
+                      </div>
                       {field.type === 'textarea' ? (
                         <textarea
                           value={formData.scenes[field.key] || ''}
@@ -349,6 +414,9 @@ const Builder = () => {
                           placeholder={field.placeholder}
                           className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all text-sm"
                         />
+                      )}
+                      {aiErrorByField[field.key] && (
+                        <p className="text-[11px] text-red-500 font-medium">{aiErrorByField[field.key]}</p>
                       )}
                     </div>
                   ))}
@@ -561,35 +629,67 @@ const Builder = () => {
             <div className="flex items-center gap-2 text-secondary font-bold text-xs uppercase tracking-widest">
               <Eye size={16} className="text-primary-pink" /> Live Preview
             </div>
-            {expiryLabel && (
-              <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200">
-                ⏱ Draft Expires in {expiryLabel}
-              </div>
-            )}
-            <div className="flex items-center gap-4">
-              <button className="text-secondary hover:text-primary-pink flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors">
-                <Maximize size={14} /> Full Screen
-              </button>
-              <button className="text-secondary hover:text-primary-pink flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors">
-                <RefreshCw size={14} /> Refresh
-              </button>
-            </div>
           </div>
 
           <div className="flex-grow p-4 md:p-8 overflow-hidden flex items-center justify-center">
             <div className="w-full max-w-sm aspect-[9/19] bg-white rounded-[40px] border-[8px] border-dark shadow-2xl overflow-hidden relative">
               <div className="absolute inset-0 flex flex-col bg-[#FFD1DC] p-6 text-center overflow-y-auto">
                 <div className="flex-grow flex flex-col items-center justify-center pt-10">
-                  <div className="relative mb-8 transform hover:scale-105 transition-transform cursor-pointer">
-                    <div className="w-48 h-32 bg-white rounded-xl shadow-lg border border-primary-light flex items-center justify-center relative">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-primary-pink rounded-full border-4 border-white flex items-center justify-center text-white shadow-md">
-                        ❤️
-                      </div>
-                      <div className="absolute top-0 left-0 w-full h-full border-t-[60px] border-t-primary-light border-x-[96px] border-x-transparent"></div>
+                  <motion.button
+                    type="button"
+                    onClick={() => {
+                      if (!livePreviewOpened) setLivePreviewOpened(true);
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative mb-8 w-[240px] h-[220px] ${livePreviewOpened ? 'cursor-default' : 'cursor-pointer'}`}
+                  >
+                    <motion.div
+                      animate={livePreviewOpened
+                        ? { y: [14, -138, -122], rotate: [0, -4, -1.8], scale: [0.96, 1.04, 1] }
+                        : { y: 14, rotate: 0, scale: 0.96 }}
+                      transition={livePreviewOpened
+                        ? { duration: 0.78, ease: ['easeOut', 'easeOut', 'easeInOut'], times: [0, 0.72, 1] }
+                        : { type: 'spring', stiffness: 170, damping: 17 }}
+                      className="absolute left-1/2 bottom-[62px] -translate-x-1/2 w-[204px] h-[152px] rounded-[10px] border border-[#cfb584] overflow-hidden z-10 shadow-[0_14px_30px_rgba(97,66,32,0.24)]"
+                      style={{
+                        backgroundColor: '#f2dfb8',
+                        backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(130,95,56,0.16), transparent 42%), radial-gradient(circle at 90% 82%, rgba(124,83,38,0.15), transparent 36%), repeating-linear-gradient(180deg, rgba(119,84,46,0.04), rgba(119,84,46,0.04) 1px, transparent 1px, transparent 20px), linear-gradient(140deg, rgba(255,255,255,0.54), transparent 45%)',
+                      }}
+                    >
+                      <div className="absolute inset-[7px] rounded-[8px] border border-[#d8bd8c]/70 pointer-events-none" />
+                      <p className="h-full px-4 py-4 text-left text-[13px] leading-[1.55] text-[#5a3c20] font-playfair font-medium overflow-hidden">
+                        {formData.scenes.scene2Header || formData.scenes.scene1Text || formData.scenes.scene1Header || 'A little preview from your letter...'}
+                      </p>
+                    </motion.div>
+
+                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[224px] h-[148px]">
+                      <div className="absolute inset-0 rounded-[14px] bg-gradient-to-b from-[#ffe6ee] to-[#f8b5c6] border border-[#efb7c8] shadow-[0_12px_30px_rgba(225,73,115,0.24)]" />
+                      <div className="absolute inset-x-0 bottom-0 h-[96px] bg-gradient-to-r from-[#f6c4d2] via-[#f8d0dc] to-[#f3bccb] [clip-path:polygon(0_0,50%_84%,100%_0,100%_100%,0_100%)] rounded-b-[14px]" />
+                      <motion.div
+                        animate={livePreviewOpened ? { rotateX: -180, y: -2 } : { rotateX: 0, y: 0 }}
+                        transition={{ duration: 0.5, ease: [0.2, 0.75, 0.22, 1] }}
+                        className="absolute left-0 right-0 top-0 h-[88px] origin-top [transform-style:preserve-3d] [perspective:1000px]"
+                      >
+                        <div className="w-full h-full bg-gradient-to-b from-[#ffdce7] to-[#f8bfd0] border-x border-t border-[#efb7c8] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[12px]" />
+                      </motion.div>
+
+                      <AnimatePresence>
+                        {!livePreviewOpened && (
+                          <motion.div
+                            initial={{ scale: 0.65, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.35, opacity: 0, y: -4 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute left-1/2 top-[54px] -translate-x-1/2 z-20 w-11 h-11 bg-primary-pink rounded-full border-4 border-white flex items-center justify-center text-white text-sm shadow-lg"
+                          >
+                            ❤️
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </div>
+                  </motion.button>
                   <p className="font-dancing text-primary-pink text-xl">
-                    {formData.scenes.hint || 'Tap seal to open ♥'}
+                    {livePreviewOpened ? 'Your message is opening beautifully ✨' : (formData.scenes.hint || 'Tap seal to open ♥')}
                   </p>
                   {formData.recipientName && (
                     <p className="text-primary-pink/60 text-sm mt-2">For {formData.recipientName}</p>
