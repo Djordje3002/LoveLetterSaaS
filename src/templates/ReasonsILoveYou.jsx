@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle } from 'lucide-react';
 import { palettes, fonts, extractYouTubeId } from './palettes';
@@ -45,14 +45,24 @@ const ReasonsILoveYou = ({
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
+      <motion.div
+        className="pointer-events-none absolute inset-0 opacity-70"
+        aria-hidden
+        animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+        style={{
+          backgroundImage: `radial-gradient(circle at 18% 16%, ${pal.primary}20, transparent 36%), radial-gradient(circle at 82% 20%, ${pal.accent}20, transparent 38%), radial-gradient(circle at 52% 86%, #ffffff3a, transparent 42%)`,
+          backgroundSize: '170% 170%',
+        }}
+      />
       {musicEnabled && videoId && (
         <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
           allow="autoplay" className="w-0 h-0 absolute opacity-0" title="bg music" />
       )}
 
       {/* Header */}
-      <div className="text-center py-16 px-6">
+      <div className="text-center py-16 px-6 relative z-10">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-sm font-bold uppercase tracking-widest mb-4" style={{ color: pal.primary }}>
             ♥ For {recipientName || 'You'}
@@ -75,13 +85,14 @@ const ReasonsILoveYou = ({
       </div>
 
       {/* Cards Grid */}
-      <div className="max-w-5xl mx-auto px-4 pb-24">
+      <div className="max-w-5xl mx-auto px-4 pb-24 relative z-10">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           <AnimatePresence>
             {cards.map((card, i) => (
               <motion.div key={card.id} layout
                 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -4, scale: 1.03 }}
                 className="aspect-square cursor-pointer" style={{ perspective: '1000px' }}
                 onClick={() => flip(card.id)}>
                 <div className={`relative w-full h-full transition-all duration-500`}
@@ -106,7 +117,7 @@ const ReasonsILoveYou = ({
 
       {revealed === cards.length && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="text-center pb-16 px-6">
+          className="text-center pb-16 px-6 relative z-10">
           {scenes.closingMessage && (
             <p className="font-dancing text-3xl mb-4" style={{ color: pal.primary }}>
               {scenes.closingMessage}

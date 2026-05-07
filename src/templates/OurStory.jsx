@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { differenceInDays, parseISO } from 'date-fns';
 import { palettes, fonts, extractYouTubeId } from './palettes';
@@ -12,6 +12,11 @@ const OurStory = ({
   const fnt = fonts[font] || fonts.classic;
   const videoId = extractYouTubeId(musicUrl);
   const [bookOpen, setBookOpen] = useState(false);
+  const chapterCards = useMemo(() => ([
+    { title: scenes.chapter1Title || 'How We Met', text: scenes.chapter1Text || '' },
+    { title: scenes.chapter2Title || 'Our First Date', text: scenes.chapter2Text || '' },
+    { title: scenes.chapter3Title || 'The Moment I Knew', text: scenes.chapter3Text || '' },
+  ].filter(c => c.text)), [scenes.chapter1Text, scenes.chapter1Title, scenes.chapter2Text, scenes.chapter2Title, scenes.chapter3Text, scenes.chapter3Title]);
 
   useEffect(() => {
     const t = setTimeout(() => setBookOpen(true), 800);
@@ -28,13 +33,18 @@ const OurStory = ({
     } catch { return null; }
   })();
 
-  const chapters = [
-    { title: scenes.chapter1Title || 'How We Met', text: scenes.chapter1Text || '' },
-    { title: scenes.chapter2Title || 'Our First Date', text: scenes.chapter2Text || '' },
-  ].filter(c => c.text);
-
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
+    <div className="min-h-screen overflow-x-hidden relative" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
+      <motion.div
+        className="pointer-events-none absolute inset-0 opacity-70"
+        aria-hidden
+        animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+        transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+        style={{
+          backgroundImage: `radial-gradient(circle at 18% 16%, ${pal.primary}18, transparent 40%), radial-gradient(circle at 82% 20%, ${pal.accent}20, transparent 42%), radial-gradient(circle at 52% 86%, ${pal.primary}14, transparent 44%)`,
+          backgroundSize: '180% 180%',
+        }}
+      />
       {musicEnabled && videoId && (
         <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
           allow="autoplay" className="w-0 h-0 absolute opacity-0" title="bg music" />
@@ -58,6 +68,12 @@ const OurStory = ({
               style={{ fontFamily: fnt.heading, color: pal.text }}>
               {recipientName ? `Me & ${recipientName}` : 'Our Love Story'}
             </h1>
+            <motion.div
+              className="mx-auto mb-4 h-1 rounded-full"
+              style={{ backgroundColor: pal.accent, width: '140px' }}
+              animate={{ width: ['90px', '170px', '90px'], opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+            />
             {daysTogether !== null && (
               <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg"
                 style={{ backgroundColor: pal.primary }}>
@@ -71,11 +87,18 @@ const OurStory = ({
 
           {/* Chapters */}
           <div className="space-y-16">
-            {chapters.map((ch, i) => (
+            {chapterCards.map((ch, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 + i * 0.3 }}
-                className="bg-white rounded-2xl p-8 shadow-lg border border-card relative overflow-hidden">
+                whileHover={{ y: -4, scale: 1.01 }}
+                className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-card relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl" style={{ backgroundColor: pal.primary }} />
+                <motion.div
+                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-30"
+                  style={{ backgroundColor: pal.primary }}
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.35, 0.2] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.2 }}
+                />
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: pal.primary }}>
                   Chapter {i + 1}
                 </p>
@@ -88,7 +111,7 @@ const OurStory = ({
 
             {scenes.closingMessage && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2 + chapters.length * 0.3 }} className="text-center py-8">
+                transition={{ delay: 1.2 + chapterCards.length * 0.3 }} className="text-center py-8">
                 <p className="font-dancing text-3xl" style={{ color: pal.primary }}>{scenes.closingMessage}</p>
                 {showSenderName && senderName && (
                   <p className="font-dancing text-2xl text-secondary mt-2">— {senderName}</p>

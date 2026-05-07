@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarDays, MapPin, Sparkles } from 'lucide-react';
+import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
 const DateInviteLetter = ({
@@ -18,6 +19,7 @@ const DateInviteLetter = ({
   const fnt = fonts[font] || fonts.elegant;
   const videoId = extractYouTubeId(musicUrl);
   const [answer, setAnswer] = useState('');
+  const [revealed, setRevealed] = useState(false);
 
   const headline = scenes.inviteHeadline || 'Will you go on a date with me?';
   const message = scenes.inviteMessage || 'I have a little plan for us, and I would love to spend that time with you.';
@@ -27,95 +29,123 @@ const DateInviteLetter = ({
   const rsvpNote = scenes.rsvpContact || "Tell me yes when you're ready 💌";
 
   return (
-    <div className="min-h-screen px-6 py-12 md:py-20" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
-      {musicEnabled && videoId && (
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
-          allow="autoplay"
-          className="w-0 h-0 absolute opacity-0"
-          title="bg music"
-        />
-      )}
-
-      <div className="max-w-3xl mx-auto">
+    <EnvelopeRevealShell
+      hintText={scenes.hint || 'Open your date invitation'}
+      openingHintText="Opening invitation..."
+      letterPreviewText={scenes.inviteHeadline || scenes.inviteMessage || 'A special invitation is waiting for you...'}
+      backgroundStyle={{ backgroundColor: pal.bg }}
+      floatingDecor={[
+        { id: 'i1', icon: '📅', style: { top: '12%', left: '10%' }, delay: 0.1 },
+        { id: 'i2', icon: '💌', style: { top: '15%', right: '10%' }, delay: 0.35 },
+        { id: 'i3', icon: '✨', style: { bottom: '16%', left: '14%' }, delay: 0.75 },
+      ]}
+      envelopeTheme={{
+        body: 'linear-gradient(180deg, #ffe9f0 0%, #ffdbe9 52%, #f5c5db 100%)',
+        flap: 'linear-gradient(180deg, #ffeef5 0%, #f9d4e6 100%)',
+        front: 'linear-gradient(90deg, #f8d5e6 0%, #fee7f2 50%, #f3c9de 100%)',
+        border: '#e8b0c8',
+        seal: 'linear-gradient(135deg, #ef5f8f 0%, #dc3c72 100%)',
+        hint: pal.primary,
+      }}
+    >
+      <div className="min-h-screen px-6 py-12 md:py-20 relative overflow-hidden" style={{ backgroundColor: pal.bg, fontFamily: fnt.body }}>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-card rounded-3xl shadow-xl p-8 md:p-12"
-        >
-          <p className="text-xs uppercase tracking-[0.25em] font-bold mb-4" style={{ color: pal.primary }}>
-            Date Invitation
-          </p>
-          <h1 className="text-4xl md:text-5xl mb-6 font-bold leading-tight" style={{ fontFamily: fnt.heading, color: pal.text }}>
-            {headline}
-          </h1>
-          <p className="text-secondary leading-relaxed text-lg mb-10">
-            {message}
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="rounded-2xl border border-card p-4 bg-primary-light/30">
-              <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">When</p>
-              <p className="font-bold text-dark flex items-center gap-2"><CalendarDays size={16} style={{ color: pal.primary }} /> {when}</p>
-            </div>
-            <div className="rounded-2xl border border-card p-4 bg-primary-light/30">
-              <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">Where</p>
-              <p className="font-bold text-dark flex items-center gap-2"><MapPin size={16} style={{ color: pal.primary }} /> {where}</p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-card p-4 mb-10">
-            <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">Dress Code</p>
-            <p className="font-medium text-dark">{dressCode}</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => setAnswer('yes')}
-              className="flex-1 text-white font-bold py-3 rounded-pill transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: pal.primary }}
-            >
-              Yes, I would love to
-            </button>
-            <button
-              onClick={() => setAnswer('maybe')}
-              className="flex-1 border-2 font-bold py-3 rounded-pill transition-all"
-              style={{ borderColor: pal.primary, color: pal.primary }}
-            >
-              Maybe, tell me more
-            </button>
-          </div>
-
-          {answer && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 rounded-2xl p-4 border border-card bg-primary-light/40">
-              <p className="font-bold flex items-center gap-2" style={{ color: pal.primary }}>
-                <Sparkles size={16} />
-                {answer === 'yes' ? 'Yay! This made my day.' : "I'd still love to make this special for us."}
-              </p>
-              <p className="text-sm text-secondary mt-2">{rsvpNote}</p>
-            </motion.div>
-          )}
-
-          {(scenes.closingMessage || (showSenderName && senderName)) && (
-            <div className="mt-10 text-right">
-              {scenes.closingMessage && (
-                <p className="font-dancing text-3xl" style={{ color: pal.primary }}>{scenes.closingMessage}</p>
-              )}
-              {showSenderName && senderName && (
-                <p className="font-dancing text-2xl text-secondary mt-1">— {senderName}</p>
-              )}
-            </div>
-          )}
-          {recipientName && (
-            <p className="text-xs text-secondary mt-6">Made especially for {recipientName}</p>
-          )}
-        </motion.div>
-
-        {showFooter && (
-          <p className="text-center text-secondary text-sm mt-8">made with LovePage ♥</p>
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-70"
+          animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 16%, ${pal.primary}1f, transparent 38%), radial-gradient(circle at 80% 24%, ${pal.accent}1a, transparent 36%), radial-gradient(circle at 50% 90%, #ffffff28, transparent 44%)`,
+            backgroundSize: '170% 170%',
+          }}
+        />
+        {musicEnabled && videoId && (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
+            allow="autoplay"
+            className="w-0 h-0 absolute opacity-0"
+            title="bg music"
+          />
         )}
+
+        <div className="max-w-3xl mx-auto relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/95 backdrop-blur-sm border border-card rounded-3xl shadow-xl p-8 md:p-12">
+            <p className="text-xs uppercase tracking-[0.25em] font-bold mb-4" style={{ color: pal.primary }}>
+              Date Invitation
+            </p>
+            <h1 className="text-4xl md:text-5xl mb-6 font-bold leading-tight" style={{ fontFamily: fnt.heading, color: pal.text }}>
+              {headline}
+            </h1>
+            <p className="text-secondary leading-relaxed text-lg mb-10">{message}</p>
+
+            <motion.button
+              type="button"
+              onClick={() => setRevealed(prev => !prev)}
+              whileTap={{ scale: 0.98 }}
+              className="mb-6 text-xs font-bold uppercase tracking-[0.2em] px-4 py-2 rounded-full border"
+              style={{ color: pal.primary, borderColor: `${pal.primary}55` }}
+            >
+              {revealed ? 'Hide date details' : 'Reveal date details'}
+            </motion.button>
+
+            <motion.div initial={false} animate={{ height: revealed ? 'auto' : 0, opacity: revealed ? 1 : 0 }} transition={{ duration: 0.45, ease: 'easeInOut' }} className="overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="rounded-2xl border border-card p-4 bg-primary-light/30">
+                  <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">When</p>
+                  <p className="font-bold text-dark flex items-center gap-2"><CalendarDays size={16} style={{ color: pal.primary }} /> {when}</p>
+                </div>
+                <div className="rounded-2xl border border-card p-4 bg-primary-light/30">
+                  <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">Where</p>
+                  <p className="font-bold text-dark flex items-center gap-2"><MapPin size={16} style={{ color: pal.primary }} /> {where}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-card p-4 mb-10">
+                <p className="text-xs uppercase tracking-widest font-bold mb-2 text-secondary">Dress Code</p>
+                <p className="font-medium text-dark">{dressCode}</p>
+              </div>
+            </motion.div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={() => setAnswer('yes')} className="flex-1 text-white font-bold py-3 rounded-pill transition-transform hover:scale-[1.02]" style={{ backgroundColor: pal.primary }}>
+                Yes, I would love to
+              </button>
+              <button onClick={() => setAnswer('maybe')} className="flex-1 border-2 font-bold py-3 rounded-pill transition-all" style={{ borderColor: pal.primary, color: pal.primary }}>
+                Maybe, tell me more
+              </button>
+            </div>
+
+            {answer && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 rounded-2xl p-4 border border-card bg-primary-light/40">
+                <p className="font-bold flex items-center gap-2" style={{ color: pal.primary }}>
+                  <Sparkles size={16} />
+                  {answer === 'yes' ? 'Yay! This made my day.' : "I'd still love to make this special for us."}
+                </p>
+                <p className="text-sm text-secondary mt-2">{rsvpNote}</p>
+              </motion.div>
+            )}
+
+            {(scenes.closingMessage || (showSenderName && senderName)) && (
+              <div className="mt-10 text-right">
+                {scenes.closingMessage && (
+                  <p className="font-dancing text-3xl" style={{ color: pal.primary }}>{scenes.closingMessage}</p>
+                )}
+                {showSenderName && senderName && (
+                  <p className="font-dancing text-2xl text-secondary mt-1">— {senderName}</p>
+                )}
+              </div>
+            )}
+            {recipientName && (
+              <p className="text-xs text-secondary mt-6">Made especially for {recipientName}</p>
+            )}
+          </motion.div>
+
+          {showFooter && (
+            <p className="text-center text-secondary text-sm mt-8">made with LovePage ♥</p>
+          )}
+        </div>
       </div>
-    </div>
+    </EnvelopeRevealShell>
   );
 };
 

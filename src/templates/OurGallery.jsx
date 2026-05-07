@@ -36,7 +36,17 @@ const OurGallery = ({
   }, [prev, next]);
 
   return (
-    <div className="h-screen flex flex-col bg-black overflow-hidden" style={{ fontFamily: fnt.body }}>
+    <div className="h-screen flex flex-col bg-black overflow-hidden relative" style={{ fontFamily: fnt.body }}>
+      <motion.div
+        className="pointer-events-none absolute inset-0 opacity-55"
+        aria-hidden
+        animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        style={{
+          backgroundImage: `radial-gradient(circle at 18% 16%, ${pal.primary}2a, transparent 38%), radial-gradient(circle at 82% 22%, ${pal.accent}2a, transparent 40%), radial-gradient(circle at 50% 84%, #ffffff18, transparent 45%)`,
+          backgroundSize: '170% 170%',
+        }}
+      />
       {musicEnabled && videoId && (
         <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
           allow="autoplay" className="w-0 h-0 absolute opacity-0" title="bg music" />
@@ -54,11 +64,30 @@ const OurGallery = ({
         )}
       </div>
       <div className="flex-grow relative flex items-center justify-center overflow-hidden">
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[1]"
+          animate={{ opacity: [0.12, 0.28, 0.12] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ background: 'linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.25) 50%, transparent 80%)' }}
+        />
         <AnimatePresence mode="wait">
-          <motion.div key={current} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }} className="absolute inset-0">
+          <motion.div
+            key={current}
+            initial={{ opacity: 0, scale: 1.06, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.98, filter: 'blur(6px)' }}
+            transition={{ duration: 0.65, ease: 'easeOut' }}
+            className="absolute inset-0"
+          >
             {photos[current].imageUrl ? (
-              <img src={photos[current].imageUrl} alt={photos[current].caption} className="w-full h-full object-cover" />
+              <motion.img
+                src={photos[current].imageUrl}
+                alt={photos[current].caption}
+                className="w-full h-full object-cover"
+                initial={{ scale: 1.08 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 7, ease: 'linear' }}
+              />
             ) : (
               <div className={`w-full h-full bg-gradient-to-br ${photos[current].color} flex items-center justify-center`}>
                 <p className="text-white/30 text-8xl font-black">📷</p>
@@ -67,10 +96,10 @@ const OurGallery = ({
             <div className="absolute inset-0 bg-black/30" />
           </motion.div>
         </AnimatePresence>
-        <button onClick={prev} className="absolute left-4 z-20 w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all">
+        <button onClick={prev} className="absolute left-4 z-20 w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 hover:scale-110 transition-all">
           <ChevronLeft size={24} />
         </button>
-        <button onClick={next} className="absolute right-4 z-20 w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all">
+        <button onClick={next} className="absolute right-4 z-20 w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 hover:scale-110 transition-all">
           <ChevronRight size={24} />
         </button>
         <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-2 z-20">
