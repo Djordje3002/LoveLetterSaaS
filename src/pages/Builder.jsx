@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { templateFields } from '../templates/fields';
+import AuthModal from '../components/AuthModal';
+import { useAuth } from '../context/AuthContext';
+import { buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
+import { trackEvent } from '../utils/analytics';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -12,42 +16,52 @@ const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 const AI_SUGGEST_ENDPOINT = import.meta.env.VITE_AI_SUGGEST_ENDPOINT || '/api/generate-message-suggestion';
 
+const QUICK_TONES = [
+  { id: 'sweet', label: 'Sweet', note: 'Warm and tender' },
+  { id: 'deep', label: 'Deep', note: 'Emotional and sincere' },
+  { id: 'playful', label: 'Playful', note: 'Cute and smiley' },
+];
+
 const Builder = () => {
   const { templateId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const draftId = searchParams.get('draft');
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('Text');
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
   const [expiryLabel, setExpiryLabel] = useState('');
-  const [formData, setFormData] = useState({
-    recipientName: '',
-    senderName: '',
-    showSenderName: true,
-    showFooter: true,
-    palette: 'pink',
-    font: 'playful',
-    scenes: {},
-    reasons: [],
-    musicEnabled: false,
-    musicUrl: '',
-    volume: 60,
-  });
+  const [formData, setFormData] = useState(() => getInitialDraftFormData(templateId));
   const [templateName, setTemplateName] = useState('');
   const debounceRef = useRef(null);
   const expiryIntervalRef = useRef(null);
   const fileInputRefs = useRef({});
+  const localDraftKeyRef = useRef(`local-${templateId || 'draft'}`);
   const [uploadingBySlot, setUploadingBySlot] = useState({});
   const [uploadError, setUploadError] = useState('');
   const [livePreviewOpened, setLivePreviewOpened] = useState(false);
   const [generatingByField, setGeneratingByField] = useState({});
   const [aiErrorByField, setAiErrorByField] = useState({});
+  const [authOpen, setAuthOpen] = useState(false);
+  const [pendingAuthAction, setPendingAuthAction] = useState('');
+  const [showQuickStart, setShowQuickStart] = useState(!draftId);
+  const [quickRecipient, setQuickRecipient] = useState('');
+  const [quickTone, setQuickTone] = useState('sweet');
 
   // Load draft from Firestore
   useEffect(() => {
-    if (!draftId) { navigate('/templates'); return; }
+    setLoading(true);
+    if (!draftId) {
+      setFormData(getInitialDraftFormData(templateId));
+      setTemplateName(formatTemplateName(templateId));
+      setExpiryLabel('');
+      setSaveStatus('idle');
+      setShowQuickStart(true);
+      setLoading(false);
+      return;
+    }
     const load = async () => {
       try {
         const snap = await getDoc(doc(db, 'pages', draftId));
@@ -70,6 +84,7 @@ const Builder = () => {
           volume: 60,
         });
         setTemplateName(formatTemplateName(data.templateId));
+        setShowQuickStart(false);
         // Expiry countdown
         if (data.expiresAt) startExpiryTimer(data.expiresAt.toDate());
       } catch (err) {
@@ -80,7 +95,11 @@ const Builder = () => {
       }
     };
     load();
-  }, [draftId, navigate]);
+  }, [draftId, navigate, templateId]);
+
+  useEffect(() => {
+    trackEvent('builder_opened', { templateId, hasDraft: Boolean(draftId) });
+  }, [draftId, templateId]);
 
   // Expiry countdown
   function startExpiryTimer(expiresAtDate) {
@@ -120,11 +139,11 @@ const Builder = () => {
   }
 
   // Save to Firestore
-  const saveToFirestore = useCallback(async (data) => {
-    if (!draftId) return;
+  const saveToFirestore = useCallback(async (data, targetDraftId = draftId) => {
+    if (!targetDraftId) return null;
     setSaveStatus('saving');
     try {
-      await updateDoc(doc(db, 'pages', draftId), {
+      await updateDoc(doc(db, 'pages', targetDraftId), {
         recipientName: data.recipientName,
         senderName: data.senderName,
         showSenderName: data.showSenderName,
@@ -138,19 +157,21 @@ const Builder = () => {
       });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
+      return targetDraftId;
     } catch (err) {
       console.error('Save failed:', err);
       setSaveStatus('error');
+      return null;
     }
   }, [draftId]);
 
   // Debounced auto-save
   useEffect(() => {
-    if (loading) return;
+    if (loading || !draftId || !user) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => saveToFirestore(formData), 800);
     return () => clearTimeout(debounceRef.current);
-  }, [formData, loading, saveToFirestore]);
+  }, [draftId, formData, loading, saveToFirestore, user]);
 
   const handleInput = (e) => {
     const { name, value, type, checked } = e.target;
@@ -161,8 +182,23 @@ const Builder = () => {
     setFormData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: value } }));
   };
 
+  const applyQuickPersonalize = () => {
+    const personalizedScenes = buildQuickPersonalizedScenes(templateId, {
+      recipientName: quickRecipient,
+      tone: quickTone,
+    });
+    setFormData(prev => ({
+      ...prev,
+      recipientName: quickRecipient.trim(),
+      scenes: { ...prev.scenes, ...personalizedScenes },
+    }));
+    setActiveTab('Text');
+    setShowQuickStart(false);
+    trackEvent('quick_personalize_applied', { templateId, tone: quickTone, hasRecipient: Boolean(quickRecipient.trim()) });
+  };
+
   const handleGenerateSuggestion = async (field) => {
-    if (!draftId) return;
+    const suggestionDraftId = draftId || localDraftKeyRef.current;
     setAiErrorByField(prev => ({ ...prev, [field.key]: '' }));
     setGeneratingByField(prev => ({ ...prev, [field.key]: true }));
     try {
@@ -171,7 +207,7 @@ const Builder = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fieldType: field.type,
-          draftId,
+          draftId: suggestionDraftId,
           fieldKey: field.key,
           fieldLabel: field.label,
           currentValue: formData.scenes[field.key] || '',
@@ -203,14 +239,57 @@ const Builder = () => {
     }
   };
 
-  const handleSaveNow = async () => {
+  const ensureRemoteDraft = useCallback(async ({ syncRoute = true } = {}) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    await saveToFirestore(formData);
+    if (draftId) return saveToFirestore(formData, draftId);
+
+    setSaveStatus('saving');
+    try {
+      const createdDraftId = await createDraft(templateId, formData);
+      trackEvent('draft_created', { templateId, draftId: createdDraftId });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      if (syncRoute) {
+        navigate(`/create/${templateId}?draft=${createdDraftId}`, { replace: true });
+      }
+      return createdDraftId;
+    } catch (err) {
+      console.error('Draft creation failed:', err);
+      setSaveStatus('error');
+      return null;
+    }
+  }, [draftId, formData, navigate, saveToFirestore, templateId]);
+
+  const requireAccountFor = (action) => {
+    setPendingAuthAction(action);
+    setAuthOpen(true);
+  };
+
+  const handleSaveNow = async () => {
+    if (!user) {
+      requireAccountFor('save');
+      return;
+    }
+    await ensureRemoteDraft();
   };
 
   const handlePreviewPublish = async () => {
-    await handleSaveNow();
-    navigate(`/preview/${draftId}`);
+    if (!user) {
+      requireAccountFor('publish');
+      return;
+    }
+    const targetDraftId = await ensureRemoteDraft({ syncRoute: false });
+    if (targetDraftId) navigate(`/preview/${targetDraftId}`);
+  };
+
+  const handleAuthSuccess = async () => {
+    const action = pendingAuthAction || 'save';
+    const targetDraftId = await ensureRemoteDraft({ syncRoute: action !== 'publish' });
+    if (!targetDraftId) {
+      throw new Error('Could not save your draft. Please check your connection and try again.');
+    }
+    setPendingAuthAction('');
+    if (action === 'publish') navigate(`/preview/${targetDraftId}`);
   };
 
   // Reasons list handlers
@@ -245,7 +324,8 @@ const Builder = () => {
   const handlePhotoSelected = async (slot, event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file || !draftId) return;
+    if (!file) return;
+    const uploadDraftId = draftId || localDraftKeyRef.current;
 
     if (!IMAGE_TYPES.includes(file.type)) {
       setUploadError('Please upload a JPG, PNG, or WEBP image.');
@@ -268,7 +348,7 @@ const Builder = () => {
       const form = new FormData();
       form.append('file', file);
       form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      form.append('folder', `loveletters/drafts/${draftId}`);
+      form.append('folder', `loveletters/drafts/${uploadDraftId}`);
       form.append('public_id', `photo${slot}-${Date.now()}`);
 
       const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
@@ -311,6 +391,106 @@ const Builder = () => {
     );
   }
 
+  if (showQuickStart) {
+    const previewScenes = {
+      ...formData.scenes,
+      ...buildQuickPersonalizedScenes(templateId, { recipientName: quickRecipient, tone: quickTone }),
+    };
+
+    return (
+      <div className="min-h-screen bg-[#fff8f4] flex items-center justify-center px-6 py-10">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-[#f0ddd4] shadow-[0_24px_70px_rgba(124,74,63,0.12)] rounded-[28px] p-8 md:p-10"
+          >
+            <Link to={`/templates/${templateId}`} className="inline-flex items-center gap-2 text-secondary hover:text-primary-pink text-sm font-bold mb-8">
+              <ArrowLeft size={16} /> Back to template
+            </Link>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-pink mb-3">Quick personalize</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-dark mb-4">Make the first draft feel personal.</h1>
+            <p className="text-secondary text-lg mb-8 max-w-2xl">
+              Add their name and choose the mood. We will fill the starter message, then you can edit every word in the full builder.
+            </p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Recipient name</label>
+                <input
+                  value={quickRecipient}
+                  onChange={(e) => setQuickRecipient(e.target.value)}
+                  placeholder="e.g. Sofia"
+                  className="mt-2 w-full max-w-md px-4 py-3 border border-card rounded-xl focus:outline-none focus:border-primary-pink text-lg"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Tone</label>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {QUICK_TONES.map((tone) => (
+                    <button
+                      key={tone.id}
+                      type="button"
+                      onClick={() => setQuickTone(tone.id)}
+                      className={`text-left rounded-2xl border p-4 transition-all ${
+                        quickTone === tone.id
+                          ? 'border-primary-pink bg-primary-light text-dark shadow-sm'
+                          : 'border-card bg-white text-secondary hover:border-primary-pink/50'
+                      }`}
+                    >
+                      <span className="block font-black">{tone.label}</span>
+                      <span className="text-xs">{tone.note}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-9">
+              <button
+                onClick={applyQuickPersonalize}
+                className="btn-primary btn-shimmer px-7 py-4 text-base font-bold flex items-center justify-center gap-2"
+              >
+                <Sparkles size={18} /> Fill my message
+              </button>
+              <button
+                onClick={() => {
+                  setShowQuickStart(false);
+                  trackEvent('quick_personalize_skipped', { templateId });
+                }}
+                className="btn-outline px-7 py-4 text-base font-bold"
+              >
+                Skip and edit manually
+              </button>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24, rotate: 1.5 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.15 }}
+            className="hidden lg:block rounded-[34px] bg-[#1f1520] p-4 shadow-[0_30px_80px_rgba(44,21,35,0.28)]"
+          >
+            <div className="aspect-[9/16] rounded-[26px] overflow-hidden bg-[#fff0f5] relative p-7">
+              <div className="absolute inset-0 bg-gingham opacity-80" />
+              <div className="relative z-10 h-full flex flex-col justify-center">
+                <div className="rounded-[22px] border border-[#e7bed0] bg-[#fff8fb] shadow-xl p-6">
+                  <div className="w-16 h-5 bg-white/80 rotate-[-7deg] mx-auto mb-3 rounded-sm" />
+                  <h3 className="font-dancing text-3xl text-[#b83a68] mb-4">{previewScenes.scene2Header}</h3>
+                  <p className="text-sm leading-7 text-[#5d2943] whitespace-pre-line">
+                    {previewScenes.letterText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top Bar */}
@@ -325,6 +505,9 @@ const Builder = () => {
             </span>
             {expiryLabel && (
               <span className="text-[10px] text-amber-600 font-bold">Expires in {expiryLabel}</span>
+            )}
+            {!draftId && (
+              <span className="text-[10px] text-primary-pink font-bold">Preview mode · sign in when saving</span>
             )}
           </div>
         </div>
@@ -341,6 +524,12 @@ const Builder = () => {
               <motion.span key="saved" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="text-xs text-green-600 flex items-center gap-1">
                 <CheckCircle2 size={12} /> Saved ✓
+              </motion.span>
+            )}
+            {saveStatus === 'error' && (
+              <motion.span key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-xs text-red-500 font-medium">
+                Save failed
               </motion.span>
             )}
           </AnimatePresence>
@@ -709,6 +898,16 @@ const Builder = () => {
           </div>
         </div>
       </div>
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => {
+          setAuthOpen(false);
+          setPendingAuthAction('');
+        }}
+        onSuccess={handleAuthSuccess}
+        initialMode="signup"
+        title={pendingAuthAction === 'publish' ? 'Create account to publish' : 'Create account to save'}
+      />
     </div>
   );
 };

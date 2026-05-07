@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const AuthModal = ({ isOpen, onClose, initialMode = 'signin', title = 'Continue' }) => {
+const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title = 'Continue' }) => {
   const { signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
@@ -63,9 +63,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signin', title = 'Continue'
       } else {
         await signIn(email, password)
       }
+      if (onSuccess) await onSuccess()
       resetAndClose()
     } catch (err) {
-      setError(mapAuthError(err, false))
+      setError(err?.code ? mapAuthError(err, false) : (err?.message || 'Could not finish after sign in. Please try again.'))
     } finally {
       setSubmitting(false)
     }
@@ -76,9 +77,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signin', title = 'Continue'
     setSubmitting(true)
     try {
       await signInWithGoogle()
+      if (onSuccess) await onSuccess()
       resetAndClose()
     } catch (err) {
-      setError(mapAuthError(err, true))
+      setError(err?.code ? mapAuthError(err, true) : (err?.message || 'Could not finish after sign in. Please try again.'))
     } finally {
       setSubmitting(false)
     }

@@ -1,7 +1,12 @@
-import React, { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';
+
+const DARK_PARCHMENT_STYLE = {
+  backgroundColor: '#d9b58e',
+  backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(71,35,18,0.30), transparent 42%), radial-gradient(circle at 85% 90%, rgba(55,26,13,0.26), transparent 36%), radial-gradient(circle at 50% 108%, rgba(49,23,12,0.20), transparent 52%), repeating-linear-gradient(180deg, rgba(77,43,24,0.065), rgba(77,43,24,0.065) 1px, transparent 1px, transparent 30px), linear-gradient(125deg, rgba(255,245,219,0.36), transparent 44%)',
+};
 
 const DarkRomance = ({
   recipientName, senderName, scenes = {}, palette = 'pink',
@@ -18,6 +23,7 @@ const DarkRomance = ({
       hintText={scenes.hint || 'Break the wax seal'}
       openingHintText="Unfolding the confession..."
       letterPreviewText={scenes.letterText || scenes.scene2Header || 'A candlelit confession written for you...'}
+      paperVariant="noir"
       backgroundStyle={{ background: 'linear-gradient(180deg, #0b0b0b 0%, #1c1007 100%)' }}
       floatingDecor={[
         { id: 'd1', icon: '🕯️', style: { top: '12%', left: '10%' }, delay: 0.1 },
@@ -65,7 +71,7 @@ const DarkRomance = ({
           ))}
         </div>
 
-        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center px-8 py-24 relative">
+        <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-20 relative">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
             <p className="text-sm font-bold uppercase tracking-[0.3em] mb-6" style={{ color: pal.primary }}>
               ♥ For {recipientName || 'You'}
@@ -78,24 +84,52 @@ const DarkRomance = ({
             </motion.p>
             <div className="w-32 h-px mx-auto" style={{ backgroundColor: `${pal.primary}60` }} />
           </motion.div>
-        </div>
 
-        <div className="max-w-2xl mx-auto px-8 pb-32 space-y-8 relative z-10">
-          {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
-            <RevealLine key={i} text={para} delay={i * 0.1} accentColor={pal.primary} font={fnt.body} />
-          )) : (
-            <RevealLine text="Your letter text will appear here..." delay={0} accentColor={pal.primary} font={fnt.body} />
-          )}
+          <motion.div
+            initial={{ opacity: 0, y: 36, rotate: -0.8 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.45, duration: 0.8, ease: 'easeOut' }}
+            className="relative z-10 mt-14 w-full max-w-2xl text-left rounded-[6px] border border-[#8f6f52] shadow-[0_35px_80px_rgba(0,0,0,0.42)] px-7 py-9 md:px-10 md:py-12"
+            style={DARK_PARCHMENT_STYLE}
+          >
+            <div className="absolute inset-[10px] border border-[#6d4a30]/35 pointer-events-none" />
+            <div className="absolute -top-3 left-10 w-24 h-7 bg-[#f2ddb7]/70 rotate-[-4deg] shadow-sm" />
+            <div className="absolute -bottom-4 right-12 w-28 h-8 bg-[#5e2c1e]/20 rotate-[3deg] blur-[1px]" />
+            <div className="relative space-y-7 text-[#3f2818]">
+              {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
+                <motion.p
+                  key={i}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.75 + i * 0.22 }}
+                  className="text-lg md:text-xl leading-[1.9]"
+                  style={{ fontFamily: fnt.body }}
+                >
+                  {para}
+                </motion.p>
+              )) : (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.75 }} className="text-lg italic text-[#6f4a30] text-center">
+                  Your letter text will appear here...
+                </motion.p>
+              )}
 
-          {(scenes.closingMessage || (showSenderName && senderName)) && (
-            <RevealLine
-              text={`${scenes.closingMessage || ''}${showSenderName && senderName ? `  — ${senderName}` : ''}`}
-              delay={letterParagraphs.length * 0.1}
-              accentColor={pal.primary}
-              font="Dancing Script, cursive"
-              isClosing
-            />
-          )}
+              {(scenes.closingMessage || (showSenderName && senderName)) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 + letterParagraphs.length * 0.22 }}
+                  className="pt-5 text-right"
+                >
+                  {scenes.closingMessage && (
+                    <p className="font-dancing text-3xl text-[#731e2b]">{scenes.closingMessage}</p>
+                  )}
+                  {showSenderName && senderName && (
+                    <p className="font-dancing text-2xl text-[#573522] mt-2">— {senderName}</p>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
         </div>
 
         {showFooter && (
@@ -105,23 +139,6 @@ const DarkRomance = ({
         )}
       </div>
     </EnvelopeRevealShell>
-  );
-};
-
-const RevealLine = ({ text, delay, accentColor, font, isClosing }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-  return (
-    <motion.p
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.8, delay }}
-      className={`leading-relaxed ${isClosing ? 'text-2xl text-right' : 'text-lg md:text-xl text-white/80'}`}
-      style={{ fontFamily: isClosing ? 'Dancing Script, cursive' : font, color: isClosing ? accentColor : undefined }}
-    >
-      {text}
-    </motion.p>
   );
 };
 

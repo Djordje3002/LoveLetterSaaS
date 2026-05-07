@@ -4,10 +4,12 @@ LoveLetterSaaS is a template-driven web app for creating personalized romantic p
 
 Users can:
 - choose a template
+- preview and customize before creating an account
+- quick-personalize a starter message with recipient name and tone
 - customize text, style, music, and images
 - preview before publish
 - publish after payment
-- share the final page with recipients
+- share the final page with a live link, scannable QR card, and ready-to-copy caption
 
 ## What We Are Building
 
@@ -23,13 +25,15 @@ This project is an emotional gifting SaaS focused on:
 
 ## Core Product Flow
 
-1. Browse templates (`/templates`)
-2. Create draft in Firestore (`status: pending`)
-3. Customize content in builder (`/create/:templateId?draft=...`)
-4. Preview paywall step (`/preview/:draftId`)
-5. Pay (Stripe checkout via Cloud Functions)
-6. Verify payment and activate page (`status: active`)
-7. Share recipient link (`/p/:id`)
+1. Browse animated template demos (`/templates`)
+2. Open no-login demo or customize flow
+3. Quick-personalize locally with recipient name and tone
+4. Sign in only when saving or publishing
+5. Create Firestore draft (`status: pending`)
+6. Preview paywall step (`/preview/:draftId`)
+7. Pay (Stripe checkout via Cloud Functions)
+8. Verify payment and activate page (`status: active`)
+9. Share recipient link (`/p/:id`) with QR/caption tools
 
 ## Tech Stack
 
@@ -84,6 +88,14 @@ Build:
 npm run build
 ```
 
+Template visual smoke checks:
+
+```bash
+npm install -D @playwright/test
+npx playwright install chromium
+npm run visual:templates
+```
+
 ## Firebase Setup Notes
 
 - Firestore rules and indexes are deployed from:
@@ -106,13 +118,19 @@ npm run build
 
 Never expose Stripe secret keys or Cloudinary API secrets in frontend code or `.env` variables prefixed with `VITE_`.
 
+OpenAI message generation must run only through the Vercel API route with `OPENAI_API_KEY` stored as a server environment variable. Rotate any key that was pasted into chat or committed anywhere.
+
 ## Current Status
 
 Implemented:
 - template selection and builder flow
+- no-login preview/customize with account gate at save/publish
+- quick personalize starter flow
+- animated template gallery previews
 - Firestore draft persistence
 - Cloudinary image upload in builder
 - recipient template rendering
+- funnel analytics hooks stored locally and forwarded to `gtag` when present
 - hosting deployment
 
 In progress / next:

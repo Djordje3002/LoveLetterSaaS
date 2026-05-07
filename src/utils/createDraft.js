@@ -2,7 +2,7 @@ import { db } from '../firebase'
 import { auth } from '../firebase'
 import { collection, doc, setDoc, Timestamp } from 'firebase/firestore'
 
-const TEMPLATE_SCENE_DEFAULTS = {
+export const TEMPLATE_SCENE_DEFAULTS = {
   'kawaii-letter': {
     hint: 'Tap the seal to open ♥',
     scene2Header: 'My sweetest letter to you',
@@ -72,7 +72,87 @@ const TEMPLATE_SCENE_DEFAULTS = {
   },
 }
 
-export async function createDraft(templateId) {
+export const TEMPLATE_STYLE_DEFAULTS = {
+  'kawaii-letter': { palette: 'pink', font: 'playful' },
+  '100-reasons': { palette: 'pink', font: 'playful' },
+  'our-gallery': { palette: 'pink', font: 'playful' },
+  'dark-romance': { palette: 'pink', font: 'elegant' },
+  'our-story': { palette: 'pink', font: 'classic' },
+  'midnight-love': { palette: 'navy', font: 'elegant' },
+  'rose-whisper': { palette: 'lavender', font: 'elegant' },
+  'golden-promise': { palette: 'gold', font: 'classic' },
+  'date-invite': { palette: 'pink', font: 'elegant' },
+}
+
+export function getInitialDraftFormData(templateId) {
+  const styleDefaults = TEMPLATE_STYLE_DEFAULTS[templateId] || TEMPLATE_STYLE_DEFAULTS['kawaii-letter']
+
+  return {
+    recipientName: '',
+    senderName: '',
+    showSenderName: true,
+    showFooter: true,
+    palette: styleDefaults.palette,
+    font: styleDefaults.font,
+    scenes: TEMPLATE_SCENE_DEFAULTS[templateId] ? { ...TEMPLATE_SCENE_DEFAULTS[templateId] } : {},
+    reasons: [],
+    musicEnabled: false,
+    musicUrl: '',
+    volume: 60,
+  }
+}
+
+export function buildQuickPersonalizedScenes(templateId, { recipientName = '', tone = 'sweet' } = {}) {
+  const name = String(recipientName || '').trim() || 'you'
+  const toneLines = {
+    sweet: [
+      `Dear ${name}, I made this because you deserve something soft, thoughtful, and only yours.`,
+      'You make ordinary moments feel warmer, and I hope this little page makes you smile today.',
+      'Thank you for being someone my heart keeps choosing in the smallest ways.',
+    ],
+    deep: [
+      `Dear ${name}, some feelings are too real to leave unsaid.`,
+      'You stay with me in quiet moments, in the pauses, and in the way my day changes when I think of you.',
+      'This is my small way of saying that you matter more than I always know how to explain.',
+    ],
+    playful: [
+      `Dear ${name}, this is your official reminder that you are dangerously easy to adore.`,
+      'You make my days brighter, my smile less optional, and my brain a little ridiculous in the best way.',
+      'So yes, this page exists because I wanted to make you grin.',
+    ],
+  }
+  const lines = toneLines[tone] || toneLines.sweet
+
+  const byTemplate = {
+    'dark-romance': {
+      letterText: lines.join('\n'),
+      closingMessage: 'Yours, in every lifetime.',
+      hint: 'Break the wax seal to read',
+    },
+    'midnight-love': {
+      letterText: lines.join('\n'),
+      closingMessage: 'Yours under every star.',
+      hint: 'Open under the stars',
+    },
+    'date-invite': {
+      inviteHeadline: `${name}, will you go on a date with me?`,
+      inviteMessage: lines.slice(0, 2).join(' '),
+      dateWhen: 'Saturday, 7:30 PM',
+      dateWhere: 'Somewhere cozy',
+      dressCode: 'Come exactly as you are',
+      rsvpContact: 'Text me yes when you are ready',
+    },
+  }
+
+  return {
+    scene2Header: `A letter for ${name}`,
+    letterText: lines.join('\n'),
+    closingMessage: 'Made just for you.',
+    ...(byTemplate[templateId] || {}),
+  }
+}
+
+export async function createDraft(templateId, initialData = {}) {
   const currentUser = auth.currentUser
   if (!currentUser) {
     throw new Error('Please sign in before creating a draft.')
@@ -82,21 +162,22 @@ export async function createDraft(templateId) {
   const id = draftRef.id
   const now = Timestamp.now()
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000))
+  const defaults = getInitialDraftFormData(templateId)
 
   const draftData = {
     id,
     status: 'pending',
     templateId,
-    recipientName: '',
-    senderName: '',
-    showSenderName: true,
-    showFooter: true,
-    palette: 'pink',
-    font: 'playful',
-    scenes: TEMPLATE_SCENE_DEFAULTS[templateId] ? { ...TEMPLATE_SCENE_DEFAULTS[templateId] } : {},
-    reasons: [],
-    musicEnabled: false,
-    musicUrl: '',
+    recipientName: initialData.recipientName ?? defaults.recipientName,
+    senderName: initialData.senderName ?? defaults.senderName,
+    showSenderName: initialData.showSenderName ?? defaults.showSenderName,
+    showFooter: initialData.showFooter ?? defaults.showFooter,
+    palette: initialData.palette ?? defaults.palette,
+    font: initialData.font ?? defaults.font,
+    scenes: { ...defaults.scenes, ...(initialData.scenes || {}) },
+    reasons: Array.isArray(initialData.reasons) ? initialData.reasons : defaults.reasons,
+    musicEnabled: initialData.musicEnabled ?? defaults.musicEnabled,
+    musicUrl: initialData.musicUrl ?? defaults.musicUrl,
     stripeSessionId: '',
     ownerUid: currentUser?.uid || '',
     ownerEmail: currentUser?.email || '',

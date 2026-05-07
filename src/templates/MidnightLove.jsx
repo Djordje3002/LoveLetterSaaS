@@ -3,6 +3,11 @@ import { motion } from 'framer-motion';
 import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
+const MIDNIGHT_PAPER_STYLE = {
+  backgroundColor: '#eef4ff',
+  backgroundImage: 'radial-gradient(circle at 12% 14%, rgba(133,158,211,0.22), transparent 40%), radial-gradient(circle at 88% 86%, rgba(75,107,170,0.16), transparent 35%), repeating-linear-gradient(180deg, rgba(69,93,145,0.07), rgba(69,93,145,0.07) 1px, transparent 1px, transparent 30px), radial-gradient(circle at 50% -24%, rgba(255,255,255,0.86), transparent 68%)',
+};
+
 const MidnightLove = ({
   recipientName, senderName, scenes = {}, palette = 'navy',
   font = 'elegant', showSenderName = true, showFooter = true,
@@ -31,6 +36,7 @@ const MidnightLove = ({
       hintText={scenes.hint || 'Open under the stars'}
       openingHintText="Opening your midnight letter..."
       letterPreviewText={scenes.letterText || scenes.scene2Header || 'A starry message written for you...'}
+      paperVariant="midnight"
       backgroundStyle={{ background: 'radial-gradient(circle at 50% 10%, #1a2b5f 0%, #0a1230 40%, #03071e 100%)' }}
       floatingDecor={[
         { id: 'm1', icon: '🌙', style: { top: '12%', left: '9%' }, delay: 0 },
@@ -81,7 +87,7 @@ const MidnightLove = ({
 
         <ShootingStar interval={8000} />
 
-        <div className="relative z-10 max-w-2xl mx-auto px-8 py-32 text-center">
+        <div className="relative z-10 min-h-screen max-w-3xl mx-auto px-6 py-24 text-center flex flex-col justify-center">
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-sm font-bold uppercase tracking-[0.3em] mb-8" style={{ color: pal.accent }}>
             ✦ A message for
           </motion.p>
@@ -96,28 +102,44 @@ const MidnightLove = ({
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          <div className="space-y-8 text-left">
-            {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
-              <motion.p key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 + i * 0.32 }} className="text-lg text-white/80 leading-relaxed">
-                {para}
-              </motion.p>
-            )) : (
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }} className="text-lg text-white/40 leading-relaxed italic text-center">
-                Your letter will appear here under a thousand stars...
-              </motion.p>
-            )}
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30, rotate: 0.8 }}
+            animate={{ opacity: 1, y: 0, rotate: 0 }}
+            transition={{ delay: 0.6, duration: 0.75, ease: 'easeOut' }}
+            className="relative mx-auto w-full max-w-2xl rounded-[18px] border border-[#aab9dc] shadow-[0_30px_80px_rgba(3,7,30,0.46)] px-7 py-9 md:px-10 md:py-12 text-left overflow-hidden"
+            style={MIDNIGHT_PAPER_STYLE}
+          >
+            <div className="absolute top-0 left-10 w-20 h-7 bg-white/70 rotate-[-6deg] shadow-sm rounded-sm" />
+            <div className="absolute inset-[10px] rounded-[12px] border border-[#bdc9e5]/80 pointer-events-none" />
+            <div className="relative space-y-7">
+              {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
+                <motion.p
+                  key={i}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.95 + i * 0.26 }}
+                  className="text-lg md:text-xl text-[#233456] leading-[1.9]"
+                >
+                  {para}
+                </motion.p>
+              )) : (
+                <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95 }} className="text-lg text-[#60739d] leading-relaxed italic text-center">
+                  Your letter will appear here under a thousand stars...
+                </motion.p>
+              )}
 
-          {(scenes.closingMessage || (showSenderName && senderName)) && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 + letterParagraphs.length * 0.32 }} className="mt-20 text-right">
-              {scenes.closingMessage && (
-                <p className="font-dancing text-3xl mb-2" style={{ color: pal.accent }}>{scenes.closingMessage}</p>
+              {(scenes.closingMessage || (showSenderName && senderName)) && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 + letterParagraphs.length * 0.26 }} className="pt-5 text-right">
+                  {scenes.closingMessage && (
+                    <p className="font-dancing text-3xl mb-2" style={{ color: '#3e5fc2' }}>{scenes.closingMessage}</p>
+                  )}
+                  {showSenderName && senderName && (
+                    <p className="font-dancing text-2xl text-[#52658c]">— {senderName}</p>
+                  )}
+                </motion.div>
               )}
-              {showSenderName && senderName && (
-                <p className="font-dancing text-2xl text-white/60">— {senderName}</p>
-              )}
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
         </div>
 
         {showFooter && (

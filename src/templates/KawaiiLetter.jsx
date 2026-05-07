@@ -4,6 +4,11 @@ import { Camera, ChevronRight } from 'lucide-react';
 import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
+const KAWAII_PAPER_STYLE = {
+  backgroundColor: '#fff6fb',
+  backgroundImage: 'radial-gradient(circle at 12% 14%, rgba(236,148,184,0.18), transparent 38%), radial-gradient(circle at 88% 82%, rgba(216,124,160,0.16), transparent 34%), repeating-linear-gradient(180deg, rgba(171,99,131,0.09), rgba(171,99,131,0.09) 1px, transparent 1px, transparent 30px), linear-gradient(120deg, rgba(255,255,255,0.75), transparent 42%)',
+};
+
 const KawaiiLetter = ({
   recipientName, senderName, scenes = {}, palette = 'pink',
   font = 'playful', showSenderName = true, showFooter = true,
@@ -33,14 +38,15 @@ const KawaiiLetter = ({
       hintText={scenes.hint || 'Tap to open ♥'}
       openingHintText="Opening your letter..."
       letterPreviewText={scenes.scene2Header || scenes.letterText || scenes.scene1Text || 'A little preview from your letter...'}
+      paperVariant="rose"
       backgroundStyle={{ backgroundColor: pal.bg }}
       floatingDecor={floatingEmojis}
       envelopeTheme={{
-        body: 'linear-gradient(180deg, #ffe9f0 0%, #ffd1de 52%, #ef9fb6 100%)',
-        flap: 'linear-gradient(180deg, #ffe3ec 0%, #f6bbcd 100%)',
-        front: 'linear-gradient(90deg, #f4c0cf 0%, #f8d2dd 50%, #f2b9ca 100%)',
-        border: '#e8a6bb',
-        seal: 'linear-gradient(135deg, #f34f80 0%, #dc305f 100%)',
+        body: 'linear-gradient(180deg, #ffeaf2 0%, #ffd6e4 52%, #f1a8bd 100%)',
+        flap: 'linear-gradient(180deg, #ffedf4 0%, #f7bfd1 100%)',
+        front: 'linear-gradient(90deg, #f8c8d7 0%, #fce0e8 50%, #f5bfd0 100%)',
+        border: '#e8adc1',
+        seal: 'linear-gradient(135deg, #f65287 0%, #d93467 100%)',
         hint: pal.primary,
       }}
     >
@@ -71,62 +77,66 @@ const KawaiiLetter = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="min-h-screen flex flex-col items-center py-24 px-6 relative"
-              style={{ backgroundColor: '#FAF9F6' }}
+              className="min-h-screen flex flex-col items-center py-20 px-6 relative overflow-hidden"
+              style={{
+                backgroundColor: '#fff8fb',
+                backgroundImage: 'linear-gradient(90deg, rgba(248,200,212,0.36) 50%, transparent 50%), linear-gradient(rgba(248,200,212,0.36) 50%, transparent 50%)',
+                backgroundSize: '78px 78px',
+              }}
             >
-              <motion.div
-                aria-hidden
-                className="absolute inset-0 opacity-50"
-                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  backgroundImage: `linear-gradient(120deg, transparent 0%, ${pal.primary}0f 40%, transparent 80%)`,
-                  backgroundSize: '220% 220%',
-                }}
-              />
+              <span className="absolute top-16 left-10 text-4xl">🌼</span>
+              <span className="absolute top-16 right-12 text-4xl">⭐</span>
+              <span className="absolute bottom-24 left-10 text-4xl">🎈</span>
+              <span className="absolute bottom-24 right-12 text-4xl">🐱</span>
+              <span className="absolute left-8 top-1/2 -translate-y-1/2 text-3xl text-[#c35a86]">〰️</span>
+
               <div className="max-w-2xl w-full text-center">
-                <h1 className="text-4xl md:text-5xl italic mb-8" style={{ fontFamily: fnt.heading, color: pal.text }}>
+                <h1 className="text-4xl md:text-5xl italic mb-8" style={{ fontFamily: fnt.heading, color: '#9c2f5e' }}>
                   {scenes.scene2Header || 'A letter for you...'}
                 </h1>
-                <div className="w-24 h-px mx-auto mb-12" style={{ backgroundColor: `${pal.primary}50` }} />
+                <div className="relative rounded-[24px] border border-[#e7bed0] shadow-[0_24px_44px_rgba(173,74,116,0.22)] overflow-hidden max-w-xl mx-auto" style={KAWAII_PAPER_STYLE}>
+                  <div className="absolute top-0 left-7 w-16 h-6 bg-white/70 rotate-[-8deg] rounded-sm shadow-sm" />
+                  <div className="absolute top-0 right-8 w-16 h-6 bg-white/70 rotate-[7deg] rounded-sm shadow-sm" />
+                  <div className="px-8 py-12 text-left relative">
+                    <div className="space-y-6 text-[1.06rem] md:text-xl leading-[1.9] font-serif text-[#5d2943]">
+                      {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
+                        <motion.p key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + i * 0.3 }}>
+                          {para}
+                        </motion.p>
+                      )) : (
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }} className="text-[#99647c] italic text-center">
+                          Your letter text will appear here...
+                        </motion.p>
+                      )}
+                    </div>
 
-                <div className="space-y-6 text-lg md:text-xl leading-relaxed font-serif text-left">
-                  {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
-                    <motion.p key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.4 }}>
-                      {para}
-                    </motion.p>
-                  )) : (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 italic text-center">
-                      Your letter text will appear here...
-                    </motion.p>
-                  )}
+                    {showSenderName && senderName && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + letterParagraphs.length * 0.3 }} className="mt-14 flex flex-col items-end">
+                        <p className="font-dancing text-3xl" style={{ color: '#cb4f82' }}>— {senderName}</p>
+                      </motion.div>
+                    )}
+
+                    {scenes.closingMessage && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 + letterParagraphs.length * 0.3 }}
+                        className="font-dancing text-2xl mt-6 text-right"
+                        style={{ color: '#cb4f82' }}
+                      >
+                        {scenes.closingMessage}
+                      </motion.p>
+                    )}
+                  </div>
                 </div>
-
-                {showSenderName && senderName && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + letterParagraphs.length * 0.4 }} className="mt-16 flex flex-col items-end">
-                    <p className="font-dancing text-3xl" style={{ color: pal.primary }}>— {senderName}</p>
-                  </motion.div>
-                )}
-
-                {scenes.closingMessage && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 + letterParagraphs.length * 0.4 + 0.3 }}
-                    className="font-dancing text-2xl mt-8"
-                    style={{ color: pal.primary }}
-                  >
-                    {scenes.closingMessage}
-                  </motion.p>
-                )}
 
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 2 }}
                   onClick={() => setScene(3)}
-                  className="mt-20 px-8 py-4 rounded-full font-bold flex items-center gap-2 mx-auto text-white transition-all hover:scale-105 active:scale-95"
-                  style={{ backgroundColor: pal.primary }}
+                  className="mt-14 px-8 py-4 rounded-full font-bold flex items-center gap-2 mx-auto text-white transition-all hover:scale-105 active:scale-95 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #f54f86, #df2f64)' }}
                 >
                   Continue <ChevronRight size={20} />
                 </motion.button>

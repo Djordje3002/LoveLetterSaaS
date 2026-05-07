@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, CreditCard, ShieldCheck, Headphones, Loader2, AlertCircle } from 'lucide-react';
+import { X, Loader2, AlertCircle, Globe2, QrCode, Infinity, LockKeyhole } from 'lucide-react';
 import HeartParticles from '../components/HeartParticles';
 import { db, functions } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from '../components/AuthModal';
+import { trackEvent } from '../utils/analytics';
 
 const normalizeText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
 
@@ -57,6 +58,7 @@ const FullscreenPreview = () => {
           return;
         }
         setPageData(data);
+        trackEvent('preview_opened', { templateId: data.templateId, draftId });
       } catch (err) {
         console.error(err);
         setError('Failed to load preview. Please try again.');
@@ -80,6 +82,7 @@ const FullscreenPreview = () => {
   };
 
   const handlePublish = async () => {
+    trackEvent('publish_clicked', { draftId, templateId: pageData?.templateId, checkoutDetailsVisible: showCheckoutDetails });
     if (!user) {
       setError('Please sign in or create an account before payment.');
       setAuthOpen(true);
@@ -95,6 +98,7 @@ const FullscreenPreview = () => {
     try {
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
       const result = await createCheckoutSession({ draftId, discountCode: normalizedCode });
+      trackEvent('checkout_started', { draftId, templateId: pageData?.templateId, discountApplied: hasValidDiscount });
       window.location.href = result.data.url;
     } catch (err) {
       console.error(err);
@@ -224,10 +228,11 @@ const FullscreenPreview = () => {
           </div>
         )}
         {/* Trust Strip */}
-        <div className="bg-[#fff8eb]/95 backdrop-blur-md border-t border-[#e8dcc6] py-3 px-6 flex justify-center gap-8 text-[10px] font-bold text-[#7a6553] uppercase tracking-widest">
-          <div className="flex items-center gap-1.5"><CreditCard size={14} className="text-[#d0792f]" /> Secure Payment</div>
-          <div className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-[#d0792f]" /> SSL Encrypted</div>
-          <div className="flex items-center gap-1.5"><Headphones size={14} className="text-[#d0792f]" /> 24/7 Support</div>
+        <div className="bg-[#fff8eb]/95 backdrop-blur-md border-t border-[#e8dcc6] py-3 px-6 flex flex-wrap justify-center gap-x-8 gap-y-2 text-[10px] font-bold text-[#7a6553] uppercase tracking-widest">
+          <div className="flex items-center gap-1.5"><Globe2 size={14} className="text-[#d0792f]" /> Live Link</div>
+          <div className="flex items-center gap-1.5"><QrCode size={14} className="text-[#d0792f]" /> QR Code</div>
+          <div className="flex items-center gap-1.5"><Infinity size={14} className="text-[#d0792f]" /> Forever Hosting</div>
+          <div className="flex items-center gap-1.5"><LockKeyhole size={14} className="text-[#d0792f]" /> Secure Payment</div>
         </div>
         {/* Action Bar */}
         <div className="min-h-24 bg-[#fffdf8] border-t border-[#eadfca] shadow-[0_-8px_30px_rgba(89,62,27,0.12)] px-6 md:px-12 py-4 flex items-center justify-between gap-4">
@@ -251,12 +256,12 @@ const FullscreenPreview = () => {
                   <span className="text-3xl font-black text-[#4f341d]">{displayPrice}</span>
                   <span className="text-[#876f5a] text-sm font-bold">one-time</span>
                 </div>
-                <p className="text-[10px] font-bold text-[#bf6d2f] uppercase tracking-widest mt-0.5">Forever live · Share anywhere</p>
+	                <p className="text-[10px] font-bold text-[#bf6d2f] uppercase tracking-widest mt-0.5">Includes live link, heart QR code, forever hosting, and share tools</p>
               </>
             ) : (
               <>
-                <p className="text-sm font-bold text-[#4f341d]">Ready to make it live?</p>
-                <p className="text-xs text-[#876f5a]">Click publish to reveal final checkout details and price.</p>
+	                <p className="text-sm font-bold text-[#4f341d]">Ready to make it live?</p>
+	                <p className="text-xs text-[#876f5a]">First click shows price and discount box. Second click starts secure checkout.</p>
               </>
             )}
           </div>

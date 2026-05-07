@@ -1,7 +1,8 @@
 const MODEL = 'gpt-4o-mini';
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 30;
+const MAX_REQUESTS_PER_WINDOW = Number(process.env.AI_RATE_LIMIT_PER_MINUTE || 20);
+const MAX_BODY_BYTES = 8_000;
 const ipHits = new Map();
 
 function getClientIp(req) {
@@ -77,6 +78,7 @@ function parseBody(req) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   const corsAllowed = setCorsHeaders(req, res);
   if (!corsAllowed && req.headers.origin) {
     return res.status(403).json({ error: 'Origin is not allowed.' });
@@ -88,6 +90,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed.' });
+  }
+
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return res.status(413).json({ error: 'Request is too large.' });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;

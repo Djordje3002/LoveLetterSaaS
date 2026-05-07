@@ -4,6 +4,7 @@ import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smar
 import Layout from '../components/Layout';
 import { createDraft } from '../utils/createDraft';
 import { useAuth } from '../context/AuthContext';
+import { trackEvent } from '../utils/analytics';
 
 const TemplateDetail = () => {
   const navigate = useNavigate();
@@ -15,14 +16,20 @@ const TemplateDetail = () => {
 
   const createDraftAndNavigate = async (target) => {
     if (creatingEditor || creatingPreview) return;
+    trackEvent(target === 'preview' ? 'template_preview_clicked' : 'template_customize_clicked', { templateId, loggedIn: Boolean(user) });
     if (!user) {
-      navigate(`/auth?mode=signup&next=${encodeURIComponent(`/templates/${templateId}`)}`);
+      if (target === 'preview') {
+        navigate(`/preview-demo/${templateId}`);
+        return;
+      }
+      navigate(`/create/${templateId}`);
       return;
     }
     setCreateError('');
     target === 'editor' ? setCreatingEditor(true) : setCreatingPreview(true);
     try {
       const draftId = await createDraft(templateId);
+      trackEvent('draft_created', { templateId, draftId });
       if (target === 'preview') {
         navigate(`/preview/${draftId}`);
         return;
@@ -180,7 +187,7 @@ const TemplateDetail = () => {
               
               <div className="border-t border-card pt-8 mb-8">
                 <h4 className="font-bold text-dark mb-1">Customize template</h4>
-                <p className="text-secondary text-sm mb-6">Try the full editor for free. Pay only when you publish.</p>
+                <p className="text-secondary text-sm mb-6">Customize first. Create an account only when you save or publish.</p>
                 <button onClick={() => createDraftAndNavigate('editor')} disabled={creatingEditor || creatingPreview}
                   className="w-full btn-primary btn-shimmer py-5 text-xl flex items-center justify-center gap-2 mb-4 uppercase tracking-wide disabled:opacity-70">
                   {creatingEditor ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE FOR FREE!'}
@@ -207,8 +214,8 @@ const TemplateDetail = () => {
                 <h4 className="font-bold text-dark mb-4">How to use this template</h4>
                 <div className="space-y-4">
                   {[
-                    'Create a free draft securely on this page',
-                    'Template appears instantly in your editor',
+                    'Open the editor and customize for free',
+                    'Sign in only when you save your draft',
                     'Publish when ready and share your link'
                   ].map((step, i) => (
                     <div key={i} className="flex gap-4 items-start">

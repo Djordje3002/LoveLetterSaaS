@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Copy, Check, MessageCircle, Send, Plus, Download, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { db, functions } from '../firebase';
+import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
+import { QRCodeSVG } from 'qrcode.react';
 import DecorativeHeartQr from '../components/DecorativeHeartQr';
+import { trackEvent } from '../utils/analytics';
 
 const SuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -14,10 +16,12 @@ const SuccessPage = () => {
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [copied, setCopied] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
   const qrRef = useRef(null);
 
   const appUrl = import.meta.env.VITE_APP_URL || 'https://lovepage.app';
   const pageUrl = `${appUrl}/p/${draftId}`;
+  const shareCaption = `I made something special for you. Open this when you have a quiet minute: ${pageUrl}`;
 
   useEffect(() => {
     if (!sessionId || !draftId) {
@@ -29,6 +33,7 @@ const SuccessPage = () => {
         const verifyPayment = httpsCallable(functions, 'verifyPayment');
         await verifyPayment({ sessionId, draftId });
         setStatus('success');
+        trackEvent('paid', { draftId });
       } catch (err) {
         console.error('Verification failed:', err);
         setStatus('error');
@@ -39,8 +44,16 @@ const SuccessPage = () => {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(pageUrl);
+    trackEvent('share_link_copied', { draftId });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyCaption = () => {
+    navigator.clipboard.writeText(shareCaption);
+    trackEvent('share_caption_copied', { draftId });
+    setCaptionCopied(true);
+    setTimeout(() => setCaptionCopied(false), 2000);
   };
 
   const downloadQR = () => {
@@ -65,11 +78,13 @@ const SuccessPage = () => {
   };
 
   const shareWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent('I made something special for you ♥ ' + pageUrl)}`, '_blank');
+    trackEvent('share_whatsapp_clicked', { draftId });
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareCaption)}`, '_blank');
   };
 
   const shareTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent('Something special for you ♥')}`, '_blank');
+    trackEvent('share_telegram_clicked', { draftId });
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent('Something special for you')}`, '_blank');
   };
 
   if (status === 'verifying') {
@@ -142,9 +157,16 @@ const SuccessPage = () => {
         </div>
 
         {/* QR Code */}
-        <div className="bg-slate-50 rounded-2xl p-8 border border-card inline-block mb-8 w-full">
-          <div id="qr-code" className="flex justify-center mb-4">
-            <DecorativeHeartQr size={230} color="#CC2D9A" />
+        <div className="relative overflow-hidden bg-[#fff7fb] rounded-[28px] p-7 border border-[#f1c9dc] inline-block mb-8 w-full shadow-inner">
+          <div className="absolute -right-10 -top-8 opacity-10 pointer-events-none">
+            <DecorativeHeartQr size={180} color="#CC2D9A" />
+          </div>
+          <div className="relative bg-white rounded-[24px] border border-[#f5d5e5] p-5 shadow-[0_18px_40px_rgba(204,45,154,0.12)] max-w-[300px] mx-auto">
+            <p className="font-dancing text-3xl text-[#CC2D9A] mb-3">Scan my letter</p>
+            <div id="qr-code" ref={qrRef} className="flex justify-center mb-4">
+              <QRCodeSVG value={pageUrl} size={210} fgColor="#CC2D9A" bgColor="#ffffff" level="H" includeMargin />
+            </div>
+            <p className="text-[11px] text-secondary font-bold break-all">{pageUrl}</p>
           </div>
           <button onClick={downloadQR}
             className="text-primary-pink font-bold text-sm flex items-center gap-2 mx-auto hover:underline">
@@ -155,7 +177,7 @@ const SuccessPage = () => {
         <div className="w-full h-px bg-card mb-8" />
 
         {/* Share buttons */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div className="flex justify-center gap-4 mb-5">
           <button onClick={shareWhatsApp}
             className="w-12 h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
             <MessageCircle size={24} />
@@ -169,6 +191,11 @@ const SuccessPage = () => {
             <Copy size={24} />
           </button>
         </div>
+
+        <button onClick={copyCaption}
+          className="w-full bg-slate-50 border border-card rounded-xl px-4 py-3 text-sm font-bold text-dark hover:border-primary-pink transition-colors mb-8">
+          {captionCopied ? 'Caption copied!' : 'Copy share caption for Instagram'}
+        </button>
 
         <p className="text-xs text-secondary mb-6 italic">Your page is live forever at the link above. Bookmark it!</p>
         <Link to="/templates" className="flex items-center justify-center gap-2 text-primary-pink font-bold hover:gap-3 transition-all">
