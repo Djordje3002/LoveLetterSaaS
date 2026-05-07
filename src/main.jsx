@@ -18,6 +18,7 @@ import TermsOfService from './pages/TermsOfService'
 import DashboardPage from './pages/DashboardPage'
 import AuthPage from './pages/AuthPage'
 import { AuthProvider } from './context/AuthContext'
+import RomanticSequencePlayer from './components/RomanticSequencePlayer'
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -36,6 +37,7 @@ const AnimatedRoutes = () => {
         <Route path="/p/:id" element={<PageWrapper><RecipientPage /></PageWrapper>} />
         <Route path="/privacy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
         <Route path="/terms" element={<PageWrapper><TermsOfService /></PageWrapper>} />
+        <Route path="/romantic-sequence" element={<RomanticSequencePlayer />} />
       </Routes>
     </AnimatePresence>
   );

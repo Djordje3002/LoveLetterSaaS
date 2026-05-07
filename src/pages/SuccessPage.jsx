@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Copy, Check, MessageCircle, Send, Plus, Download, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { QRCodeSVG } from 'qrcode.react';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
+import DecorativeHeartQr from '../components/DecorativeHeartQr';
 
 const SuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -144,13 +144,7 @@ const SuccessPage = () => {
         {/* QR Code */}
         <div className="bg-slate-50 rounded-2xl p-8 border border-card inline-block mb-8 w-full">
           <div id="qr-code" className="flex justify-center mb-4">
-            <QRCodeSVG
-              value={pageUrl}
-              size={200}
-              fgColor="#F43F73"
-              bgColor="#ffffff"
-              level="M"
-            />
+            <DecorativeHeartQr size={230} color="#CC2D9A" />
           </div>
           <button onClick={downloadQR}
             className="text-primary-pink font-bold text-sm flex items-center gap-2 mx-auto hover:underline">
