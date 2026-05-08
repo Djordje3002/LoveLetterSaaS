@@ -9,38 +9,32 @@ import { trackEvent } from '../utils/analytics';
 const TemplateDetail = () => {
   const navigate = useNavigate();
   const [creatingEditor, setCreatingEditor] = useState(false);
-  const [creatingPreview, setCreatingPreview] = useState(false);
   const [createError, setCreateError] = useState('');
   const { templateId } = useParams();
   const { user } = useAuth();
 
   const createDraftAndNavigate = async (target) => {
-    if (creatingEditor || creatingPreview) return;
+    if (creatingEditor) return;
     trackEvent(target === 'preview' ? 'template_preview_clicked' : 'template_customize_clicked', { templateId, loggedIn: Boolean(user) });
+    if (target === 'preview') {
+      navigate(`/preview-demo/${templateId}`);
+      return;
+    }
     if (!user) {
-      if (target === 'preview') {
-        navigate(`/preview-demo/${templateId}`);
-        return;
-      }
       navigate(`/create/${templateId}`);
       return;
     }
     setCreateError('');
-    target === 'editor' ? setCreatingEditor(true) : setCreatingPreview(true);
+    setCreatingEditor(true);
     try {
       const draftId = await createDraft(templateId);
       trackEvent('draft_created', { templateId, draftId });
-      if (target === 'preview') {
-        navigate(`/preview/${draftId}`);
-        return;
-      }
       navigate(`/create/${templateId}?draft=${draftId}`);
     } catch (err) {
       console.error('Failed to create draft:', err);
       setCreateError(err?.message || 'Could not create your draft. Please check your connection and try again.');
     } finally {
       setCreatingEditor(false);
-      setCreatingPreview(false);
     }
   };
 
@@ -153,11 +147,11 @@ const TemplateDetail = () => {
 
             <button
               onClick={() => createDraftAndNavigate('preview')}
-              disabled={creatingEditor || creatingPreview}
+              disabled={creatingEditor}
               className="w-full btn-outline flex items-center justify-center gap-2 mb-12 disabled:opacity-70"
             >
-              {creatingPreview ? <Loader2 size={18} className="animate-spin" /> : <Smartphone size={20} />}
-              {creatingPreview ? 'Preparing preview...' : 'Open Full-Screen Live Preview'}
+              <Smartphone size={20} />
+              Open Full-Screen Live Preview
             </button>
 
             {/* Inclusions */}
@@ -188,7 +182,7 @@ const TemplateDetail = () => {
               <div className="border-t border-card pt-8 mb-8">
                 <h4 className="font-bold text-dark mb-1">Customize template</h4>
                 <p className="text-secondary text-sm mb-6">Customize first. Create an account only when you save or publish.</p>
-                <button onClick={() => createDraftAndNavigate('editor')} disabled={creatingEditor || creatingPreview}
+                <button onClick={() => createDraftAndNavigate('editor')} disabled={creatingEditor}
                   className="w-full btn-primary btn-shimmer py-5 text-xl flex items-center justify-center gap-2 mb-4 uppercase tracking-wide disabled:opacity-70">
                   {creatingEditor ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE FOR FREE!'}
                 </button>
