@@ -8,7 +8,7 @@ import { templateFields } from '../templates/fields';
 import AuthModal from '../components/AuthModal';
 import TemplateMiniDemo from '../components/TemplateMiniDemo';
 import { useAuth } from '../context/AuthContext';
-import { buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
+import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
@@ -24,9 +24,12 @@ const QUICK_TONES = [
 ];
 
 const REVEAL_FIRST_TEMPLATES = new Set(['kawaii-letter', 'dark-romance', 'midnight-love', 'date-invite']);
+const DEFAULT_TEMPLATE_ID = 'kawaii-letter';
+const resolveTemplateId = (id) => (TEMPLATE_STYLE_DEFAULTS[id] ? id : DEFAULT_TEMPLATE_ID);
 
 const Builder = () => {
   const { templateId } = useParams();
+  const activeTemplateId = resolveTemplateId(templateId);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const draftId = searchParams.get('draft');
@@ -36,12 +39,12 @@ const Builder = () => {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
   const [expiryLabel, setExpiryLabel] = useState('');
-  const [formData, setFormData] = useState(() => getInitialDraftFormData(templateId));
+  const [formData, setFormData] = useState(() => getInitialDraftFormData(activeTemplateId));
   const [templateName, setTemplateName] = useState('');
   const debounceRef = useRef(null);
   const expiryIntervalRef = useRef(null);
   const fileInputRefs = useRef({});
-  const localDraftKeyRef = useRef(`local-${templateId || 'draft'}`);
+  const localDraftKeyRef = useRef(`local-${activeTemplateId || 'draft'}`);
   const [uploadingBySlot, setUploadingBySlot] = useState({});
   const [uploadError, setUploadError] = useState('');
   const [generatingByField, setGeneratingByField] = useState({});
@@ -51,18 +54,18 @@ const Builder = () => {
   const [showQuickStart, setShowQuickStart] = useState(!draftId);
   const [quickRecipient, setQuickRecipient] = useState('');
   const [quickTone, setQuickTone] = useState('sweet');
-  const [livePreviewRevealed, setLivePreviewRevealed] = useState(!REVEAL_FIRST_TEMPLATES.has(templateId));
+  const [livePreviewRevealed, setLivePreviewRevealed] = useState(!REVEAL_FIRST_TEMPLATES.has(activeTemplateId));
 
   useEffect(() => {
-    setLivePreviewRevealed(!REVEAL_FIRST_TEMPLATES.has(templateId));
-  }, [templateId, draftId]);
+    setLivePreviewRevealed(!REVEAL_FIRST_TEMPLATES.has(activeTemplateId));
+  }, [activeTemplateId, draftId]);
 
   // Load draft from Firestore
   useEffect(() => {
     setLoading(true);
     if (!draftId) {
-      setFormData(getInitialDraftFormData(templateId));
-      setTemplateName(formatTemplateName(templateId));
+      setFormData(getInitialDraftFormData(activeTemplateId));
+      setTemplateName(formatTemplateName(activeTemplateId));
       setExpiryLabel('');
       setSaveStatus('idle');
       setShowQuickStart(true);
@@ -77,6 +80,10 @@ const Builder = () => {
           return;
         }
         const data = snap.data();
+        if (data.templateId && data.templateId !== activeTemplateId) {
+          navigate(`/create/${activeTemplateId}`, { replace: true });
+          return;
+        }
         setFormData({
           recipientName: data.recipientName || '',
           senderName: data.senderName || '',
@@ -102,11 +109,11 @@ const Builder = () => {
       }
     };
     load();
-  }, [draftId, navigate, templateId]);
+  }, [activeTemplateId, draftId, navigate]);
 
   useEffect(() => {
-    trackEvent('builder_opened', { templateId, hasDraft: Boolean(draftId) });
-  }, [draftId, templateId]);
+    trackEvent('builder_opened', { templateId: activeTemplateId, hasDraft: Boolean(draftId) });
+  }, [activeTemplateId, draftId]);
 
   // Expiry countdown
   function startExpiryTimer(expiresAtDate) {
@@ -187,7 +194,7 @@ const Builder = () => {
   };
 
   const applyQuickPersonalize = () => {
-    const personalizedScenes = buildQuickPersonalizedScenes(templateId, {
+    const personalizedScenes = buildQuickPersonalizedScenes(activeTemplateId, {
       recipientName: quickRecipient,
       tone: quickTone,
     });
@@ -198,7 +205,7 @@ const Builder = () => {
     }));
     setActiveTab('Text');
     setShowQuickStart(false);
-    trackEvent('quick_personalize_applied', { templateId, tone: quickTone, hasRecipient: Boolean(quickRecipient.trim()) });
+    trackEvent('quick_personalize_applied', { templateId: activeTemplateId, tone: quickTone, hasRecipient: Boolean(quickRecipient.trim()) });
   };
 
   const handleGenerateSuggestion = async (field) => {
@@ -217,7 +224,7 @@ const Builder = () => {
           currentValue: formData.scenes[field.key] || '',
           recipientName: formData.recipientName || '',
           senderName: formData.senderName || '',
-          templateId,
+          templateId: activeTemplateId,
         }),
       });
 
@@ -245,16 +252,28 @@ const Builder = () => {
 
   const ensureRemoteDraft = useCallback(async ({ syncRoute = true } = {}) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (draftId) return saveToFirestore(formData, draftId);
+    if (draftId) {
+      try {
+        const existingSnap = await getDoc(doc(db, 'pages', draftId));
+        if (existingSnap.exists()) {
+          const existingData = existingSnap.data();
+          if ((existingData?.templateId || '') === activeTemplateId) {
+            return saveToFirestore(formData, draftId);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not verify existing draft before saving:', err);
+      }
+    }
 
     setSaveStatus('saving');
     try {
-      const createdDraftId = await createDraft(templateId, formData);
-      trackEvent('draft_created', { templateId, draftId: createdDraftId });
+      const createdDraftId = await createDraft(activeTemplateId, formData);
+      trackEvent('draft_created', { templateId: activeTemplateId, draftId: createdDraftId });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
       if (syncRoute) {
-        navigate(`/create/${templateId}?draft=${createdDraftId}`, { replace: true });
+        navigate(`/create/${activeTemplateId}?draft=${createdDraftId}`, { replace: true });
       }
       return createdDraftId;
     } catch (err) {
@@ -262,7 +281,7 @@ const Builder = () => {
       setSaveStatus('error');
       return null;
     }
-  }, [draftId, formData, navigate, saveToFirestore, templateId]);
+  }, [activeTemplateId, draftId, formData, navigate, saveToFirestore]);
 
   const requireAccountFor = (action) => {
     setPendingAuthAction(action);
@@ -381,9 +400,9 @@ const Builder = () => {
     { id: 'Settings', icon: <Settings size={18} /> },
   ];
 
-  const fields = templateFields[templateId] || [];
-  const isReasons = templateId === '100-reasons';
-  const requiresRevealBeforeMessage = REVEAL_FIRST_TEMPLATES.has(templateId);
+  const fields = templateFields[activeTemplateId] || [];
+  const isReasons = activeTemplateId === '100-reasons';
+  const requiresRevealBeforeMessage = REVEAL_FIRST_TEMPLATES.has(activeTemplateId);
   const showLivePreviewMessage = !requiresRevealBeforeMessage || livePreviewRevealed;
   const livePreviewTitle = formData.scenes.scene2Header
     || formData.scenes.homeTitle
@@ -414,7 +433,7 @@ const Builder = () => {
   if (showQuickStart) {
     const previewScenes = {
       ...formData.scenes,
-      ...buildQuickPersonalizedScenes(templateId, { recipientName: quickRecipient, tone: quickTone }),
+      ...buildQuickPersonalizedScenes(activeTemplateId, { recipientName: quickRecipient, tone: quickTone }),
     };
 
     return (
@@ -425,7 +444,7 @@ const Builder = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border border-[#f0ddd4] shadow-[0_24px_70px_rgba(124,74,63,0.12)] rounded-[28px] p-8 md:p-10"
           >
-            <Link to={`/templates/${templateId}`} className="inline-flex items-center gap-2 text-secondary hover:text-primary-pink text-sm font-bold mb-8">
+            <Link to={`/templates/${activeTemplateId}`} className="inline-flex items-center gap-2 text-secondary hover:text-primary-pink text-sm font-bold mb-8">
               <ArrowLeft size={16} /> Back to template
             </Link>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-pink mb-3">Quick personalize</p>
@@ -478,7 +497,7 @@ const Builder = () => {
               <button
                 onClick={() => {
                   setShowQuickStart(false);
-                  trackEvent('quick_personalize_skipped', { templateId });
+                  trackEvent('quick_personalize_skipped', { templateId: activeTemplateId });
                 }}
                 className="btn-outline px-7 py-4 text-base font-bold"
               >
@@ -495,11 +514,11 @@ const Builder = () => {
           >
             <div className="aspect-[9/16] rounded-[26px] overflow-hidden bg-white relative">
               <div className="h-[58%] border-b border-card/70">
-                <TemplateMiniDemo templateId={templateId} />
+                <TemplateMiniDemo templateId={activeTemplateId} />
               </div>
               <div className="h-[42%] bg-white p-4">
                 <div className="rounded-xl border border-card bg-slate-50 p-4 h-full">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{formatTemplateName(templateId)}</p>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{formatTemplateName(activeTemplateId)}</p>
                   <h3 className="font-playfair text-base text-dark mb-2 line-clamp-2">
                     {previewScenes.scene2Header || previewScenes.questionTitle || previewScenes.introLine || `A letter for ${quickRecipient || 'you'}`}
                   </h3>
@@ -520,7 +539,7 @@ const Builder = () => {
       {/* Top Bar */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-card shrink-0 bg-white z-10">
         <div className="flex items-center gap-4">
-          <Link to={`/templates/${templateId}`} className="text-secondary hover:text-primary-pink transition-colors">
+          <Link to={`/templates/${activeTemplateId}`} className="text-secondary hover:text-primary-pink transition-colors">
             <ArrowLeft size={20} />
           </Link>
           <div className="flex flex-col">
@@ -849,14 +868,14 @@ const Builder = () => {
               <div className="absolute inset-0 flex flex-col bg-white text-center overflow-hidden">
                 <div className="h-[54%]">
                   <TemplateMiniDemo
-                    templateId={templateId}
+                    templateId={activeTemplateId}
                     interactive
                     onRevealChange={setLivePreviewRevealed}
                   />
                 </div>
                 <div className="h-[46%] bg-white border-t border-card p-5 text-left overflow-hidden">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">
-                    {formatTemplateName(templateId)}
+                    {formatTemplateName(activeTemplateId)}
                   </p>
                   {showLivePreviewMessage ? (
                     <>
