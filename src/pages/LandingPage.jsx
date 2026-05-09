@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Sparkles, Palette, Share2, Star, Quote } from 'lucide-react';
+import { CheckCircle2, Sparkles, Palette, Share2, Quote } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import Layout from '../components/Layout';
 import TemplateCard from '../components/TemplateCard';
+import { getTemplateCards } from '../templates/registry';
 
 const StatCounter = ({ value, label }) => {
   const [count, setCount] = useState(0);
@@ -56,7 +57,7 @@ const LandingPage = () => {
     { value: '10+', label: 'Gift Templates' },
     { value: '100%', label: 'Customizable' },
     { value: '∞', label: 'Unlimited Sharing' },
-    { value: '200', label: 'Happy Customers' },
+    { value: '200+', label: 'Happy Customers' },
   ];
 
   const steps = [
@@ -80,68 +81,56 @@ const LandingPage = () => {
     },
   ];
 
-  const templates = [
-    { id: 'kawaii-letter', name: 'Kawaii Letter', tags: ['Most Popular', 'Love'] },
-    { id: 'iva-birthday', name: 'Full House of Love', tags: ['Full Experience', 'Love'] },
-    { id: 'chat-reveal', name: 'Chat Reveal', tags: ['Love', 'Chat'] },
-    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
-    { id: '100-reasons', name: '100 Reasons', tags: ['Reasons', 'Love'] },
-    { id: 'our-gallery', name: 'Our Gallery', tags: ['Gallery', 'Memories'] },
-    { id: 'dark-romance', name: 'Dark Romance', tags: ['Elegant', 'Letter'] },
-    { id: 'our-story', name: 'Our Story', tags: ['Story', 'Timeline'] },
-    { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
-    { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
-    { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
-  ];
+  const templates = getTemplateCards();
 
   const testimonials = [
     {
-      text: "I made this for my girlfriend's birthday and she literally cried happy tears. The page was so beautiful and easy to make!",
+      text: "I made this for my girl as a surprise, and she couldn’t stop talking about it. She even sent the link to her best friend right away.",
       name: "Josh B.",
       occasion: "Anniversary Gift",
       initials: "JB"
     },
     {
-      text: "Sent this to my wife on Valentine's Day. She said it was the most thoughtful gift she's ever received.",
+      text: "I made it so fast and simple, and she loved it so much. She kept smiling while reading and told me it was her favorite surprise.",
       name: "Dylan S.",
       occasion: "Valentine's Gift",
       initials: "DS"
     },
     {
-      text: "Used it for my parents' anniversary and the whole family was amazed. Will definitely use it again!",
+      text: "I put this together late at night for my girlfriend, and when she opened it she started smiling instantly. She said it was the sweetest thing I’ve ever made for her.",
       name: "Keith W.",
       occasion: "Anniversary Gift",
       initials: "KW"
     },
     {
-      text: "I used the Valentine question template and she said yes in five minutes. The reveal animation is genius.",
-      name: "Marko T.",
+      text: "I created this for my girlfriend’s birthday, and she got emotional in the best way. She said it felt like our whole story in one page.",
+      name: "Ethan M.",
       occasion: "Valentine Confession",
-      initials: "MT"
+      initials: "EM"
     },
     {
-      text: "The editor is simple but the final result looks premium. I shared the link and everyone asked how I built it.",
-      name: "Ana P.",
+      text: "I made one for my girl just to say I love you, and her reaction was everything. She keeps reopening it and telling me how special it feels.",
+      name: "Mia C.",
       occasion: "Birthday Surprise",
-      initials: "AP"
+      initials: "MC"
     },
     {
-      text: "Finally a gift that feels personal and modern. I added our photos and music and it looked magical.",
-      name: "Luka V.",
+      text: "I thought it would take hours, but I finished it quickly and it still felt super personal. She said it looked like something made just for us.",
+      name: "Noah R.",
       occasion: "Relationship Milestone",
-      initials: "LV"
+      initials: "NR"
     },
     {
-      text: "I made one at midnight and published before sleeping. Super smooth flow from template to live page.",
-      name: "Ivana R.",
+      text: "I made this at midnight, hit publish, and sent it right away. She replied in seconds saying she loved every part of it.",
+      name: "Ava K.",
       occasion: "Late-night Love Note",
-      initials: "IR"
+      initials: "AK"
     },
     {
-      text: "Worth every cent. My partner keeps reopening the page and showing it to friends.",
-      name: "Petar N.",
+      text: "I wanted something simple but meaningful, and this nailed it. She keeps opening the page again and showing it to her friends.",
+      name: "Liam H.",
       occasion: "Valentine's Gift",
-      initials: "PN"
+      initials: "LH"
     }
   ];
   const slidingTestimonials = [...testimonials, ...testimonials];
@@ -163,10 +152,9 @@ const LandingPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
+          className="text-6xl md:text-8xl font-bold mb-6 leading-[0.95] text-dark"
         >
-          Give Love a <br />
-          <span className="text-transparent bg-clip-text bg-pink-gradient">Beautiful Home</span>
+          Make Your <span className="text-primary-pink">Love</span> Truly <span className="text-primary-pink">Unforgettable</span>
         </motion.h1>
 
         <motion.p
@@ -175,7 +163,7 @@ const LandingPage = () => {
           transition={{ delay: 0.2 }}
           className="text-secondary text-lg md:text-xl max-w-2xl mb-10"
         >
-          Create a personalized interactive page your partner will never forget. 
+          Create a personalized interactive page your partner will never forget.
           Share it with a link or QR code.
         </motion.p>
 
@@ -185,7 +173,7 @@ const LandingPage = () => {
           transition={{ delay: 0.3 }}
           className="flex flex-wrap justify-center gap-4 mb-12"
         >
-          {['No design skills', 'Mobile friendly', 'Link & QR code', 'Up to 100 reasons'].map((badge) => (
+          {['Super simple.', 'Mobile friendly', 'Link & QR code', 'Up to 100 reasons'].map((badge) => (
             <div key={badge} className="flex items-center gap-1.5 bg-white border border-card px-4 py-2 rounded-pill text-sm font-medium shadow-sm">
               <CheckCircle2 size={16} className="text-primary-pink" />
               {badge}

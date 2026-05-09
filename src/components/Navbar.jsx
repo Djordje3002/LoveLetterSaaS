@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Heart } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
+import loveGiftsLogo from '../../LoveGiftsLogo.png';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -37,7 +38,13 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <Heart className="text-primary-pink fill-primary-pink" size={28} />
+          <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white border border-primary-light shadow-sm p-1.5 flex items-center justify-center">
+            <img
+              src={loveGiftsLogo}
+              alt="LoveGifts"
+              className="h-full w-full object-contain rounded-full"
+            />
+          </div>
           <span className="font-playfair text-2xl font-bold text-dark italic">LovePage</span>
         </Link>
 

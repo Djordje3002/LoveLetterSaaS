@@ -12,11 +12,10 @@ const Section = ({ title, children }) => (
 );
 
 const PrivacyPolicy = () => {
-  const lastUpdated = 'May 5, 2025';
+  const lastUpdated = 'May 9, 2026';
 
   return (
     <Layout>
-      {/* Hero */}
       <div className="bg-primary-light border-b border-card py-16 px-6 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="w-16 h-16 bg-white rounded-2xl shadow-soft flex items-center justify-center mx-auto mb-6 border border-card">
@@ -27,129 +26,176 @@ const PrivacyPolicy = () => {
         </motion.div>
       </div>
 
-      {/* Back link */}
       <div className="max-w-3xl mx-auto px-6 pt-8">
         <Link to="/" className="inline-flex items-center gap-2 text-primary-pink font-bold hover:gap-3 transition-all text-sm mb-8">
           <ArrowLeft size={16} /> Back to Home
         </Link>
       </div>
 
-      {/* Content */}
       <div className="max-w-3xl mx-auto px-6 pb-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-10 text-amber-800 text-sm">
-            <strong>Summary:</strong> LovePage collects only the minimum data needed to provide the service. We do not sell your data. Payment processing is handled entirely by Stripe — we never store your card details.
+            <strong>Summary:</strong> We collect only what we need to run LovePage. We do not sell personal data. Card payments are handled by Stripe, AI suggestions are generated through our server endpoint, and your page content is stored to deliver your draft or published page.
           </div>
 
           <Section title="1. Who We Are">
-            <p>LovePage ("we", "us", "our") is an online service that allows users to create and share personalized digital love letter pages. Our website is accessible at <strong>lovepage.app</strong> (or the domain on which you accessed this site).</p>
-            <p>If you have questions about this Privacy Policy, contact us at: <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a>.</p>
+            <p>
+              LovePage ("LovePage", "we", "us", "our") provides an online service for creating, customizing,
+              publishing, and sharing interactive digital letter pages.
+            </p>
+            <p>
+              Questions about this Privacy Policy can be sent to{' '}
+              <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a>.
+            </p>
           </Section>
 
-          <Section title="2. Information We Collect">
-            <p>We collect information in the following categories:</p>
+          <Section title="2. Scope">
+            <p>
+              This Privacy Policy applies to our website, builder, preview and publish flow, account features, dashboard,
+              and related support communications.
+            </p>
+          </Section>
 
-            <h3 className="font-bold text-dark mt-6 mb-2">a) Information You Provide Directly</h3>
+          <Section title="3. Information We Collect">
+            <h3 className="font-bold text-dark mt-4 mb-2">a) Account and identity data</h3>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Page content:</strong> The text, recipient/sender names, and customization choices you enter into the page builder (stored in Firestore to power your love page).</li>
-              <li><strong>Payment information:</strong> When you purchase a page, you are redirected to Stripe's hosted checkout page. We receive only a Stripe session ID and payment confirmation — we never see, store, or process your credit card number, CVV, or billing address directly.</li>
+              <li>Email address, user ID, and sign-in details through Firebase Authentication (email/password or Google sign-in).</li>
             </ul>
 
-            <h3 className="font-bold text-dark mt-6 mb-2">b) Information Collected Automatically</h3>
+            <h3 className="font-bold text-dark mt-6 mb-2">b) Content and customization data</h3>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Usage data:</strong> Browser type, device type, pages visited, referring URLs, and timestamps, collected via standard server logs and analytics tools.</li>
-              <li><strong>Cookies &amp; local storage:</strong> We use browser local storage to remember your current draft ID between sessions. We do not use advertising cookies or third-party tracking cookies.</li>
-              <li><strong>IP address:</strong> Logged temporarily as part of standard server infrastructure (Firebase Hosting / Google Cloud) for security and abuse prevention.</li>
+              <li>Template choice, message text, recipient/sender names, settings, styling choices, and draft metadata.</li>
+              <li>Media URLs or uploaded images you add to your page experience.</li>
             </ul>
 
-            <h3 className="font-bold text-dark mt-6 mb-2">c) Information We Do NOT Collect</h3>
+            <h3 className="font-bold text-dark mt-6 mb-2">c) Payment and transaction data</h3>
             <ul className="list-disc pl-6 space-y-2">
-              <li>We do not require account registration — you do not need to provide an email address to use LovePage.</li>
-              <li>We do not collect names, phone numbers, or any personal identifiers beyond what you voluntarily type into your love page.</li>
-              <li>We do not collect payment card data of any kind.</li>
+              <li>Stripe checkout session ID, payment status, timestamps, and related transaction metadata.</li>
+              <li>We do not receive or store full card numbers, CVC, or complete payment instrument details.</li>
+            </ul>
+
+            <h3 className="font-bold text-dark mt-6 mb-2">d) Technical and usage data</h3>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>IP address, browser/device information, request logs, and app interaction events used for product analytics and debugging.</li>
+              <li>Local browser storage items used to keep draft references and product state.</li>
+            </ul>
+
+            <h3 className="font-bold text-dark mt-6 mb-2">e) AI suggestion data</h3>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>When you use "AI Suggest", request fields (such as template context and text inputs) are sent through our backend endpoint to generate suggestions.</li>
             </ul>
           </Section>
 
-          <Section title="3. How We Use Your Information">
-            <p>We use the information we collect to:</p>
+          <Section title="4. How We Use Information">
             <ul className="list-disc pl-6 space-y-2">
-              <li>Provide, operate, and maintain the LovePage service (storing and serving your love page).</li>
-              <li>Process and verify your one-time payment via Stripe.</li>
-              <li>Detect, investigate, and prevent fraudulent transactions and other illegal activities.</li>
-              <li>Analyze usage patterns to improve the product (aggregate, anonymized data only).</li>
-              <li>Comply with legal obligations.</li>
+              <li>Provide core app functionality (drafting, previewing, publishing, sharing, and account access).</li>
+              <li>Process and verify payments and prevent fraud/abuse.</li>
+              <li>Host and deliver pages and media content.</li>
+              <li>Generate AI writing suggestions when requested by you.</li>
+              <li>Maintain app security, monitor reliability, and improve performance and UX.</li>
+              <li>Comply with legal obligations and enforce our Terms.</li>
             </ul>
-            <p>We do <strong>not</strong> use your data for advertising, we do <strong>not</strong> sell your data to any third party, and we do <strong>not</strong> use your personal data for any purpose beyond operating this service.</p>
           </Section>
 
-          <Section title="4. Data Storage & Retention">
-            <p>Your page content is stored in Google Firebase Firestore, hosted on Google Cloud infrastructure in the United States. By using LovePage, you consent to your data being stored and processed in the US.</p>
-            <p><strong>Drafts (unpaid pages)</strong> are automatically deleted 24 hours after creation if payment is not completed.</p>
-            <p><strong>Active pages (paid)</strong> are stored indefinitely so your love page remains accessible at its unique link. If you want your page deleted, contact us at <a href="mailto:support@lovepage.app" className="text-primary-pink hover:underline">support@lovepage.app</a> and we will remove it within 7 business days.</p>
-          </Section>
-
-          <Section title="5. Sharing Your Information">
-            <p>We share data with the following third-party services only as necessary to operate LovePage:</p>
+          <Section title="5. Legal Bases (EEA/UK, where applicable)">
+            <p>Depending on your location, we process personal data under one or more of these legal bases:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Stripe, Inc.</strong> — Payment processing. When you pay, you interact directly with Stripe's platform. Stripe's privacy policy is available at <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary-pink hover:underline">stripe.com/privacy</a>.</li>
-              <li><strong>Google Firebase / Google Cloud Platform</strong> — Database (Firestore), hosting, and serverless functions. Google's privacy policy: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary-pink hover:underline">policies.google.com/privacy</a>.</li>
+              <li><strong>Contract:</strong> to deliver the service you request.</li>
+              <li><strong>Legitimate interests:</strong> for security, fraud prevention, analytics, and service improvement.</li>
+              <li><strong>Consent:</strong> where legally required for specific processing.</li>
+              <li><strong>Legal obligation:</strong> where we must retain or disclose data by law.</li>
             </ul>
-            <p>We do not share, sell, rent, or trade your personal information with any other third parties for their commercial purposes.</p>
           </Section>
 
-          <Section title="6. Cookies & Tracking">
-            <p>LovePage uses:</p>
+          <Section title="6. Sharing and Service Providers">
+            <p>We share data only with vendors needed to run the service, including:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Browser localStorage</strong> — To remember your in-progress draft between visits. This data stays on your device and is not transmitted to external advertising services.</li>
-              <li><strong>No advertising cookies.</strong> We do not use Google AdSense, Facebook Pixel, or any other advertising tracking technology.</li>
+              <li><strong>Google Firebase / Google Cloud:</strong> authentication, database, hosting, and backend functions.</li>
+              <li><strong>Stripe:</strong> secure checkout and payment processing.</li>
+              <li><strong>Cloudinary:</strong> hosting and delivery for uploaded media, where used.</li>
+              <li><strong>OpenAI API:</strong> generation of optional AI message suggestions via our backend route.</li>
             </ul>
-            <p>You can clear your browser's local storage at any time via your browser settings, which will remove any draft references stored locally.</p>
+            <p>
+              We may also disclose data when required by law, to protect legal rights, or during a merger, acquisition,
+              financing, or similar business transfer.
+            </p>
+            <p>
+              We do not sell personal information or share it for third-party advertising.
+            </p>
           </Section>
 
-          <Section title="7. Your Rights">
-            <p>Depending on your location, you may have the following rights regarding your personal data:</p>
+          <Section title="7. Data Retention">
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Right to Access:</strong> Request a copy of the data we hold about you.</li>
-              <li><strong>Right to Deletion:</strong> Request that we delete your page content and any associated data.</li>
-              <li><strong>Right to Rectification:</strong> Request that we correct inaccurate data.</li>
-              <li><strong>Right to Restriction:</strong> Request that we limit processing of your data.</li>
-              <li><strong>Right to Portability:</strong> Request your data in a portable format.</li>
+              <li><strong>Pending drafts:</strong> pending drafts may be auto-deleted after expiration (currently 24 hours) by scheduled cleanup.</li>
+              <li><strong>Published pages:</strong> retained to keep published links active unless deletion is requested or required.</li>
+              <li><strong>Account and payment metadata:</strong> retained as needed for operations, fraud prevention, and legal/accounting obligations.</li>
+              <li><strong>Local browser data:</strong> remains on your device until you clear browser storage.</li>
             </ul>
-            <p>To exercise any of these rights, email us at <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a>. We will respond within 30 days.</p>
-            <p>If you are located in the European Economic Area (EEA), you also have the right to lodge a complaint with your local data protection authority.</p>
           </Section>
 
-          <Section title="8. Children's Privacy">
-            <p>LovePage is not directed at children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us immediately and we will delete that information.</p>
+          <Section title="8. International Transfers">
+            <p>
+              Our providers may process data in countries other than your own, including the United States.
+              By using LovePage, you understand that your data may be transferred and processed internationally.
+            </p>
           </Section>
 
-          <Section title="9. Security">
-            <p>We implement appropriate technical and organizational measures to protect your information against unauthorized access, alteration, disclosure, or destruction. These measures include:</p>
+          <Section title="9. Your Privacy Rights">
+            <p>Depending on applicable law, you may have rights to:</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>HTTPS encryption for all data in transit.</li>
-              <li>Firebase Security Rules restricting database access.</li>
-              <li>Payment data handled exclusively by PCI-DSS compliant Stripe infrastructure.</li>
+              <li>Access, correct, or delete personal data.</li>
+              <li>Restrict or object to certain processing.</li>
+              <li>Request portability of data you provided.</li>
+              <li>Withdraw consent where processing depends on consent.</li>
+              <li>Appeal or complain to your local data protection authority.</li>
             </ul>
-            <p>However, no method of transmission over the Internet or electronic storage is 100% secure. We cannot guarantee absolute security.</p>
+            <p>
+              Send requests to{' '}
+              <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a>.
+            </p>
           </Section>
 
-          <Section title="10. International Data Transfers">
-            <p>Our infrastructure is primarily based in the United States. If you are accessing LovePage from outside the US, your data may be transferred to, stored, and processed in the US. By using LovePage, you consent to this transfer.</p>
+          <Section title="10. Cookies and Local Storage">
+            <p>
+              LovePage uses essential browser storage and similar technologies to preserve app state (for example,
+              draft references and settings). You can clear these in your browser settings.
+            </p>
           </Section>
 
-          <Section title="11. Changes to This Policy">
-            <p>We may update this Privacy Policy from time to time. We will indicate the date of the most recent revision at the top of this page. For significant changes, we may add a notice on the homepage. Your continued use of LovePage after any changes constitutes your acceptance of the updated policy.</p>
+          <Section title="11. Security">
+            <p>
+              We use reasonable technical and organizational measures designed to protect personal data, including secure
+              transport encryption and provider-level access controls. No system is perfectly secure, and we cannot
+              guarantee absolute security.
+            </p>
           </Section>
 
-          <Section title="12. Contact Us">
-            <p>For any questions, data requests, or concerns about this Privacy Policy:</p>
+          <Section title="12. Children's Privacy">
+            <p>
+              LovePage is not intended for children under 13, and we do not knowingly collect personal data from children
+              under 13. If you believe such data was submitted, contact us and we will investigate and remove it where required.
+            </p>
+          </Section>
+
+          <Section title="13. Changes to This Policy">
+            <p>
+              We may update this Privacy Policy periodically. We will post the revised version with a new "Last updated"
+              date. Material changes may be communicated through in-app or website notice.
+            </p>
+          </Section>
+
+          <Section title="14. Contact Us">
             <div className="bg-primary-light rounded-xl p-6 border border-card mt-4">
-              <p><strong>Email:</strong> <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a></p>
-              <p className="mt-1"><strong>Support:</strong> <a href="mailto:support@lovepage.app" className="text-primary-pink hover:underline">support@lovepage.app</a></p>
+              <p>
+                <strong>Privacy:</strong>{' '}
+                <a href="mailto:privacy@lovepage.app" className="text-primary-pink hover:underline">privacy@lovepage.app</a>
+              </p>
+              <p className="mt-1">
+                <strong>Support:</strong>{' '}
+                <a href="mailto:support@lovepage.app" className="text-primary-pink hover:underline">support@lovepage.app</a>
+              </p>
             </div>
           </Section>
-
         </motion.div>
       </div>
     </Layout>
