@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
@@ -51,6 +51,7 @@ const KawaiiLetter = ({
   const [flapOpen, setFlapOpen] = useState(false);
   const [typedText, setTypedText] = useState('');
   const [sealVisible, setSealVisible] = useState(true);
+  const [burstKey, setBurstKey] = useState(0);
 
   const pal = palettes[palette] || palettes.pink;
   const fnt = fonts[font] || fonts.playful;
@@ -80,12 +81,13 @@ const KawaiiLetter = ({
     return () => window.clearInterval(interval);
   }, [phase, typedLetter]);
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     if (flapOpen) return;
     setFlapOpen(true);
+    setBurstKey((current) => current + 1);
     window.setTimeout(() => setSealVisible(false), 140);
-    window.setTimeout(() => setPhase('floral'), 620);
-  };
+    window.setTimeout(() => setPhase('floral'), 680);
+  }, [flapOpen]);
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ fontFamily: fnt.body }}>
@@ -108,30 +110,41 @@ const KawaiiLetter = ({
             className="min-h-screen relative flex items-center justify-center px-4"
             style={GINGHAM_STYLE}
           >
-            <span className="absolute top-[9%] left-[8%] text-5xl">🌼</span>
-            <span className="absolute top-[8%] right-[7%] text-4xl">⭐</span>
-            <span className="absolute bottom-[14%] left-[8%] text-5xl">🎈</span>
-            <span className="absolute bottom-[12%] right-[8%] text-5xl">🐱</span>
-            <span className="absolute left-[5%] top-1/2 -translate-y-1/2 text-4xl text-[#b5547f]">〰️</span>
-
-            <div className="w-[min(82vw,540px)] relative">
-              <motion.div
-                initial={{ y: -120, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.58, ease: [0.34, 1.56, 0.64, 1] }}
-                className="relative h-[290px]"
+            {[
+              { id: 'flower', char: '🌼', className: 'top-[9%] left-[8%] text-5xl' },
+              { id: 'star', char: '⭐', className: 'top-[8%] right-[7%] text-4xl' },
+              { id: 'balloon', char: '🎈', className: 'bottom-[14%] left-[8%] text-5xl' },
+              { id: 'cat', char: '🐱', className: 'bottom-[12%] right-[8%] text-5xl' },
+              { id: 'wave', char: '〰️', className: 'left-[5%] top-1/2 -translate-y-1/2 text-4xl text-[#b5547f]' },
+            ].map((item, index) => (
+              <motion.span
+                key={item.id}
+                className={`absolute ${item.className}`}
+                animate={{ y: [0, -6, 0], rotate: [0, -4, 4, 0] }}
+                transition={{ duration: 4 + index * 0.35, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <div className="absolute inset-0 bg-[#f2a8bc] border border-[#ee9eb4] rounded-[3px] shadow-[0_14px_28px_rgba(195,111,138,0.35)]" />
+                {item.char}
+              </motion.span>
+            ))}
+
+            <div className="relative w-[min(86vw,520px)] max-w-[88%] h-[min(55vw,320px)]">
+              <motion.div
+                initial={{ y: -200, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+                className="relative w-full h-full"
+              >
+                <div className="absolute inset-0 rounded-[8px] bg-[#f3a8bd] border border-[#ec9bb2] shadow-[0_22px_38px_rgba(190,92,126,0.32)]" />
                 <motion.div
-                  animate={flapOpen ? { rotateX: -178 } : { rotateX: 0 }}
-                  transition={{ duration: 0.58, ease: [0.22, 0.88, 0.28, 1] }}
+                  animate={flapOpen ? { rotateX: -180 } : { rotateX: 0 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
                   className="absolute left-0 right-0 top-0 h-[58%] origin-top [transform-style:preserve-3d]"
                 >
-                  <div className="w-full h-full bg-[#f6c8d8] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+                  <div className="w-full h-full bg-[#ffd3df] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[8px]" />
                 </motion.div>
-                <div className="absolute inset-y-0 left-0 w-1/2 bg-[#dc8faa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
-                <div className="absolute inset-y-0 right-0 w-1/2 bg-[#dc8faa] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
-                <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#e9a4bb] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
+                <div className="absolute inset-y-0 left-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+                <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#eba9bf] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
 
                 {sealVisible ? (
                   <motion.button
@@ -139,14 +152,36 @@ const KawaiiLetter = ({
                     onClick={handleOpen}
                     whileTap={{ scale: 0.95 }}
                     animate={{ scale: [1, 1.06, 1] }}
-                    transition={{ duration: 1.4, repeat: Infinity }}
-                    className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#c11163] to-[#9e104d] text-[#ffd6e5] text-3xl shadow-[0_10px_20px_rgba(97,18,52,0.45)]"
+                    transition={{ duration: 1.25, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#cf226a] to-[#a61150] text-[#ffe0eb] text-3xl shadow-[0_12px_20px_rgba(97,18,52,0.42)]"
                   >
                     ♥
                   </motion.button>
                 ) : null}
               </motion.div>
-              <p className="text-center mt-3 text-[2rem] text-[#b00d5f] font-semibold font-dancing">
+
+              {[...Array(12)].map((_, i) => (
+                <motion.span
+                  key={`${burstKey}-${i}`}
+                  className="absolute left-1/2 top-1/2 text-[#ff4f8f] text-lg"
+                  initial={{ opacity: 0, scale: 0.2, x: 0, y: 0 }}
+                  animate={
+                    flapOpen
+                      ? {
+                          opacity: [0, 1, 0],
+                          scale: [0.2, 1, 0.6],
+                          x: Math.cos((i / 12) * Math.PI * 2) * (68 + (i % 3) * 16),
+                          y: Math.sin((i / 12) * Math.PI * 2) * (54 + (i % 4) * 12),
+                        }
+                      : { opacity: 0 }
+                  }
+                  transition={{ duration: 0.72, ease: 'easeOut' }}
+                >
+                  ✦
+                </motion.span>
+              ))}
+
+              <p className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-[2rem] text-[#b00d5f] font-semibold font-dancing">
                 {scenes.hint || 'Tap seal to open ♥'}
               </p>
             </div>
@@ -217,7 +252,7 @@ const KawaiiLetter = ({
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#fbf7ee]/75 pointer-events-none" />
               <div className="absolute left-[28px] top-0 bottom-0 w-[2px] bg-[#e5bcc6]" />
 
-              <div className="relative h-full px-9 sm:px-14 py-14 sm:py-16 overflow-hidden">
+              <div className="relative h-full px-9 sm:px-14 py-14 sm:py-16 overflow-y-auto pr-2">
                 <p
                   className="text-[#1a1a1a] text-[1.95rem] sm:text-[2.25rem] leading-[1.62] whitespace-pre-line text-center"
                   style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}

@@ -106,12 +106,12 @@ const MidnightLove = ({
             initial={{ opacity: 0, y: 30, rotate: 0.8 }}
             animate={{ opacity: 1, y: 0, rotate: 0 }}
             transition={{ delay: 0.6, duration: 0.75, ease: 'easeOut' }}
-            className="relative mx-auto w-full max-w-2xl rounded-[18px] border border-[#aab9dc] shadow-[0_30px_80px_rgba(3,7,30,0.46)] px-7 py-9 md:px-10 md:py-12 text-left overflow-hidden"
+            className="relative mx-auto w-full max-w-2xl rounded-[18px] border border-[#aab9dc] shadow-[0_30px_80px_rgba(3,7,30,0.46)] px-7 py-9 md:px-10 md:py-12 text-left overflow-hidden max-h-[78vh]"
             style={MIDNIGHT_PAPER_STYLE}
           >
             <div className="absolute top-0 left-10 w-20 h-7 bg-white/70 rotate-[-6deg] shadow-sm rounded-sm" />
             <div className="absolute inset-[10px] rounded-[12px] border border-[#bdc9e5]/80 pointer-events-none" />
-            <div className="relative space-y-7">
+            <div className="relative max-h-[60vh] overflow-y-auto pr-2 space-y-7">
               {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
                 <motion.p
                   key={i}

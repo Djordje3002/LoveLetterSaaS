@@ -117,6 +117,14 @@ h1, h2, h3, h4, h5, h6 {
   .card-white {
     @apply bg-white border border-card rounded-xl shadow-soft p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
   }
+
+  .builder-real-preview .min-h-screen {
+    min-height: 100%;
+  }
+
+  .builder-real-preview .h-screen {
+    height: 100%;
+  }
 }
 
 /* Background blobs */

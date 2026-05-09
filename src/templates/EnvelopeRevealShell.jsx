@@ -139,9 +139,9 @@ const EnvelopeRevealShell = ({
               >
                 <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ background: 'linear-gradient(124deg, rgba(255,255,255,0.66), transparent 48%)' }} />
                 <div className="absolute inset-[8px] rounded-[8px] border pointer-events-none" style={{ borderColor: paper.innerBorder }} />
-                <p className="relative h-full px-5 py-4 text-left text-[13px] leading-[1.6] font-playfair font-medium overflow-hidden" style={{ color: paper.text }}>
+                <div className="relative h-full px-5 py-4 text-left text-[13px] leading-[1.6] font-playfair font-medium overflow-y-auto pr-2" style={{ color: paper.text }}>
                   {letterPreviewText}
-                </p>
+                </div>
                 <div className="absolute bottom-0 left-0 right-0 h-7 pointer-events-none" style={{ background: `linear-gradient(to top, ${paper.fade}, transparent)` }} />
               </motion.div>
 

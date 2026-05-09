@@ -89,13 +89,13 @@ const DarkRomance = ({
             initial={{ opacity: 0, y: 36, rotate: -0.8 }}
             animate={{ opacity: 1, y: 0, rotate: 0 }}
             transition={{ delay: 0.45, duration: 0.8, ease: 'easeOut' }}
-            className="relative z-10 mt-14 w-full max-w-2xl text-left rounded-[6px] border border-[#8f6f52] shadow-[0_35px_80px_rgba(0,0,0,0.42)] px-7 py-9 md:px-10 md:py-12"
+            className="relative z-10 mt-14 w-full max-w-2xl text-left rounded-[6px] border border-[#8f6f52] shadow-[0_35px_80px_rgba(0,0,0,0.42)] px-7 py-9 md:px-10 md:py-12 overflow-hidden max-h-[78vh]"
             style={DARK_PARCHMENT_STYLE}
           >
             <div className="absolute inset-[10px] border border-[#6d4a30]/35 pointer-events-none" />
             <div className="absolute -top-3 left-10 w-24 h-7 bg-[#f2ddb7]/70 rotate-[-4deg] shadow-sm" />
             <div className="absolute -bottom-4 right-12 w-28 h-8 bg-[#5e2c1e]/20 rotate-[3deg] blur-[1px]" />
-            <div className="relative space-y-7 text-[#3f2818]">
+            <div className="relative max-h-[60vh] overflow-y-auto pr-2 space-y-7 text-[#3f2818]">
               {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
                 <motion.p
                   key={i}
