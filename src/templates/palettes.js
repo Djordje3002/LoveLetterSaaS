@@ -9,9 +9,9 @@ export const palettes = {
 }
 
 export const fonts = {
-  playful: { heading: "'Nunito', sans-serif", body: "'Nunito', sans-serif" },
-  elegant: { heading: "'Playfair Display', serif", body: "'Inter', sans-serif" },
-  classic: { heading: "'Cormorant Garamond', serif", body: "Georgia, serif" },
+  playful: { heading: "'Inter', sans-serif", body: "'Inter', sans-serif" },
+  elegant: { heading: "'Inter', sans-serif", body: "'Inter', sans-serif" },
+  classic: { heading: "'Playfair Display', serif", body: "'Inter', sans-serif" },
 }
 
 export function extractYouTubeId(url) {

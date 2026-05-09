@@ -73,12 +73,21 @@ const KawaiiLetter = ({
     if (phase !== 'letter') return undefined;
     setTypedText('');
     let cursor = 0;
-    const interval = window.setInterval(() => {
-      cursor += 1;
-      setTypedText(typedLetter.slice(0, cursor));
-      if (cursor >= typedLetter.length) window.clearInterval(interval);
-    }, 22);
-    return () => window.clearInterval(interval);
+    let interval = null;
+
+    // Let the paper complete its entrance before typing begins.
+    const startTimer = window.setTimeout(() => {
+      interval = window.setInterval(() => {
+        cursor += 1;
+        setTypedText(typedLetter.slice(0, cursor));
+        if (cursor >= typedLetter.length && interval) window.clearInterval(interval);
+      }, 22);
+    }, 650);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      if (interval) window.clearInterval(interval);
+    };
   }, [phase, typedLetter]);
 
   const handleOpen = useCallback(() => {
@@ -225,13 +234,13 @@ const KawaiiLetter = ({
             key="letter"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen relative overflow-hidden px-3 py-6 sm:py-10"
+            className="min-h-screen relative overflow-x-hidden px-3 py-6 sm:py-10"
             style={DOTTED_STYLE}
           >
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center text-[3rem] md:text-[4.4rem] leading-none text-[#b30553] font-dancing font-bold relative z-10"
+              className="pt-8 md:pt-12 text-center text-[3rem] md:text-[4.4rem] leading-none text-[#b30553] font-dancing font-bold relative z-10"
             >
               {heading}
             </motion.h1>
@@ -245,17 +254,17 @@ const KawaiiLetter = ({
               initial={{ y: 220, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.54, ease: [0.21, 0.85, 0.24, 1] }}
-              className="mx-auto mt-6 sm:mt-8 w-[min(92vw,860px)] h-[min(64vh,620px)] rounded-[14px] border border-[#ddd3c7] overflow-hidden relative"
+              className="mx-auto mt-6 sm:mt-8 w-[min(92vw,860px)] min-h-[78vh] rounded-[14px] border border-[#ddd3c7] overflow-hidden relative"
               style={linedPaperStyle}
             >
               <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-24 h-8 bg-white/90 rotate-[2deg] border border-[#e8e1d7] shadow-sm" />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#fbf7ee]/75 pointer-events-none" />
               <div className="absolute left-[28px] top-0 bottom-0 w-[2px] bg-[#e5bcc6]" />
 
-              <div className="relative h-full px-9 sm:px-14 py-14 sm:py-16 overflow-y-auto pr-2">
+              <div className="relative px-9 sm:px-14 py-14 sm:py-16">
                 <p
-                  className="text-[#1a1a1a] text-[1.95rem] sm:text-[2.25rem] leading-[1.62] whitespace-pre-line text-center"
-                  style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}
+                  className="font-dancing text-[#2b1a20] text-[2.2rem] sm:text-[2.6rem] leading-[1.46] whitespace-pre-line text-center"
+                  style={{ fontFamily: "'Dancing Script', 'Great Vibes', cursive", fontWeight: 700, letterSpacing: '0.01em' }}
                 >
                   {typedText}
                   <span className="inline-block ml-1 animate-pulse text-[#7b2a4f]">|</span>

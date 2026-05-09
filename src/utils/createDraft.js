@@ -94,19 +94,27 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     celebrationTitle: "I knew you would say yes!",
     celebrationText: 'Now we celebrate this moment and make it unforgettable.',
   },
+  'birthday-candles': {
+    age: '25',
+    headline: 'Happy Birthday, my love! 🎂',
+    subheadline: 'Today is your day. Make a wish and enjoy every second.',
+    letterText: "Happy birthday, my love.\nYou make life brighter with your laugh, your heart, and your presence.\nI hope this year brings you calm, joy, and everything you are dreaming about.\nThank you for being exactly who you are.\nI am so lucky to celebrate you today and every day.",
+    wishLine: 'Make a wish and smile big ✨',
+    closingMessage: 'To your happiest year yet.',
+  },
   'iva-birthday': {
     accessName: 'iva',
     accessPassword: 'love',
     welcomeTitle: 'Welcome, my love 💙',
     welcomeSubtitle: 'This is our little private world.',
     questionTitle: 'Will you keep choosing me forever? 💍',
-    homeTitle: 'Happy Birthday, my love 💙',
+    homeTitle: 'Full House of Love 💙',
     homeSubtitle: 'Every click is a little reminder of how much I love you.',
     galleryTitle: 'Our Moments 📸',
     gallerySubtitle: 'A collection of our favorite memories.',
     reasonsTitle: 'Reasons I Love You 💙',
     sideCardTitle: 'Quick Memories',
-    letterText: "Happy birthday, my love.\nI made this little world just for you.\nThank you for every smile, every hug, and every gentle moment we share.\nYou make ordinary days feel golden and unforgettable.\nI am endlessly grateful for your heart, your warmth, and your love.",
+    letterText: "My love,\nI made this little world just for you.\nThank you for every smile, every hug, and every gentle moment we share.\nYou make ordinary days feel golden and unforgettable.\nI am endlessly grateful for your heart, your warmth, and your love.",
     closingMessage: 'I love you the most.',
     polaroidCaption1: 'You and your beautiful smile',
     polaroidCaption2: 'A day I will always remember',
@@ -186,8 +194,9 @@ export const TEMPLATE_STYLE_DEFAULTS = {
   'midnight-love': { palette: 'navy', font: 'elegant' },
   'rose-whisper': { palette: 'lavender', font: 'elegant' },
   'golden-promise': { palette: 'gold', font: 'classic' },
-  'date-invite': { palette: 'pink', font: 'playful' },
   'iva-birthday': { palette: 'navy', font: 'playful' },
+  'date-invite': { palette: 'pink', font: 'playful' },
+  'birthday-candles': { palette: 'gold', font: 'playful' },
   'sky-love': { palette: 'navy', font: 'elegant' },
   'chat-reveal': { palette: 'pink', font: 'playful' },
 }
@@ -262,10 +271,17 @@ export function buildQuickPersonalizedScenes(templateId, { recipientName = '', t
       celebrationText: `You said yes, ${name}. This just became one of my favorite memories.`,
     },
     'iva-birthday': {
-      homeTitle: `Happy birthday, ${name} 💙`,
+      homeTitle: `${name}, this is for you 💙`,
       homeSubtitle: 'I made this little private world just for you.',
       letterText: lines.join('\n'),
       closingMessage: 'Made with all my love.',
+    },
+    'birthday-candles': {
+      headline: `Happy Birthday, ${name}! 🎂`,
+      subheadline: 'Today is your day. Make a wish and enjoy every second.',
+      letterText: lines.join('\n'),
+      wishLine: 'Blow the candles and smile big ✨',
+      closingMessage: 'To your happiest year yet.',
     },
     'our-story': {
       storyTitle: `${name} & Me`,
@@ -290,6 +306,122 @@ them: love: i love you so much ${name} 🩷`,
     scene2Header: `A letter for ${name}`,
     letterText: lines.join('\n'),
     closingMessage: 'Made just for you.',
+    ...(byTemplate[templateId] || {}),
+  }
+}
+
+export function buildCreativeDirectionScenes(templateId, { recipientName = '', direction = 'cinematic' } = {}) {
+  const name = String(recipientName || '').trim() || 'you'
+  const directions = {
+    cinematic: {
+      header: `For ${name}, like a movie scene`,
+      lines: [
+        `Every time you enter a room, the whole scene changes for me, ${name}.`,
+        'You turn ordinary moments into something I want to replay forever.',
+        'If this page had a soundtrack, it would be every heartbeat I notice around you.',
+        'Some love stories are written in books, ours is written in moments.',
+      ],
+      closing: 'You are my favorite scene.',
+    },
+    cozy: {
+      header: `A warm note for ${name}`,
+      lines: [
+        `I love the quiet way life feels better when you are near, ${name}.`,
+        'You make small days feel soft, safe, and full of meaning.',
+        'Being with you feels like finally exhaling after a long day.',
+        'Thank you for making love feel simple and true.',
+      ],
+      closing: 'Home is wherever you are.',
+    },
+    poetic: {
+      header: `A little poem for ${name}`,
+      lines: [
+        `${name}, even silence sounds softer when it is shared with you.`,
+        'You are the calm between my thoughts and the light inside my ordinary hours.',
+        'I keep finding your name in every beautiful thing I notice.',
+        'If love had handwriting, mine would still write you first.',
+      ],
+      closing: 'Always, in every line.',
+    },
+    playful: {
+      header: `Okay ${name}, this is cute on purpose`,
+      lines: [
+        `You are dangerously easy to adore, ${name}.`,
+        'You make my smile automatic and my brain slightly dramatic.',
+        'I made this page because texting this would not be enough.',
+        'So yes, this is me being obsessed, respectfully.',
+      ],
+      closing: 'Still your biggest fan.',
+    },
+  }
+
+  const preset = directions[direction] || directions.cinematic
+  const byTemplate = {
+    'date-invite': {
+      introLine: `${name}, there is one question I have been waiting to ask...`,
+      confessionTitle: 'Before I ask, read this first...',
+      confession1Text: preset.lines[0],
+      confession2Text: preset.lines[1],
+      confession3Text: preset.lines[2],
+      confession4Text: preset.lines[3],
+      confession5Text: `You are my favorite person to make memories with, ${name}.`,
+      confession6Text: 'So... can I be yours officially?',
+      questionTitle: `${name}, will you say yes to us?`,
+      questionSubtitle: 'One tap and this becomes my favorite memory.',
+      celebrationTitle: 'You said yes ✨',
+      celebrationText: `Knew it. This is the start of something even better, ${name}.`,
+    },
+    'our-story': {
+      storyTitle: `${name} & Me`,
+      chapter1Title: 'Chapter 1: Where It Started',
+      chapter1Text: preset.lines[0],
+      chapter2Title: 'Chapter 2: Why It Matters',
+      chapter2Text: preset.lines[1],
+      finalLetter: `${preset.lines.join('\n')}\n\n${preset.closing}`,
+    },
+    'our-gallery': {
+      galleryTitle: `${name}, our moments`,
+      introText: preset.lines[1],
+      polaroidCaption1: 'The one I keep replaying',
+      polaroidCaption2: 'Proof that joy looks like us',
+      polaroidCaption3: 'The day felt perfect',
+      polaroidCaption4: 'My favorite little memory',
+      polaroidCaption5: 'Still smiling at this one',
+    },
+    'iva-birthday': {
+      homeTitle: `${name}, this is for you 💙`,
+      homeSubtitle: 'I made this little private world just for us.',
+      letterText: preset.lines.join('\n'),
+      closingMessage: preset.closing,
+    },
+    'birthday-candles': {
+      headline: `Happy Birthday, ${name}! 🎂`,
+      subheadline: 'Let the candles glow and make a wish.',
+      letterText: preset.lines.join('\n'),
+      wishLine: preset.closing,
+      closingMessage: `Celebrating you, ${name}.`,
+    },
+    '100-reasons': {
+      introText: preset.lines[0],
+      closingMessage: preset.closing,
+    },
+    'chat-reveal': {
+      chatSenderName: `${name} 🩷`,
+      chatScript: `them: hey ${name}\n\
+them: i wanted to say this in a way you would remember\n\
+me: now i am curious\n\
+them: ${preset.lines[0].toLowerCase()}\n\
+them: ${preset.lines[1].toLowerCase()}\n\
+them: ${preset.lines[2].toLowerCase()}\n\
+them: ${preset.lines[3].toLowerCase()}\n\
+them: love: i really, really love you`,
+    },
+  }
+
+  return {
+    scene2Header: preset.header,
+    letterText: preset.lines.join('\n'),
+    closingMessage: preset.closing,
     ...(byTemplate[templateId] || {}),
   }
 }

@@ -45,6 +45,24 @@ const EnvelopeDemo = ({ mood = 'kawaii', interactive = false, onRevealChange }) 
       label: 'under stars',
       decor: ['top-4 left-5|🌙', 'top-5 right-6|✦', 'bottom-5 right-7|✧'],
     },
+    rose: {
+      bg: 'bg-[#fff2f6]',
+      body: 'from-[#ffd7e6] via-[#ffc5da] to-[#f6a8c3]',
+      front: 'from-[#f6b4cc] via-[#ffdbe8] to-[#eca7be]',
+      seal: 'from-[#e2477b] to-[#bb2f5f]',
+      text: 'text-[#b53f67]',
+      label: 'rose whisper',
+      decor: ['top-3 left-5|🌹', 'top-4 right-6|✨', 'bottom-5 left-6|💗'],
+    },
+    golden: {
+      bg: 'bg-[#fff8e8]',
+      body: 'from-[#f4deb0] via-[#ebcd8f] to-[#cfab60]',
+      front: 'from-[#e4c786] via-[#f8e9c4] to-[#d8b26d]',
+      seal: 'from-[#cf9b2f] to-[#9f6f11]',
+      text: 'text-[#8d6216]',
+      label: 'golden promise',
+      decor: ['top-3 left-5|✨', 'top-4 right-6|⭐', 'bottom-4 right-6|💛'],
+    },
   };
   const theme = themes[mood] || themes.kawaii;
   const [state, setState] = useState('closed'); // closed | opening | opened
@@ -185,6 +203,49 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
   if (templateId === 'dark-romance') return <EnvelopeDemo mood="dark" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'midnight-love') return <EnvelopeDemo mood="midnight" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'kawaii-letter') return <EnvelopeDemo mood="kawaii" interactive={interactive} onRevealChange={onRevealChange} />;
+  if (templateId === 'rose-whisper') return <EnvelopeDemo mood="rose" interactive={interactive} onRevealChange={onRevealChange} />;
+  if (templateId === 'golden-promise') return <EnvelopeDemo mood="golden" interactive={interactive} onRevealChange={onRevealChange} />;
+  if (templateId === 'iva-birthday') {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-[#0b1627] via-[#13263f] to-[#27466f] relative overflow-hidden flex items-center justify-center">
+        {[10, 24, 38, 54, 68, 84].map((left, i) => (
+          <span
+            key={left}
+            className="absolute text-[10px] text-[#84d8ff]"
+            style={{ left: `${left}%`, top: `${14 + (i * 11) % 62}%`, opacity: 0.72 }}
+          >
+            ✦
+          </span>
+        ))}
+        <div className="w-[84%] h-[78%] rounded-2xl border border-[#3a5678] bg-[#0f1b2d]/92 p-3 shadow-xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#7fd8ff]">full house</span>
+            <span className="text-[9px] text-[#b6ddff]">Together</span>
+          </div>
+          <div className="flex gap-1.5 mb-2">
+            {['Home', 'Gallery', 'Reasons'].map((tab, i) => (
+              <span
+                key={tab}
+                className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${i === 0 ? 'bg-[#77d7ff] text-[#062033]' : 'bg-[#1e334d] text-[#c2dfff]'}`}
+              >
+                {tab}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 h-[66%]">
+            {[0, 1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                className="rounded-md border border-[#3a5169] bg-gradient-to-br from-[#1a2a40] to-[#0c1727]"
+                animate={{ y: [0, -2, 0] }}
+                transition={{ duration: 2.4 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (templateId === 'sky-love') {
     return (
       <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#1f3b84] via-[#10245a] to-[#060f2c]">
@@ -304,6 +365,42 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
     );
   }
 
+  if (templateId === 'birthday-candles') {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-[#ffe1b9] via-[#fff0d8] to-[#ffd4b3] relative overflow-hidden flex items-center justify-center">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.span
+            key={`party-${i}`}
+            className="absolute text-lg"
+            style={{ left: `${10 + i * 22}%`, top: `${8 + (i % 2) * 12}%` }}
+            animate={{ y: [0, -6, 0], rotate: [0, -5, 5, 0] }}
+            transition={{ duration: 2.8 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            {i % 2 === 0 ? '🎈' : '✨'}
+          </motion.span>
+        ))}
+        <div className="relative w-40 h-28">
+          <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-[92%] h-10 rounded-xl bg-gradient-to-r from-[#d7864d] via-[#f0a365] to-[#cb7440] border border-[#b96e40]" />
+          <div className="absolute left-1/2 bottom-8 -translate-x-1/2 w-[78%] h-9 rounded-lg bg-gradient-to-r from-[#ffd494] via-[#ffe6b8] to-[#ffc984] border border-[#ddb477]" />
+          <div className="absolute left-1/2 bottom-[42px] -translate-x-1/2 flex gap-2">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={`mini-candle-${idx}`} className="relative flex flex-col items-center">
+                <motion.span
+                  className="absolute -top-3 text-[10px]"
+                  animate={{ y: [0, -2, 0], opacity: [0.85, 1, 0.85] }}
+                  transition={{ duration: 0.8 + (idx % 2) * 0.15, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  🔥
+                </motion.span>
+                <div className="w-2 h-6 rounded-sm bg-[#ff5a6f] border border-[#d53d52]" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (templateId === 'date-invite') {
     return (
       <div
@@ -375,31 +472,6 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
           <span className="absolute left-4 bottom-3 text-[10px] text-[#b9855d]">Gallery + Letter</span>
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b9855d]">→</span>
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#b9855d]">←</span>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (templateId === 'iva-birthday') {
-    return (
-      <div className="w-full h-full bg-gradient-to-br from-[#081426] via-[#132947] to-[#2a4d7a] flex items-center justify-center relative overflow-hidden">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span
-            key={`star-${i}`}
-            className="absolute text-[#77d7ff]/80"
-            style={{ left: `${8 + i * 18}%`, top: `${14 + (i % 2) * 15}%`, fontSize: `${14 + (i % 3) * 4}px` }}
-          >
-            ✦
-          </span>
-        ))}
-        <motion.div
-          className="w-40 rounded-2xl border border-[#4f6d8b] bg-[#0f1e31]/85 px-4 py-5 text-center shadow-xl"
-          animate={{ y: [6, -6, 6] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="inline-flex w-10 h-10 items-center justify-center rounded-full bg-[#1f3858] mb-3 text-[#77d7ff]">🔒</div>
-          <p className="text-[10px] uppercase tracking-[0.15em] font-black text-[#77d7ff]">Private Birthday</p>
-          <p className="text-xs text-white/85 mt-1">Gate + Gallery + Reasons</p>
         </motion.div>
       </div>
     );

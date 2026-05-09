@@ -1,81 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smartphone, ThumbsUp, Loader2 } from 'lucide-react';
 import Layout from '../components/Layout';
 import { createDraft } from '../utils/createDraft';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../utils/analytics';
-
-const TEMPLATE_DATA = {
-  'kawaii-letter': {
-    name: 'Kawaii Digital Letter',
-    description: 'A kawaii digital letter experience featuring an interactive envelope, a heartfelt letter, draggable polaroid memories, a retro TV music player, and a flower explosion finale. All text and photos are fully customizable.',
-    emoji: '✉️',
-    color: 'bg-[#FFD1DC]',
-  },
-  '100-reasons': {
-    name: '100 Reasons',
-    description: 'Flip beautifully animated cards revealing all the reasons you love someone. Includes confetti finale and playful interactions.',
-    emoji: '💯',
-    color: 'bg-gradient-to-br from-violet-200 to-rose-200',
-  },
-  'our-gallery': {
-    name: 'Our Gallery',
-    description: 'A cinematic gallery-style experience for your memories with smooth transitions, captions, and romantic atmosphere.',
-    emoji: '🖼️',
-    color: 'bg-gradient-to-br from-amber-200 to-orange-200',
-  },
-  'dark-romance': {
-    name: 'Dark Romance',
-    description: 'A dramatic, elegant letter template with ember effects and moody visuals for a timeless romantic vibe.',
-    emoji: '🕯️',
-    color: 'bg-gradient-to-br from-[#1C1007] to-[#2D1A0E]',
-  },
-  'our-story': {
-    name: 'Our Story',
-    description: 'An interactive storybook with left/right page arrows, photo-gallery pages from your uploads, and a final heartfelt letter page.',
-    emoji: '📖',
-    color: 'bg-[#F5ECD7]',
-  },
-  'midnight-love': {
-    name: 'Midnight Love',
-    description: 'A starry night template with a typewriter-style reveal and dreamy motion effects for heartfelt long-form letters.',
-    emoji: '🌙',
-    color: 'bg-gradient-to-br from-[#0D1B3E] to-[#1A0533]',
-  },
-  'rose-whisper': {
-    name: 'Rose Whisper',
-    description: 'A gentle romantic style built on our signature letter flow, with softer elegant tones and refined typography.',
-    emoji: '🌹',
-    color: 'bg-gradient-to-br from-rose-200 to-pink-200',
-  },
-  'golden-promise': {
-    name: 'Golden Promise',
-    description: 'A warm golden variation of the love letter experience, perfect for heartfelt promises and anniversary notes.',
-    emoji: '✨',
-    color: 'bg-gradient-to-br from-amber-200 to-yellow-100',
-  },
-  'date-invite': {
-    name: 'Will You Be My Valentine?',
-    description: 'A playful confession journey with clickable reveals, draggable memories, a runaway "No" button, and confetti when they say yes. Every line and photo is customizable.',
-    emoji: '💘',
-    color: 'bg-gradient-to-br from-pink-200 via-rose-200 to-red-200',
-  },
-  'iva-birthday': {
-    name: 'Full House of Love',
-    description: 'A private birthday-themed experience with a playful entry gate, love question, memory gallery, cinematic letter reveal, and a 100-style reasons grid.',
-    emoji: '🎂',
-    color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
-  },
-  'chat-reveal': {
-    name: 'Chat Reveal',
-    description: 'An iMessage-style love confession with typing dots, dramatic bubble reveals, floating hearts, and replay. Fully customizable with long chat scripts.',
-    emoji: '💬',
-    color: 'bg-gradient-to-br from-[#111111] to-[#2a1a3a]',
-  },
-};
-
-const DEFAULT_TEMPLATE_ID = 'kawaii-letter';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, getTemplateConfig } from '../templates/registry';
 
 const TemplateDetail = () => {
   const navigate = useNavigate();
@@ -83,7 +13,7 @@ const TemplateDetail = () => {
   const [createError, setCreateError] = useState('');
   const { templateId } = useParams();
   const { user } = useAuth();
-  const resolvedTemplateId = TEMPLATE_DATA[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
+  const resolvedTemplateId = TEMPLATE_BY_ID[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
 
   const createDraftAndNavigate = async (target) => {
     if (creatingEditor) return;
@@ -109,7 +39,7 @@ const TemplateDetail = () => {
       setCreatingEditor(false);
     }
   };
-  const template = TEMPLATE_DATA[resolvedTemplateId];
+  const template = getTemplateConfig(resolvedTemplateId);
 
   const inclusions = [
     { icon: <Image size={20} />, label: 'Customizable text & images' },
@@ -154,7 +84,7 @@ const TemplateDetail = () => {
                   <Play size={40} className="fill-white ml-2" />
                 </div>
                 <div className="absolute bottom-6 left-6 text-2xl font-bold font-playfair drop-shadow-md">
-                  {template.name}
+                  {template.title}
                 </div>
               </div>
             </div>
@@ -188,7 +118,7 @@ const TemplateDetail = () => {
           <div className="lg:col-span-5">
             <div className="sticky top-28">
               <span className="text-primary-pink font-bold text-sm mb-2 block uppercase tracking-widest">♥ Interactive Gift Template</span>
-              <h1 className="text-4xl font-bold mb-6">{template.name}</h1>
+              <h1 className="text-4xl font-bold mb-6">{template.title}</h1>
               <p className="text-secondary leading-relaxed mb-8">
                 {template.description}
               </p>

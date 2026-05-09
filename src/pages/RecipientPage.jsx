@@ -1,44 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, HeartCrack } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import KawaiiLetter from '../templates/KawaiiLetter';
-import ReasonsILoveYou from '../templates/ReasonsILoveYou';
-import OurGallery from '../templates/OurGallery';
-import DarkRomance from '../templates/DarkRomance';
-import OurStory from '../templates/OurStory';
-import MidnightLove from '../templates/MidnightLove';
-import RoseWhisper from '../templates/RoseWhisper';
-import GoldenPromise from '../templates/GoldenPromise';
-import DateInviteLetter from '../templates/DateInviteLetter';
-import IvaBirthday from '../templates/IvaBirthday';
-import SkyLove from '../templates/SkyLove';
-import ChatReveal from '../templates/ChatReveal';
-
-const TEMPLATES = {
-  'kawaii-letter': KawaiiLetter,
-  '100-reasons': ReasonsILoveYou,
-  'our-gallery': OurGallery,
-  'dark-romance': DarkRomance,
-  'our-story': OurStory,
-  'midnight-love': MidnightLove,
-  'rose-whisper': RoseWhisper,
-  'golden-promise': GoldenPromise,
-  'date-invite': DateInviteLetter,
-  'iva-birthday': IvaBirthday,
-  'sky-love': SkyLove,
-  'chat-reveal': ChatReveal,
-};
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_COMPONENTS } from '../templates/registry';
 
 const RecipientPage = () => {
   const { id } = useParams();
-  const [status, setStatus] = useState('loading'); // loading | found | not-found | inactive
+  const [status, setStatus] = useState(id ? 'loading' : 'not-found'); // loading | found | not-found | inactive
   const [pageData, setPageData] = useState(null);
 
   useEffect(() => {
-    if (!id) { setStatus('not-found'); return; }
+    if (!id) return;
     const load = async () => {
       try {
         const snap = await getDoc(doc(db, 'pages', id));
@@ -85,7 +59,8 @@ const RecipientPage = () => {
     );
   }
 
-  const TemplateComponent = TEMPLATES[pageData.templateId];
+  const templateId = pageData?.templateId || DEFAULT_TEMPLATE_ID;
+  const TemplateComponent = TEMPLATE_COMPONENTS[templateId];
   if (!TemplateComponent) {
     return (
       <div className="min-h-screen flex items-center justify-center">

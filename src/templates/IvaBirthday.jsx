@@ -101,7 +101,7 @@ const IvaBirthday = ({
     if (letterOpenTimerRef.current) window.clearTimeout(letterOpenTimerRef.current);
   }, []);
 
-  const letterText = scenes.letterText || 'Happy birthday, my love. This little space is made just for you.';
+  const letterText = scenes.letterText || 'My love, this little space is made just for you.';
   const letterParagraphs = letterText.split('\n').filter(Boolean);
 
   const checkGate = () => {
@@ -124,7 +124,7 @@ const IvaBirthday = ({
   };
 
   const handleYesClick = () => {
-    setQuestionMessage('Knew it 💍 Opening your birthday world...');
+    setQuestionMessage('Knew it 💍 Opening our little world...');
     setTimeout(() => setScreen('main'), 900);
   };
 
@@ -181,7 +181,7 @@ const IvaBirthday = ({
           src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
           allow="autoplay"
           className="w-0 h-0 absolute opacity-0"
-          title="birthday background music"
+          title="full-house background music"
         />
       )}
 
@@ -218,7 +218,7 @@ const IvaBirthday = ({
                 />
               </div>
               <button onClick={checkGate} className="mt-6 w-full rounded-full px-6 py-3 font-bold text-[#05101a] bg-[#77d7ff] hover:brightness-105 transition-all">
-                Enter Birthday Space ✨
+                Enter Full House of Love ✨
               </button>
               <p className="mt-3 text-sm text-[#ff9ab0] min-h-[20px]">{gateMessage}</p>
             </div>
@@ -289,124 +289,110 @@ const IvaBirthday = ({
               </header>
 
               {tab === 'home' && (
-                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
-                  <div className="rounded-[28px] border border-[#28445f] bg-[#111b2b]/94 p-7">
-                    <p className="uppercase tracking-[0.24em] text-xs text-[#77d7ff] font-black mb-3">Birthday Letter</p>
-                    <h2 className="text-4xl font-bold mb-3" style={{ fontFamily: fnt.heading }}>{scenes.homeTitle || 'Happy Birthday, my love 💙'}</h2>
-                    <p className="text-white/75 mb-6">{scenes.homeSubtitle || 'Every click is a little reminder of how much I love you.'}</p>
+                <div className="rounded-[28px] border border-[#28445f] bg-[#111b2b]/94 p-7 md:p-8 min-h-[74vh]">
+                  <p className="uppercase tracking-[0.24em] text-xs text-[#77d7ff] font-black mb-3">Love Letter</p>
+                  <h2 className="text-4xl font-bold mb-3" style={{ fontFamily: fnt.heading }}>{scenes.homeTitle || 'Full House of Love 💙'}</h2>
+                  <p className="text-white/75 mb-6">{scenes.homeSubtitle || 'Every click is a little reminder of how much I love you.'}</p>
 
-                    <div className="rounded-2xl border border-[#48607a] bg-[#fdf5e7] text-[#2f2318] p-5 shadow-inner">
-                      <button
-                        type="button"
-                        onClick={openLetter}
-                        disabled={letterState !== 'closed'}
-                        className={`w-full text-left flex items-center justify-between font-bold mb-3 transition-colors ${
-                          letterState === 'closed' ? 'text-[#8b3b4e] hover:text-[#9f1f44]' : 'text-[#6e5a43]'
-                        }`}
+                  <div className="rounded-2xl border border-[#48607a] bg-[#fdf5e7] text-[#2f2318] p-5 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={openLetter}
+                      disabled={letterState !== 'closed'}
+                      className={`w-full text-left flex items-center justify-between font-bold mb-3 transition-colors ${
+                        letterState === 'closed' ? 'text-[#8b3b4e] hover:text-[#9f1f44]' : 'text-[#6e5a43]'
+                      }`}
+                    >
+                      <span>
+                        {letterState === 'closed' ? 'Open love letter' : letterState === 'opening' ? 'Opening letter...' : 'Letter opened'}
+                      </span>
+                      <Sparkles size={16} />
+                    </button>
+
+                    <div className="relative h-[58vh] min-h-[420px] overflow-hidden rounded-xl border border-[#d3c4a8] bg-[#f8ebd3]">
+                      {(letterState === 'opening' || letterState === 'opened') && (
+                        <div className="pointer-events-none absolute left-1/2 top-[52%] z-30 -translate-x-1/2 -translate-y-1/2">
+                          {sealBurst.map((glyph, i) => (
+                            <motion.span
+                              key={`${glyph}-${i}`}
+                              className="absolute text-[#a52d56] text-base font-bold"
+                              initial={{ opacity: 0.95, scale: 0.65, x: 0, y: 0 }}
+                              animate={{
+                                opacity: [0.95, 0],
+                                scale: [0.65, 1.2],
+                                x: Math.cos((i / sealBurst.length) * Math.PI * 2) * (38 + (i % 2) * 8),
+                                y: Math.sin((i / sealBurst.length) * Math.PI * 2) * (34 + (i % 2) * 10),
+                              }}
+                              transition={{ duration: 0.52, delay: 0.05 + i * 0.03, ease: 'easeOut' }}
+                            >
+                              {glyph}
+                            </motion.span>
+                          ))}
+                        </div>
+                      )}
+                      <motion.div
+                        className="absolute left-1/2 bottom-[106px] -translate-x-1/2 w-[82%] max-w-[430px] h-[240px] rounded-lg border border-[#d6be95] overflow-hidden bg-[#f7ebd3]"
+                        animate={letterState === 'opened'
+                          ? { y: -8, opacity: 1, scale: 1, rotate: -0.8 }
+                          : letterState === 'opening'
+                            ? { y: [164, -28, -8], opacity: [0, 1, 1], scale: [0.95, 1.04, 1], rotate: [0, -2.4, -0.8] }
+                            : { y: 160, opacity: 0, scale: 0.96, rotate: 0 }}
+                        transition={letterState === 'opening'
+                          ? { duration: 0.92, ease: 'easeOut', times: [0, 0.74, 1] }
+                          : { type: 'spring', stiffness: 170, damping: 16 }}
+                        style={{
+                          backgroundImage:
+                            'repeating-linear-gradient(180deg, rgba(110,80,45,0.08), rgba(110,80,45,0.08) 1px, transparent 1px, transparent 28px), radial-gradient(circle at 15% 18%, rgba(179,146,106,0.24), transparent 42%), radial-gradient(circle at 88% 82%, rgba(130,89,44,0.18), transparent 40%)',
+                        }}
                       >
-                        <span>
-                          {letterState === 'closed' ? 'Open birthday letter' : letterState === 'opening' ? 'Opening letter...' : 'Letter opened'}
-                        </span>
-                        <Sparkles size={16} />
-                      </button>
-
-                      <div className="relative h-[360px] overflow-hidden rounded-xl border border-[#d3c4a8] bg-[#f8ebd3]">
-                        {(letterState === 'opening' || letterState === 'opened') && (
-                          <div className="pointer-events-none absolute left-1/2 top-[52%] z-30 -translate-x-1/2 -translate-y-1/2">
-                            {sealBurst.map((glyph, i) => (
-                              <motion.span
-                                key={`${glyph}-${i}`}
-                                className="absolute text-[#a52d56] text-base font-bold"
-                                initial={{ opacity: 0.95, scale: 0.65, x: 0, y: 0 }}
-                                animate={{
-                                  opacity: [0.95, 0],
-                                  scale: [0.65, 1.2],
-                                  x: Math.cos((i / sealBurst.length) * Math.PI * 2) * (38 + (i % 2) * 8),
-                                  y: Math.sin((i / sealBurst.length) * Math.PI * 2) * (34 + (i % 2) * 10),
-                                }}
-                                transition={{ duration: 0.52, delay: 0.05 + i * 0.03, ease: 'easeOut' }}
+                        <div className="absolute inset-[8px] rounded-[6px] border border-[#d8c4a2]/80 pointer-events-none" />
+                        <div className="relative h-full px-5 py-5 overflow-y-auto pr-2">
+                          <AnimatePresence initial={false}>
+                            {letterState === 'opened' && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="space-y-3"
                               >
-                                {glyph}
-                              </motion.span>
-                            ))}
-                          </div>
-                        )}
+                                {letterParagraphs.map((paragraph, i) => (
+                                  <p key={`p-${i}`} className="leading-7 text-[0.98rem]">{paragraph}</p>
+                                ))}
+                                {(scenes.closingMessage || (showSenderName && senderName)) && (
+                                  <div className="text-right pt-2">
+                                    {scenes.closingMessage ? <p className="font-dancing text-2xl text-[#a8485f]">{scenes.closingMessage}</p> : null}
+                                    {showSenderName && senderName ? <p className="font-dancing text-xl text-[#6d3a4a] mt-1">— {senderName}</p> : null}
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+
+                      <div className="absolute left-1/2 bottom-6 -translate-x-1/2 w-[84%] max-w-[440px] h-[220px]">
+                        <div className="absolute inset-0 rounded-[16px] border border-[#ca8ca1] bg-gradient-to-b from-[#ffdce7] to-[#e8a6bb] shadow-[0_18px_34px_rgba(125,56,89,0.28)]" />
+                        <div className="absolute inset-y-0 left-0 w-1/2 bg-[#d58fa4] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+                        <div className="absolute inset-y-0 right-0 w-1/2 bg-[#d58fa4] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+                        <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#ebb0c3] [clip-path:polygon(0_100%,50%_30%,100%_100%)] rounded-b-[16px]" />
                         <motion.div
-                          className="absolute left-1/2 bottom-[106px] -translate-x-1/2 w-[82%] max-w-[430px] h-[240px] rounded-lg border border-[#d6be95] overflow-hidden bg-[#f7ebd3]"
-                          animate={letterState === 'opened'
-                            ? { y: -8, opacity: 1, scale: 1, rotate: -0.8 }
-                            : letterState === 'opening'
-                              ? { y: [164, -28, -8], opacity: [0, 1, 1], scale: [0.95, 1.04, 1], rotate: [0, -2.4, -0.8] }
-                              : { y: 160, opacity: 0, scale: 0.96, rotate: 0 }}
-                          transition={letterState === 'opening'
-                            ? { duration: 0.92, ease: 'easeOut', times: [0, 0.74, 1] }
-                            : { type: 'spring', stiffness: 170, damping: 16 }}
-                          style={{
-                            backgroundImage:
-                              'repeating-linear-gradient(180deg, rgba(110,80,45,0.08), rgba(110,80,45,0.08) 1px, transparent 1px, transparent 28px), radial-gradient(circle at 15% 18%, rgba(179,146,106,0.24), transparent 42%), radial-gradient(circle at 88% 82%, rgba(130,89,44,0.18), transparent 40%)',
-                          }}
+                          className="absolute left-0 right-0 top-0 h-[56%] origin-top"
+                          animate={letterState === 'opened' || letterState === 'opening' ? { rotateX: -176, y: -5 } : { rotateX: 0, y: 0 }}
+                          transition={{ duration: 0.62, ease: [0.2, 0.75, 0.22, 1] }}
+                          style={{ transformPerspective: 1100 }}
                         >
-                          <div className="absolute inset-[8px] rounded-[6px] border border-[#d8c4a2]/80 pointer-events-none" />
-                          <div className="relative h-full px-5 py-5 overflow-y-auto pr-2">
-                            <AnimatePresence initial={false}>
-                              {letterState === 'opened' && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 12 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0 }}
-                                  className="space-y-3"
-                                >
-                                  {letterParagraphs.map((paragraph, i) => (
-                                    <p key={`p-${i}`} className="leading-7 text-[0.98rem]">{paragraph}</p>
-                                  ))}
-                                  {(scenes.closingMessage || (showSenderName && senderName)) && (
-                                    <div className="text-right pt-2">
-                                      {scenes.closingMessage ? <p className="font-dancing text-2xl text-[#a8485f]">{scenes.closingMessage}</p> : null}
-                                      {showSenderName && senderName ? <p className="font-dancing text-xl text-[#6d3a4a] mt-1">— {senderName}</p> : null}
-                                    </div>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
+                          <div className="w-full h-full bg-[#ffd9e5] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[16px]" />
                         </motion.div>
-
-                        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 w-[84%] max-w-[440px] h-[220px]">
-                          <div className="absolute inset-0 rounded-[16px] border border-[#ca8ca1] bg-gradient-to-b from-[#ffdce7] to-[#e8a6bb] shadow-[0_18px_34px_rgba(125,56,89,0.28)]" />
-                          <div className="absolute inset-y-0 left-0 w-1/2 bg-[#d58fa4] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
-                          <div className="absolute inset-y-0 right-0 w-1/2 bg-[#d58fa4] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
-                          <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#ebb0c3] [clip-path:polygon(0_100%,50%_30%,100%_100%)] rounded-b-[16px]" />
-                          <motion.div
-                            className="absolute left-0 right-0 top-0 h-[56%] origin-top"
-                            animate={letterState === 'opened' || letterState === 'opening' ? { rotateX: -176, y: -5 } : { rotateX: 0, y: 0 }}
-                            transition={{ duration: 0.62, ease: [0.2, 0.75, 0.22, 1] }}
-                            style={{ transformPerspective: 1100 }}
-                          >
-                            <div className="w-full h-full bg-[#ffd9e5] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[16px]" />
-                          </motion.div>
-                          <motion.div
-                            className="absolute left-1/2 top-[50%] -translate-x-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gradient-to-br from-[#d62464] to-[#a90f4a] text-white flex items-center justify-center text-sm font-black border border-white/80"
-                            animate={letterState === 'closed' ? { scale: [1, 1.08, 1], opacity: 1 } : { scale: 0.35, opacity: 0, y: -4 }}
-                            transition={letterState === 'closed'
-                              ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
-                              : { duration: 0.2, ease: 'easeOut' }}
-                          >
-                            ♥
-                          </motion.div>
-                        </div>
+                        <motion.div
+                          className="absolute left-1/2 top-[50%] -translate-x-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gradient-to-br from-[#d62464] to-[#a90f4a] text-white flex items-center justify-center text-sm font-black border border-white/80"
+                          animate={letterState === 'closed' ? { scale: [1, 1.08, 1], opacity: 1 } : { scale: 0.35, opacity: 0, y: -4 }}
+                          transition={letterState === 'closed'
+                            ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                            : { duration: 0.2, ease: 'easeOut' }}
+                        >
+                          ♥
+                        </motion.div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[28px] border border-[#28445f] bg-[#0d1624]/94 p-6 flex flex-col">
-                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: fnt.heading }}>{scenes.sideCardTitle || 'Quick Memories'}</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {galleryItems.slice(0, 4).map((photo, i) => (
-                        <div key={`mini-${i}`} className="rounded-xl overflow-hidden border border-[#3a5169] bg-black/30">
-                          <img src={photo.src} alt={photo.caption} className="w-full h-24 object-cover" />
-                          <p className="text-[11px] px-2 py-1.5 text-white/75 line-clamp-1">{photo.caption}</p>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>

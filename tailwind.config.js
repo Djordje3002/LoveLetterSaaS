@@ -18,7 +18,7 @@ export default {
       fontFamily: {
         playfair: ['"Playfair Display"', 'serif'],
         inter: ['Inter', 'sans-serif'],
-        dancing: ['"Dancing Script"', 'cursive'],
+        dancing: ['Inter', 'sans-serif'],
       },
       backgroundImage: {
         'pink-gradient': 'linear-gradient(135deg, #F43F73, #FF8FA3)',

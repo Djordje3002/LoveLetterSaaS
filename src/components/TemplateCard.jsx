@@ -43,7 +43,7 @@ const TemplateCard = ({ template, index }) => {
       className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
     >
       <Link to={`/templates/${template.id}`} onClick={() => trackEvent('template_clicked', { templateId: template.id })}>
-        <div className="aspect-[3/2] overflow-hidden">
+        <div className="aspect-[3/2] overflow-hidden pt-3">
           <TemplateMiniDemo templateId={template.id} />
         </div>
         <div className="p-5 bg-white border-t border-card">

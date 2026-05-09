@@ -1,27 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import TemplateCard from '../components/TemplateCard';
 import { AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
+import { getTemplateCards, TEMPLATE_GALLERY_FILTERS } from '../templates/registry';
 
 const TemplateGallery = () => {
   const [activeFilter, setActiveFilter] = useState('All');
 
-  const filters = ['All', 'Love', 'Chat', 'Reasons', 'Gallery', 'Story', 'Elegant', 'Date', 'Birthday'];
-
-  const templates = [
-    { id: 'kawaii-letter', name: 'Kawaii Letter', tags: ['Most Popular', 'Love'] },
-    { id: 'iva-birthday', name: 'Full House of Love', tags: ['Full Experience', 'Love'] },
-    { id: 'chat-reveal', name: 'Chat Reveal', tags: ['Love', 'Chat'] },
-    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
-    { id: 'sky-love', name: 'Sky Love', tags: ['Night', 'Love'] },
-    { id: '100-reasons', name: '100 Reasons', tags: ['Reasons', 'Love'] },
-    { id: 'our-gallery', name: 'Our Gallery', tags: ['Gallery', 'Memories'] },
-    { id: 'dark-romance', name: 'Dark Romance', tags: ['Elegant', 'Letter'] },
-    { id: 'our-story', name: 'Our Story', tags: ['Story', 'Timeline'] },
-    { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
-    { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
-    { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
-  ];
+  const filters = TEMPLATE_GALLERY_FILTERS;
+  const templates = getTemplateCards();
 
   return (
     <Layout>

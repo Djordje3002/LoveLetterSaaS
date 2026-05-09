@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,21 +8,10 @@ import { templateFields } from '../templates/fields';
 import AuthModal from '../components/AuthModal';
 import TemplateMiniDemo from '../components/TemplateMiniDemo';
 import { useAuth } from '../context/AuthContext';
-import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
+import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, buildCreativeDirectionScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import KawaiiLetter from '../templates/KawaiiLetter';
-import ReasonsILoveYou from '../templates/ReasonsILoveYou';
-import OurGallery from '../templates/OurGallery';
-import DarkRomance from '../templates/DarkRomance';
-import OurStory from '../templates/OurStory';
-import MidnightLove from '../templates/MidnightLove';
-import RoseWhisper from '../templates/RoseWhisper';
-import GoldenPromise from '../templates/GoldenPromise';
-import DateInviteLetter from '../templates/DateInviteLetter';
-import IvaBirthday from '../templates/IvaBirthday';
-import SkyLove from '../templates/SkyLove';
-import ChatReveal from '../templates/ChatReveal';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_COMPONENTS, getTemplateConfig } from '../templates/registry';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -36,29 +25,33 @@ const QUICK_TONES = [
   { id: 'playful', label: 'Playful', note: 'Cute and smiley' },
 ];
 
-const TEMPLATES_WITH_IMAGES = new Set(['our-gallery', 'our-story', 'date-invite', 'iva-birthday']);
-const TEMPLATES_WITHOUT_RECIPIENT_SETTING = new Set(['kawaii-letter', 'rose-whisper', 'golden-promise']);
-const TEMPLATES_WITHOUT_PALETTE_SETTING = new Set(['kawaii-letter', 'rose-whisper', 'golden-promise', 'chat-reveal']);
-const DEFAULT_TEMPLATE_ID = 'kawaii-letter';
+const CREATIVE_DIRECTIONS = [
+  { id: 'cinematic', label: 'Cinematic', note: 'Big visual moments and dramatic lines' },
+  { id: 'cozy', label: 'Cozy', note: 'Warm, intimate, everyday-love energy' },
+  { id: 'poetic', label: 'Poetic', note: 'Dreamy language and lyrical rhythm' },
+  { id: 'playful', label: 'Playful', note: 'Flirty, fun, and smile-first vibes' },
+];
+
 const resolveTemplateId = (id) => (TEMPLATE_STYLE_DEFAULTS[id] ? id : DEFAULT_TEMPLATE_ID);
-const LIVE_PREVIEW_TEMPLATES = {
-  'kawaii-letter': KawaiiLetter,
-  '100-reasons': ReasonsILoveYou,
-  'our-gallery': OurGallery,
-  'dark-romance': DarkRomance,
-  'our-story': OurStory,
-  'midnight-love': MidnightLove,
-  'rose-whisper': RoseWhisper,
-  'golden-promise': GoldenPromise,
-  'date-invite': DateInviteLetter,
-  'iva-birthday': IvaBirthday,
-  'sky-love': SkyLove,
-  'chat-reveal': ChatReveal,
+
+const getFieldSectionLabel = (templateId, key) => {
+  if (/^age|^headline|^subheadline|^wishLine/i.test(key)) return 'Birthday Setup';
+  if (/^chat/i.test(key)) return 'Chat Setup';
+  if (/^access/i.test(key) || /^welcome/i.test(key)) return 'Private Gate';
+  if (/^question|^yesLabel|^noLabel|^noTaunt|^celebration/i.test(key)) return 'Question Flow';
+  if (/^confession|^introLine|^continueLabel|^questionCta/i.test(key)) return 'Confession Flow';
+  if (/^story|^chapter|^startDate/i.test(key)) return 'Story Timeline';
+  if (/^gallery|^polaroidCaption|^memories/i.test(key)) return 'Memories';
+  if (/reason/i.test(key)) return 'Reasons';
+  if (/letter|closing|scene2Header|scene3Header|hint|finalLetter|letterTitle/i.test(key)) return 'Letter';
+  if (templateId === 'our-gallery') return 'Gallery';
+  return 'Content';
 };
 
 const Builder = () => {
   const { templateId } = useParams();
   const activeTemplateId = resolveTemplateId(templateId);
+  const templateConfig = getTemplateConfig(activeTemplateId);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const draftId = searchParams.get('draft');
@@ -84,19 +77,32 @@ const Builder = () => {
   const [quickRecipient, setQuickRecipient] = useState('');
   const [quickTone, setQuickTone] = useState('sweet');
   const [mobileWorkspaceView, setMobileWorkspaceView] = useState('editor');
+  const startExpiryTimer = useCallback((expiresAtDate) => {
+    if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
+    const tick = () => {
+      const diff = expiresAtDate - Date.now();
+      if (diff <= 0) { setExpiryLabel('Expired'); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setExpiryLabel(`${h}h ${m}m`);
+    };
+    tick();
+    expiryIntervalRef.current = setInterval(tick, 60000);
+  }, []);
+
   // Load draft from Firestore
   useEffect(() => {
-    setLoading(true);
-    if (!draftId) {
-      setFormData(getInitialDraftFormData(activeTemplateId));
-      setTemplateName(formatTemplateName(activeTemplateId));
-      setExpiryLabel('');
-      setSaveStatus('idle');
-      setShowQuickStart(true);
-      setLoading(false);
-      return;
-    }
     const load = async () => {
+      setLoading(true);
+      if (!draftId) {
+        setFormData(getInitialDraftFormData(activeTemplateId));
+        setTemplateName(templateConfig.title);
+        setExpiryLabel('');
+        setSaveStatus('idle');
+        setShowQuickStart(true);
+        setLoading(false);
+        return;
+      }
       try {
         const snap = await getDoc(doc(db, 'pages', draftId));
         if (!snap.exists() || snap.data().status !== 'pending') {
@@ -125,7 +131,7 @@ const Builder = () => {
           musicUrl: data.musicUrl || '',
           volume: 60,
         });
-        setTemplateName(formatTemplateName(data.templateId));
+        setTemplateName(getTemplateConfig(data.templateId || activeTemplateId).title);
         setShowQuickStart(false);
         // Expiry countdown
         if (data.expiresAt) startExpiryTimer(data.expiresAt.toDate());
@@ -137,47 +143,15 @@ const Builder = () => {
       }
     };
     load();
-  }, [activeTemplateId, draftId, navigate]);
+  }, [activeTemplateId, draftId, navigate, startExpiryTimer, templateConfig.title]);
 
   useEffect(() => {
     trackEvent('builder_opened', { templateId: activeTemplateId, hasDraft: Boolean(draftId) });
   }, [activeTemplateId, draftId]);
 
-  // Expiry countdown
-  function startExpiryTimer(expiresAtDate) {
-    if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
-    const tick = () => {
-      const diff = expiresAtDate - Date.now();
-      if (diff <= 0) { setExpiryLabel('Expired'); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      setExpiryLabel(`${h}h ${m}m`);
-    };
-    tick();
-    expiryIntervalRef.current = setInterval(tick, 60000);
-  }
-
   useEffect(() => () => {
     if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
   }, []);
-
-  function formatTemplateName(id) {
-    const names = {
-      'kawaii-letter': 'Kawaii Digital Letter',
-      '100-reasons': '100 Reasons',
-      'our-gallery': 'Our Gallery',
-      'dark-romance': 'Dark Romance',
-      'our-story': 'Our Story',
-      'midnight-love': 'Midnight Love',
-      'rose-whisper': 'Rose Whisper',
-      'golden-promise': 'Golden Promise',
-      'date-invite': 'Will You Be My Valentine?',
-      'iva-birthday': 'Full House of Love',
-      'sky-love': 'Sky Love',
-      'chat-reveal': 'Chat Reveal',
-    };
-    return names[id] || id;
-  }
 
   // Save to Firestore
   const saveToFirestore = useCallback(async (data, targetDraftId = draftId) => {
@@ -278,6 +252,24 @@ const Builder = () => {
     } finally {
       setGeneratingByField(prev => ({ ...prev, [field.key]: false }));
     }
+  };
+
+  const applyCreativeDirection = (directionId) => {
+    const generatedScenes = buildCreativeDirectionScenes(activeTemplateId, {
+      recipientName: formData.recipientName,
+      direction: directionId,
+    });
+
+    setFormData((prev) => {
+      const mergedScenes = { ...prev.scenes };
+      Object.entries(generatedScenes).forEach(([key, value]) => {
+        if (!String(mergedScenes[key] || '').trim()) {
+          mergedScenes[key] = value;
+        }
+      });
+      return { ...prev, scenes: mergedScenes };
+    });
+    trackEvent('creative_direction_applied', { templateId: activeTemplateId, direction: directionId });
   };
 
   const ensureRemoteDraft = useCallback(async ({ syncRoute = true } = {}) => {
@@ -425,26 +417,30 @@ const Builder = () => {
 
   const tabs = [
     { id: 'Text', icon: <Type size={18} /> },
-    ...(TEMPLATES_WITH_IMAGES.has(activeTemplateId) ? [{ id: 'Images', icon: <ImageIcon size={18} /> }] : []),
+    ...(templateConfig.supportsImages ? [{ id: 'Images', icon: <ImageIcon size={18} /> }] : []),
     { id: 'Music', icon: <Music size={18} /> },
     { id: 'Settings', icon: <Settings size={18} /> },
   ];
-  const showRecipientSetting = !TEMPLATES_WITHOUT_RECIPIENT_SETTING.has(activeTemplateId);
-  const showPaletteSetting = !TEMPLATES_WITHOUT_PALETTE_SETTING.has(activeTemplateId);
+  const showRecipientSetting = !templateConfig.hideRecipientSetting;
+  const showPaletteSetting = !templateConfig.hidePaletteSetting;
   const senderPlaceholder = user?.displayName
     || user?.email?.split('@')[0]
     || 'From your heart';
   const recipientPlaceholder = 'Who is this for?';
 
-  useEffect(() => {
-    if (activeTab === 'Images' && !TEMPLATES_WITH_IMAGES.has(activeTemplateId)) {
-      setActiveTab('Text');
-    }
-  }, [activeTab, activeTemplateId]);
+  const currentTab = activeTab === 'Images' && !templateConfig.supportsImages ? 'Text' : activeTab;
 
   const fields = templateFields[activeTemplateId] || [];
+  const groupedFields = fields.reduce((sections, field) => {
+    const section = getFieldSectionLabel(activeTemplateId, field.key);
+    if (!sections[section]) sections[section] = [];
+    sections[section].push(field);
+    return sections;
+  }, {});
+  const sectionOrder = ['Birthday Setup', 'Private Gate', 'Chat Setup', 'Confession Flow', 'Question Flow', 'Story Timeline', 'Gallery', 'Memories', 'Reasons', 'Letter', 'Content'];
+  const orderedSections = sectionOrder.filter((name) => groupedFields[name]?.length > 0);
   const isReasons = activeTemplateId === '100-reasons';
-  const LivePreviewTemplate = LIVE_PREVIEW_TEMPLATES[activeTemplateId] || KawaiiLetter;
+  const LivePreviewTemplate = TEMPLATE_COMPONENTS[activeTemplateId] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE_ID];
 
   const useProfileForSender = () => {
     const profileName = (user?.displayName || user?.email?.split('@')[0] || '').trim();
@@ -470,7 +466,7 @@ const Builder = () => {
   };
 
   const resetStyleToTemplateDefault = () => {
-    const defaults = TEMPLATE_STYLE_DEFAULTS[activeTemplateId] || TEMPLATE_STYLE_DEFAULTS.kawaii-letter;
+    const defaults = TEMPLATE_STYLE_DEFAULTS[activeTemplateId] || TEMPLATE_STYLE_DEFAULTS['kawaii-letter'];
     setFormData((prev) => ({
       ...prev,
       palette: defaults.palette,
@@ -582,7 +578,7 @@ const Builder = () => {
               </div>
               <div className="h-[42%] bg-white p-4">
                 <div className="rounded-xl border border-card bg-slate-50 p-4 h-full">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{formatTemplateName(activeTemplateId)}</p>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{templateConfig.title}</p>
                   <h3 className="font-playfair text-base text-dark mb-2 line-clamp-2">
                     {previewScenes.scene2Header || previewScenes.questionTitle || previewScenes.introLine || `A letter for ${quickRecipient || 'you'}`}
                   </h3>
@@ -678,11 +674,11 @@ const Builder = () => {
             {tabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex flex-col items-center py-3 gap-1 transition-all relative ${
-                  activeTab === tab.id ? 'text-primary-pink font-bold' : 'text-secondary hover:text-dark'
+                  currentTab === tab.id ? 'text-primary-pink font-bold' : 'text-secondary hover:text-dark'
                 }`}>
                 {tab.icon}
                 <span className="text-[10px] uppercase tracking-wider">{tab.id}</span>
-                {activeTab === tab.id && (
+                {currentTab === tab.id && (
                   <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-pink" />
                 )}
               </button>
@@ -693,47 +689,75 @@ const Builder = () => {
             <AnimatePresence mode="wait">
 
               {/* TEXT TAB */}
-              {activeTab === 'Text' && (
+              {currentTab === 'Text' && (
                 <motion.div key="text" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-4">
 
-                  {fields.map((field) => (
-                    <div key={field.key} className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <label className="text-xs font-bold text-secondary uppercase tracking-wider">{field.label}</label>
+                  <div className="rounded-2xl border border-card bg-slate-50/80 p-4 space-y-3">
+                    <div>
+                      <p className="text-xs font-black text-dark uppercase tracking-wider">Creative Direction</p>
+                      <p className="text-[11px] text-secondary">Auto-fill empty fields with a stronger creative voice.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CREATIVE_DIRECTIONS.map((direction) => (
                         <button
+                          key={direction.id}
                           type="button"
-                          onClick={() => handleGenerateSuggestion(field)}
-                          disabled={Boolean(generatingByField[field.key])}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-primary-pink/35 bg-primary-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-pink hover:bg-primary-pink/15 disabled:opacity-60"
+                          onClick={() => applyCreativeDirection(direction.id)}
+                          className="rounded-xl border border-card bg-white px-3 py-2 text-left hover:border-primary-pink/60 hover:bg-primary-light/35 transition-all"
                         >
-                          {generatingByField[field.key] ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <Sparkles size={12} />
-                          )}
-                          AI Suggest
+                          <span className="block text-xs font-bold text-dark">{direction.label}</span>
+                          <span className="block text-[10px] text-secondary mt-0.5">{direction.note}</span>
                         </button>
-                      </div>
-                      {field.type === 'textarea' ? (
-                        <textarea
-                          value={formData.scenes[field.key] || ''}
-                          onChange={e => handleSceneInput(field.key, e.target.value)}
-                          placeholder={field.placeholder}
-                          rows={/letter|final|script/i.test(field.key) ? 10 : 6}
-                          className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all resize-y overflow-y-auto text-sm min-h-[120px] max-h-[420px]"
-                        />
-                      ) : (
-                        <input
-                          value={formData.scenes[field.key] || ''}
-                          onChange={e => handleSceneInput(field.key, e.target.value)}
-                          placeholder={field.placeholder}
-                          className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all text-sm"
-                        />
-                      )}
-                      {aiErrorByField[field.key] && (
-                        <p className="text-[11px] text-red-500 font-medium">{aiErrorByField[field.key]}</p>
-                      )}
+                      ))}
+                    </div>
+                  </div>
+
+                  {orderedSections.map((sectionName) => (
+                    <div key={sectionName} className="space-y-3 rounded-2xl border border-card bg-white p-4">
+                      <p className="text-[10px] font-black text-secondary uppercase tracking-[0.18em]">{sectionName}</p>
+                      {groupedFields[sectionName].map((field) => (
+                        <div key={field.key} className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="text-xs font-bold text-secondary uppercase tracking-wider">{field.label}</label>
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateSuggestion(field)}
+                              disabled={Boolean(generatingByField[field.key])}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-primary-pink/35 bg-primary-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-pink hover:bg-primary-pink/15 disabled:opacity-60"
+                            >
+                              {generatingByField[field.key] ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              AI Suggest
+                            </button>
+                          </div>
+                          {field.type === 'textarea' ? (
+                            <textarea
+                              value={formData.scenes[field.key] || ''}
+                              onChange={(e) => handleSceneInput(field.key, e.target.value)}
+                              placeholder={field.placeholder}
+                              rows={/letter|final|script/i.test(field.key) ? 10 : 6}
+                              className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all resize-y overflow-y-auto text-sm min-h-[120px] max-h-[420px]"
+                            />
+                          ) : (
+                            <input
+                              value={formData.scenes[field.key] || ''}
+                              onChange={(e) => handleSceneInput(field.key, e.target.value)}
+                              placeholder={field.placeholder}
+                              className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all text-sm"
+                            />
+                          )}
+                          <div className="flex items-center justify-between">
+                            {aiErrorByField[field.key] ? (
+                              <p className="text-[11px] text-red-500 font-medium">{aiErrorByField[field.key]}</p>
+                            ) : <span />}
+                            <span className="text-[10px] text-secondary">{String(formData.scenes[field.key] || '').length} chars</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
 
@@ -776,7 +800,7 @@ const Builder = () => {
               )}
 
               {/* IMAGES TAB */}
-              {activeTab === 'Images' && (
+              {currentTab === 'Images' && (
                 <motion.div key="images" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
                   {[1, 2, 3, 4, 5].map(i => (
@@ -844,7 +868,7 @@ const Builder = () => {
               )}
 
               {/* MUSIC TAB */}
-              {activeTab === 'Music' && (
+              {currentTab === 'Music' && (
                 <motion.div key="music" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
                   <div className="flex items-center justify-between p-4 bg-primary-light/30 rounded-xl border border-primary-light">
@@ -878,7 +902,7 @@ const Builder = () => {
               )}
 
               {/* SETTINGS TAB */}
-              {activeTab === 'Settings' && (
+              {currentTab === 'Settings' && (
                 <motion.div key="settings" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
                   <div className="space-y-4 rounded-2xl border border-card p-4 bg-white">

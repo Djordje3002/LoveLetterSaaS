@@ -1,59 +1,17 @@
-import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import KawaiiLetter from '../templates/KawaiiLetter';
-import ReasonsILoveYou from '../templates/ReasonsILoveYou';
-import OurGallery from '../templates/OurGallery';
-import DarkRomance from '../templates/DarkRomance';
-import OurStory from '../templates/OurStory';
-import MidnightLove from '../templates/MidnightLove';
-import RoseWhisper from '../templates/RoseWhisper';
-import GoldenPromise from '../templates/GoldenPromise';
-import DateInviteLetter from '../templates/DateInviteLetter';
-import IvaBirthday from '../templates/IvaBirthday';
-import SkyLove from '../templates/SkyLove';
-import ChatReveal from '../templates/ChatReveal';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import { TEMPLATE_SCENE_DEFAULTS } from '../utils/createDraft';
-
-const TEMPLATES = {
-  'kawaii-letter': KawaiiLetter,
-  '100-reasons': ReasonsILoveYou,
-  'our-gallery': OurGallery,
-  'dark-romance': DarkRomance,
-  'our-story': OurStory,
-  'midnight-love': MidnightLove,
-  'rose-whisper': RoseWhisper,
-  'golden-promise': GoldenPromise,
-  'date-invite': DateInviteLetter,
-  'iva-birthday': IvaBirthday,
-  'sky-love': SkyLove,
-  'chat-reveal': ChatReveal,
-};
-
-const TEMPLATE_PRESENTATION = {
-  'kawaii-letter': { palette: 'pink', font: 'playful' },
-  '100-reasons': { palette: 'pink', font: 'playful' },
-  'our-gallery': { palette: 'pink', font: 'playful' },
-  'dark-romance': { palette: 'pink', font: 'elegant' },
-  'our-story': { palette: 'pink', font: 'classic' },
-  'midnight-love': { palette: 'navy', font: 'elegant' },
-  'rose-whisper': { palette: 'lavender', font: 'elegant' },
-  'golden-promise': { palette: 'gold', font: 'classic' },
-  'date-invite': { palette: 'pink', font: 'playful' },
-  'iva-birthday': { palette: 'navy', font: 'playful' },
-  'sky-love': { palette: 'navy', font: 'elegant' },
-  'chat-reveal': { palette: 'pink', font: 'playful' },
-};
+import { TEMPLATE_SCENE_DEFAULTS, TEMPLATE_STYLE_DEFAULTS } from '../utils/createDraft';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, TEMPLATE_COMPONENTS } from '../templates/registry';
 
 const DEMO_REASONS = Array.from({ length: 100 }, (_, i) => `Reason ${i + 1}: You make life brighter.`);
 
 const DemoPreviewPage = () => {
   const { templateId } = useParams();
-  const TemplateComponent = TEMPLATES[templateId] || TEMPLATES['kawaii-letter'];
-  const safeTemplateId = templateId && TEMPLATES[templateId] ? templateId : 'kawaii-letter';
+  const safeTemplateId = templateId && TEMPLATE_BY_ID[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
+  const TemplateComponent = TEMPLATE_COMPONENTS[safeTemplateId] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE_ID];
   const defaultScenes = TEMPLATE_SCENE_DEFAULTS[safeTemplateId] ? { ...TEMPLATE_SCENE_DEFAULTS[safeTemplateId] } : {};
-  const presentation = TEMPLATE_PRESENTATION[safeTemplateId] || TEMPLATE_PRESENTATION['kawaii-letter'];
+  const presentation = TEMPLATE_STYLE_DEFAULTS[safeTemplateId] || TEMPLATE_STYLE_DEFAULTS[DEFAULT_TEMPLATE_ID];
   const demoRecipientName = 'Your Love';
 
   return (

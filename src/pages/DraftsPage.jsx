@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3, Edit3, Eye, ExternalLink, Loader2, ShieldAlert, Sparkles } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -7,7 +7,9 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 const TEMPLATE_NAMES = {
-  'kawaii-letter': 'Kawaii Digital Letter',
+  'kawaii-letter': 'Love Letter',
+  'iva-birthday': 'Full House of Love',
+  'birthday-candles': 'Birthday Candles',
   '100-reasons': '100 Reasons',
   'our-gallery': 'Our Gallery',
   'dark-romance': 'Dark Romance',
@@ -16,7 +18,6 @@ const TEMPLATE_NAMES = {
   'rose-whisper': 'Rose Whisper',
   'golden-promise': 'Golden Promise',
   'date-invite': 'Will You Be My Valentine?',
-  'iva-birthday': 'Full House of Love',
   'chat-reveal': 'Chat Reveal',
 };
 

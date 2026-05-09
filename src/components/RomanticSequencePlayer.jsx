@@ -80,7 +80,7 @@ const RomanticSequencePlayer = () => {
         .romantic-frame { width: 390px; height: 844px; border-radius: 26px; overflow: hidden; position: relative; background: #fff; font-family: Inter, sans-serif; box-shadow: 0 20px 50px rgba(0,0,0,0.16); }
         .scene { position: absolute; inset: 0; opacity: 0; transition: opacity 420ms ease; }
         .scene.active { opacity: 1; }
-        .subtitle { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); font-family: 'Dancing Script', cursive; font-size: 28px; color: #111; -webkit-text-stroke: 3px #fff; font-weight: 700; line-height: 1; z-index: 40; }
+        .subtitle { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); font-family: 'Inter', sans-serif; font-size: 28px; color: #111; -webkit-text-stroke: 3px #fff; font-weight: 700; line-height: 1; z-index: 40; }
         .pulse-heart { animation: pulseHeart 1.4s ease-in-out infinite; }
         .intro-heart { animation: introPulse 4s ease-in-out infinite; }
         .envelope-drop { animation: envelopeDrop 780ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
@@ -183,7 +183,7 @@ const RomanticSequencePlayer = () => {
             )}
           </div>
 
-          <div style={{ position: 'absolute', top: 470, width: '100%', textAlign: 'center', fontFamily: 'Dancing Script, cursive', fontSize: 28, color: '#9f355f', fontWeight: 700 }}>
+          <div style={{ position: 'absolute', top: 470, width: '100%', textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 28, color: '#9f355f', fontWeight: 700 }}>
             Tap seal to open ♥
           </div>
 
@@ -221,7 +221,7 @@ const RomanticSequencePlayer = () => {
         </div>
 
         <div className={`scene ${scene === 5 ? 'active' : ''}`} style={{ background: '#FAF6F0' }}>
-          <div style={{ position: 'absolute', top: 34, width: '100%', textAlign: 'center', fontFamily: 'Dancing Script, cursive', fontWeight: 700, color: '#8B0000', fontSize: 28 }}>
+          <div style={{ position: 'absolute', top: 34, width: '100%', textAlign: 'center', fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#8B0000', fontSize: 28 }}>
             A letter for you...
           </div>
 
@@ -256,7 +256,7 @@ const RomanticSequencePlayer = () => {
                 position: 'relative',
                 padding: '34px 24px 24px 48px',
                 color: '#222',
-                fontFamily: 'Dancing Script, cursive',
+                fontFamily: 'Inter, sans-serif',
                 fontStyle: 'italic',
                 fontSize: 20,
                 lineHeight: 1.28,
