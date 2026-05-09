@@ -15,7 +15,8 @@ const TEMPLATE_NAMES = {
   'midnight-love': 'Midnight Love',
   'rose-whisper': 'Rose Whisper',
   'golden-promise': 'Golden Promise',
-  'date-invite': 'Date Invitation',
+  'date-invite': 'Will You Be My Valentine?',
+  'iva-birthday': 'IVA Birthday',
 };
 
 const formatDate = (timestamp) => {

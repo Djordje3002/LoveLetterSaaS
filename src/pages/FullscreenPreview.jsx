@@ -16,9 +16,14 @@ const pickLetterPreviewText = (draftData) => {
   const scenes = draftData?.scenes || {};
   const candidates = [
     scenes.scene2Header,
+    scenes.letterText,
+    scenes.homeTitle,
+    scenes.finalLetter,
     scenes.scene1Text,
     scenes.scene1Header,
     scenes.scene2Text,
+    scenes.confession1Text,
+    scenes.questionSubtitle,
     'My love, this little note is just the beginning of something beautiful...',
   ];
   return candidates.map(normalizeText).find(Boolean) || 'My love, this little note is just the beginning of something beautiful...';

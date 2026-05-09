@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smartphone, ShieldCheck, ThumbsUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smartphone, ThumbsUp, Loader2 } from 'lucide-react';
 import Layout from '../components/Layout';
 import { createDraft } from '../utils/createDraft';
 import { useAuth } from '../context/AuthContext';
@@ -65,7 +65,7 @@ const TemplateDetail = () => {
     },
     'our-story': {
       name: 'Our Story',
-      description: 'Tell your relationship story chapter by chapter, with date highlights and a narrative layout that feels like a keepsake.',
+      description: 'An interactive storybook with left/right page arrows, photo-gallery pages from your uploads, and a final heartfelt letter page.',
       emoji: '📖',
       color: 'bg-[#F5ECD7]',
     },
@@ -88,10 +88,16 @@ const TemplateDetail = () => {
       color: 'bg-gradient-to-br from-amber-200 to-yellow-100',
     },
     'date-invite': {
-      name: 'Date Invitation',
-      description: 'A dedicated date-invite letter template that helps you ask someone out with style, details, and interactive response buttons.',
-      emoji: '📅',
-      color: 'bg-gradient-to-br from-pink-200 to-violet-200',
+      name: 'Will You Be My Valentine?',
+      description: 'A playful confession journey with clickable reveals, draggable memories, a runaway "No" button, and confetti when they say yes. Every line and photo is customizable.',
+      emoji: '💘',
+      color: 'bg-gradient-to-br from-pink-200 via-rose-200 to-red-200',
+    },
+    'iva-birthday': {
+      name: 'IVA Birthday',
+      description: 'A private birthday-themed experience with a playful entry gate, love question, memory gallery, reasons grid, and mini diary.',
+      emoji: '🎂',
+      color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
     },
   };
 
@@ -184,15 +190,14 @@ const TemplateDetail = () => {
                 <p className="text-secondary text-sm mb-6">Customize first. Create an account only when you save or publish.</p>
                 <button onClick={() => createDraftAndNavigate('editor')} disabled={creatingEditor}
                   className="w-full btn-primary btn-shimmer py-5 text-xl flex items-center justify-center gap-2 mb-4 uppercase tracking-wide disabled:opacity-70">
-                  {creatingEditor ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE FOR FREE!'}
+                  {creatingEditor ? <><Loader2 size={20} className="animate-spin" /> Creating...</> : '▶ TRY & CUSTOMIZE!'}
                 </button>
                 {createError && (
                   <p className="text-sm text-red-500 font-medium mb-4">{createError}</p>
                 )}
                 
-                <div className="flex justify-between items-center px-2">
+                <div className="flex justify-start gap-10 items-center px-2">
                    {[
-                     { icon: <ShieldCheck size={16} />, label: 'Secure Payment' },
                      { icon: <Zap size={16} />, label: 'Instant Access' },
                      { icon: <ThumbsUp size={16} />, label: 'Satisfaction' }
                    ].map((item, i) => (
@@ -208,7 +213,7 @@ const TemplateDetail = () => {
                 <h4 className="font-bold text-dark mb-4">How to use this template</h4>
                 <div className="space-y-4">
                   {[
-                    'Open the editor and customize for free',
+                    'Open the editor and customize',
                     'Sign in only when you save your draft',
                     'Publish when ready and share your link'
                   ].map((step, i) => (

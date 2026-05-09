@@ -1,203 +1,244 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, ChevronRight } from 'lucide-react';
-import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
-const KAWAII_PAPER_STYLE = {
-  backgroundColor: '#fff6fb',
-  backgroundImage: 'radial-gradient(circle at 12% 14%, rgba(236,148,184,0.18), transparent 38%), radial-gradient(circle at 88% 82%, rgba(216,124,160,0.16), transparent 34%), repeating-linear-gradient(180deg, rgba(171,99,131,0.09), rgba(171,99,131,0.09) 1px, transparent 1px, transparent 30px), linear-gradient(120deg, rgba(255,255,255,0.75), transparent 42%)',
+const GINGHAM_STYLE = {
+  backgroundColor: '#fff6f6',
+  backgroundImage:
+    'repeating-linear-gradient(0deg, #f9dce3, #f9dce3 52px, #fff8ef 52px, #fff8ef 104px), repeating-linear-gradient(90deg, #f9dce3, #f9dce3 52px, #fff8ef 52px, #fff8ef 104px)',
+};
+
+const DOTTED_STYLE = {
+  backgroundColor: '#fff9ef',
+  backgroundImage:
+    'radial-gradient(circle at 12px 12px, rgba(245, 169, 192, 0.34) 3px, transparent 3px)',
+  backgroundSize: '42px 42px',
+};
+
+const linedPaperStyle = {
+  backgroundColor: '#fffdf9',
+  backgroundImage:
+    'linear-gradient(to bottom, transparent 0, transparent 58px, #d8d0c8 60px, transparent 62px)',
+  backgroundSize: '100% 62px',
+  boxShadow: '0 22px 46px rgba(112, 87, 59, 0.16)',
+};
+
+const buildTypedLetter = ({ scenes, senderName, showSenderName }) => {
+  const rawBody = String(scenes.letterText || '').trim();
+  const hasGreetingInBody = /^\s*my\s+dearest/i.test(rawBody);
+  const greeting = hasGreetingInBody ? '' : (scenes.letterGreeting || 'My\ndearest,');
+  const bridge = String(scenes.scene3Header || '').trim();
+  const closing = String(scenes.closingMessage || '').trim();
+  const signature = showSenderName && senderName ? `— ${senderName}` : '';
+
+  return [greeting, rawBody, bridge, closing, signature]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join('\n\n');
 };
 
 const KawaiiLetter = ({
-  recipientName, senderName, scenes = {}, palette = 'pink',
-  font = 'playful', showSenderName = true, showFooter = true,
-  musicEnabled = false, musicUrl = '',
+  senderName,
+  scenes = {},
+  palette = 'pink',
+  font = 'playful',
+  showSenderName = true,
+  showFooter = true,
+  musicEnabled = false,
+  musicUrl = '',
 }) => {
-  const [scene, setScene] = useState(2);
+  const [phase, setPhase] = useState('envelope'); // envelope | floral | letter
+  const [flapOpen, setFlapOpen] = useState(false);
+  const [typedText, setTypedText] = useState('');
+  const [sealVisible, setSealVisible] = useState(true);
+
   const pal = palettes[palette] || palettes.pink;
   const fnt = fonts[font] || fonts.playful;
   const videoId = extractYouTubeId(musicUrl);
-  const floatingEmojis = useMemo(() => ([
-    { id: 'a', icon: '🌸', style: { top: '10%', left: '7%' }, delay: 0 },
-    { id: 'b', icon: '🎀', style: { top: '14%', right: '8%' }, delay: 0.3 },
-    { id: 'c', icon: '✨', style: { top: '52%', right: '6%' }, delay: 0.6 },
-    { id: 'd', icon: '🎈', style: { bottom: '11%', left: '10%' }, delay: 0.9 },
-    { id: 'e', icon: '💌', style: { bottom: '18%', right: '16%' }, delay: 1.2 },
-  ]), []);
 
-  const letterParagraphs = (scenes.letterText || '').split('\n').filter(Boolean);
-  const polaroids = [1, 2, 3, 4, 5].map(i => ({
-    caption: scenes[`polaroidCaption${i}`] || `Memory ${i}`,
-    imageUrl: scenes[`photo${i}Url`] || '',
-    color: ['bg-rose-200', 'bg-sky-200', 'bg-amber-200', 'bg-emerald-200', 'bg-violet-200'][i - 1],
-  }));
+  const heading = scenes.scene2Header || 'A letter for you...';
+  const typedLetter = useMemo(
+    () => buildTypedLetter({ scenes, senderName, showSenderName }),
+    [scenes, senderName, showSenderName]
+  );
+
+  useEffect(() => {
+    if (phase !== 'floral') return undefined;
+    const timer = window.setTimeout(() => setPhase('letter'), 820);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'letter') return undefined;
+    setTypedText('');
+    let cursor = 0;
+    const interval = window.setInterval(() => {
+      cursor += 1;
+      setTypedText(typedLetter.slice(0, cursor));
+      if (cursor >= typedLetter.length) window.clearInterval(interval);
+    }, 22);
+    return () => window.clearInterval(interval);
+  }, [phase, typedLetter]);
+
+  const handleOpen = () => {
+    if (flapOpen) return;
+    setFlapOpen(true);
+    window.setTimeout(() => setSealVisible(false), 140);
+    window.setTimeout(() => setPhase('floral'), 620);
+  };
 
   return (
-    <EnvelopeRevealShell
-      hintText={scenes.hint || 'Tap to open ♥'}
-      openingHintText="Opening your letter..."
-      letterPreviewText={scenes.scene2Header || scenes.letterText || scenes.scene1Text || 'A little preview from your letter...'}
-      paperVariant="rose"
-      backgroundStyle={{ backgroundColor: pal.bg }}
-      floatingDecor={floatingEmojis}
-      envelopeTheme={{
-        body: 'linear-gradient(180deg, #ffeaf2 0%, #ffd6e4 52%, #f1a8bd 100%)',
-        flap: 'linear-gradient(180deg, #ffedf4 0%, #f7bfd1 100%)',
-        front: 'linear-gradient(90deg, #f8c8d7 0%, #fce0e8 50%, #f5bfd0 100%)',
-        border: '#e8adc1',
-        seal: 'linear-gradient(135deg, #f65287 0%, #d93467 100%)',
-        hint: pal.primary,
-      }}
-    >
-      <div className="min-h-screen relative overflow-x-hidden" style={{ fontFamily: fnt.body }}>
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-75"
-          animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-          transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
-          style={{
-            backgroundImage: `radial-gradient(circle at 20% 22%, ${pal.primary}22, transparent 38%), radial-gradient(circle at 76% 18%, ${pal.accent}20, transparent 40%), radial-gradient(circle at 50% 84%, ${pal.primary}1a, transparent 44%)`,
-            backgroundSize: '160% 160%',
-          }}
+    <div className="min-h-screen relative overflow-hidden" style={{ fontFamily: fnt.body }}>
+      {musicEnabled && videoId ? (
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
+          allow="autoplay"
+          className="w-0 h-0 absolute opacity-0 pointer-events-none"
+          title="kawaii-template-music"
         />
-        {musicEnabled && videoId && (
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
-            allow="autoplay"
-            className="w-0 h-0 absolute opacity-0"
-            title="background music"
-          />
+      ) : null}
+
+      <AnimatePresence mode="wait">
+        {phase === 'envelope' && (
+          <motion.section
+            key="envelope"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="min-h-screen relative flex items-center justify-center px-4"
+            style={GINGHAM_STYLE}
+          >
+            <span className="absolute top-[9%] left-[8%] text-5xl">🌼</span>
+            <span className="absolute top-[8%] right-[7%] text-4xl">⭐</span>
+            <span className="absolute bottom-[14%] left-[8%] text-5xl">🎈</span>
+            <span className="absolute bottom-[12%] right-[8%] text-5xl">🐱</span>
+            <span className="absolute left-[5%] top-1/2 -translate-y-1/2 text-4xl text-[#b5547f]">〰️</span>
+
+            <div className="w-[min(82vw,540px)] relative">
+              <motion.div
+                initial={{ y: -120, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.58, ease: [0.34, 1.56, 0.64, 1] }}
+                className="relative h-[290px]"
+              >
+                <div className="absolute inset-0 bg-[#f2a8bc] border border-[#ee9eb4] rounded-[3px] shadow-[0_14px_28px_rgba(195,111,138,0.35)]" />
+                <motion.div
+                  animate={flapOpen ? { rotateX: -178 } : { rotateX: 0 }}
+                  transition={{ duration: 0.58, ease: [0.22, 0.88, 0.28, 1] }}
+                  className="absolute left-0 right-0 top-0 h-[58%] origin-top [transform-style:preserve-3d]"
+                >
+                  <div className="w-full h-full bg-[#f6c8d8] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+                </motion.div>
+                <div className="absolute inset-y-0 left-0 w-1/2 bg-[#dc8faa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-[#dc8faa] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+                <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#e9a4bb] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
+
+                {sealVisible ? (
+                  <motion.button
+                    type="button"
+                    onClick={handleOpen}
+                    whileTap={{ scale: 0.95 }}
+                    animate={{ scale: [1, 1.06, 1] }}
+                    transition={{ duration: 1.4, repeat: Infinity }}
+                    className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#c11163] to-[#9e104d] text-[#ffd6e5] text-3xl shadow-[0_10px_20px_rgba(97,18,52,0.45)]"
+                  >
+                    ♥
+                  </motion.button>
+                ) : null}
+              </motion.div>
+              <p className="text-center mt-3 text-[2rem] text-[#b00d5f] font-semibold font-dancing">
+                {scenes.hint || 'Tap seal to open ♥'}
+              </p>
+            </div>
+          </motion.section>
         )}
 
-        <AnimatePresence mode="wait">
-          {scene === 2 && (
+        {phase === 'floral' && (
+          <motion.section
+            key="floral"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="min-h-screen relative overflow-hidden"
+            style={GINGHAM_STYLE}
+          >
             <motion.div
-              key="s2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="min-h-screen flex flex-col items-center py-20 px-6 relative overflow-hidden"
+              className="absolute inset-0"
+              initial={{ opacity: 0, scale: 0.94, filter: 'blur(6px)' }}
+              animate={{ opacity: 0.95, scale: 1.07, filter: 'blur(0px)' }}
+              transition={{ duration: 0.78, ease: 'easeOut' }}
               style={{
-                backgroundColor: '#fff8fb',
-                backgroundImage: 'linear-gradient(90deg, rgba(248,200,212,0.36) 50%, transparent 50%), linear-gradient(rgba(248,200,212,0.36) 50%, transparent 50%)',
-                backgroundSize: '78px 78px',
+                background:
+                  'radial-gradient(circle at 50% 48%, rgba(255,248,226,0.92) 0%, rgba(249,223,231,0.75) 36%, rgba(242,190,211,0.68) 56%, rgba(255,236,243,0.58) 78%)',
               }}
+            />
+            <motion.div
+              className="absolute inset-0 opacity-85"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.85 }}
+              transition={{ duration: 0.4 }}
+              style={{
+                backgroundImage:
+                  'radial-gradient(closest-side at 20% 35%, rgba(255,230,236,0.9), transparent), radial-gradient(closest-side at 82% 28%, rgba(255,246,220,0.85), transparent), radial-gradient(closest-side at 52% 66%, rgba(255,212,230,0.88), transparent)',
+              }}
+            />
+          </motion.section>
+        )}
+
+        {phase === 'letter' && (
+          <motion.section
+            key="letter"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="min-h-screen relative overflow-hidden px-3 py-6 sm:py-10"
+            style={DOTTED_STYLE}
+          >
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center text-[3rem] md:text-[4.4rem] leading-none text-[#b30553] font-dancing font-bold relative z-10"
             >
-              <span className="absolute top-16 left-10 text-4xl">🌼</span>
-              <span className="absolute top-16 right-12 text-4xl">⭐</span>
-              <span className="absolute bottom-24 left-10 text-4xl">🎈</span>
-              <span className="absolute bottom-24 right-12 text-4xl">🐱</span>
-              <span className="absolute left-8 top-1/2 -translate-y-1/2 text-3xl text-[#c35a86]">〰️</span>
+              {heading}
+            </motion.h1>
 
-              <div className="max-w-2xl w-full text-center">
-                <h1 className="text-4xl md:text-5xl italic mb-8" style={{ fontFamily: fnt.heading, color: '#9c2f5e' }}>
-                  {scenes.scene2Header || 'A letter for you...'}
-                </h1>
-                <div className="relative rounded-[24px] border border-[#e7bed0] shadow-[0_24px_44px_rgba(173,74,116,0.22)] overflow-hidden max-w-xl mx-auto" style={KAWAII_PAPER_STYLE}>
-                  <div className="absolute top-0 left-7 w-16 h-6 bg-white/70 rotate-[-8deg] rounded-sm shadow-sm" />
-                  <div className="absolute top-0 right-8 w-16 h-6 bg-white/70 rotate-[7deg] rounded-sm shadow-sm" />
-                  <div className="px-8 py-12 text-left relative">
-                    <div className="space-y-6 text-[1.06rem] md:text-xl leading-[1.9] font-serif text-[#5d2943]">
-                      {letterParagraphs.length > 0 ? letterParagraphs.map((para, i) => (
-                        <motion.p key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 + i * 0.3 }}>
-                          {para}
-                        </motion.p>
-                      )) : (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }} className="text-[#99647c] italic text-center">
-                          Your letter text will appear here...
-                        </motion.p>
-                      )}
-                    </div>
+            <span className="absolute top-[13%] left-[17%] text-6xl text-[#dc8eb3] rotate-[-8deg]">♥</span>
+            <span className="absolute bottom-[11%] right-[20%] text-5xl text-[#dc8eb3] rotate-[10deg]">♥</span>
+            <span className="absolute bottom-[7%] right-[8%] text-5xl">🌼</span>
+            <span className="absolute bottom-[7%] left-[8%] text-5xl rotate-[10deg] opacity-80">🗒️</span>
 
-                    {showSenderName && senderName && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + letterParagraphs.length * 0.3 }} className="mt-14 flex flex-col items-end">
-                        <p className="font-dancing text-3xl" style={{ color: '#cb4f82' }}>— {senderName}</p>
-                      </motion.div>
-                    )}
+            <motion.div
+              initial={{ y: 220, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.54, ease: [0.21, 0.85, 0.24, 1] }}
+              className="mx-auto mt-6 sm:mt-8 w-[min(92vw,860px)] h-[min(64vh,620px)] rounded-[14px] border border-[#ddd3c7] overflow-hidden relative"
+              style={linedPaperStyle}
+            >
+              <div className="absolute -top-[8px] left-1/2 -translate-x-1/2 w-24 h-8 bg-white/90 rotate-[2deg] border border-[#e8e1d7] shadow-sm" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#fbf7ee]/75 pointer-events-none" />
+              <div className="absolute left-[28px] top-0 bottom-0 w-[2px] bg-[#e5bcc6]" />
 
-                    {scenes.closingMessage && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 + letterParagraphs.length * 0.3 }}
-                        className="font-dancing text-2xl mt-6 text-right"
-                        style={{ color: '#cb4f82' }}
-                      >
-                        {scenes.closingMessage}
-                      </motion.p>
-                    )}
-                  </div>
-                </div>
-
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 2 }}
-                  onClick={() => setScene(3)}
-                  className="mt-14 px-8 py-4 rounded-full font-bold flex items-center gap-2 mx-auto text-white transition-all hover:scale-105 active:scale-95 shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #f54f86, #df2f64)' }}
+              <div className="relative h-full px-9 sm:px-14 py-14 sm:py-16 overflow-hidden">
+                <p
+                  className="text-[#1a1a1a] text-[1.95rem] sm:text-[2.25rem] leading-[1.62] whitespace-pre-line text-center"
+                  style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}
                 >
-                  Continue <ChevronRight size={20} />
-                </motion.button>
+                  {typedText}
+                  <span className="inline-block ml-1 animate-pulse text-[#7b2a4f]">|</span>
+                </p>
               </div>
             </motion.div>
-          )}
 
-          {scene === 3 && (
-            <motion.div key="s3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-white py-24 px-6 overflow-x-hidden relative">
-              <motion.div
-                className="pointer-events-none absolute inset-0 opacity-70"
-                animate={{ backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'] }}
-                transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  backgroundImage: `radial-gradient(circle at 10% 18%, ${pal.primary}14, transparent 30%), radial-gradient(circle at 85% 75%, ${pal.accent}1c, transparent 32%)`,
-                  backgroundSize: '180% 180%',
-                }}
-              />
-              <div className="max-w-7xl mx-auto text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold mb-4 flex items-center justify-center gap-3" style={{ fontFamily: fnt.heading }}>
-                  {scenes.scene3Header || 'Our Memories'} <Camera style={{ color: pal.primary }} />
-                </h2>
-                <p className="text-secondary">Swipe to see our favorite moments</p>
+            {showFooter ? (
+              <div className="text-center mt-6">
+                <p className="text-xs uppercase tracking-widest font-black" style={{ color: `${pal.primary}B3` }}>
+                  made with LovePage ♥
+                </p>
               </div>
-
-              <div className="flex overflow-x-auto gap-8 px-4 pb-12 snap-x" style={{ scrollbarWidth: 'none' }}>
-                {polaroids.map((photo, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, rotate: i % 2 === 0 ? -5 : 5, x: 50, y: 12 }}
-                    animate={{ opacity: 1, x: 0, rotate: i % 2 === 0 ? -2 : 2 }}
-                    transition={{ delay: i * 0.15 }}
-                    whileHover={{ rotate: 0, scale: 1.03 }}
-                    className="flex-shrink-0 w-[300px] snap-center cursor-pointer"
-                  >
-                    <div className="bg-white p-4 shadow-xl rounded-sm border border-card">
-                      <div className={`aspect-square ${photo.color} rounded-sm relative overflow-hidden mb-6`}>
-                        {photo.imageUrl && (
-                          <img src={photo.imageUrl} alt={photo.caption} className="absolute inset-0 w-full h-full object-cover" />
-                        )}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-8 bg-white/40 backdrop-blur-sm -rotate-2" />
-                      </div>
-                      <p className="font-dancing text-2xl text-dark/70 text-center">{photo.caption}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {showFooter && (
-                <div className="mt-16 text-center">
-                  <p className="text-secondary text-sm mb-2">made with LovePage ♥</p>
-                  <a href="/" className="text-sm font-bold hover:underline" style={{ color: pal.primary }}>
-                    Create your own page
-                  </a>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </EnvelopeRevealShell>
+            ) : null}
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

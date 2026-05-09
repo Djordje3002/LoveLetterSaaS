@@ -53,7 +53,7 @@ const StatCounter = ({ value, label }) => {
 
 const LandingPage = () => {
   const stats = [
-    { value: '9+', label: 'Gift Templates' },
+    { value: '10+', label: 'Gift Templates' },
     { value: '100%', label: 'Customizable' },
     { value: '∞', label: 'Unlimited Sharing' },
     { value: '200', label: 'Happy Customers' },
@@ -89,7 +89,8 @@ const LandingPage = () => {
     { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
     { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
     { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
-    { id: 'date-invite', name: 'Date Invitation', tags: ['Date', 'Love'] },
+    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
+    { id: 'iva-birthday', name: 'IVA Birthday', tags: ['Birthday', 'Love'] },
   ];
 
   const testimonials = [
@@ -112,9 +113,9 @@ const LandingPage = () => {
       initials: "KW"
     },
     {
-      text: "I used the Date Invitation template and she said yes in five minutes. The reveal animation is genius.",
+      text: "I used the Valentine question template and she said yes in five minutes. The reveal animation is genius.",
       name: "Marko T.",
-      occasion: "First Date Invite",
+      occasion: "Valentine Confession",
       initials: "MT"
     },
     {

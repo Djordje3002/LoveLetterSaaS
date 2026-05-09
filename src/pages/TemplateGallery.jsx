@@ -6,7 +6,7 @@ import Layout from '../components/Layout';
 const TemplateGallery = () => {
   const [activeFilter, setActiveFilter] = useState('All');
 
-  const filters = ['All', 'Love', 'Reasons', 'Gallery', 'Story', 'Elegant', 'Date'];
+  const filters = ['All', 'Love', 'Reasons', 'Gallery', 'Story', 'Elegant', 'Date', 'Birthday'];
 
   const templates = [
     { id: 'kawaii-letter', name: 'Kawaii Letter', tags: ['Love', 'Letter'] },
@@ -17,7 +17,8 @@ const TemplateGallery = () => {
     { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
     { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
     { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
-    { id: 'date-invite', name: 'Date Invitation', tags: ['Date', 'Love'] },
+    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
+    { id: 'iva-birthday', name: 'IVA Birthday', tags: ['Birthday', 'Love'] },
   ];
 
   return (

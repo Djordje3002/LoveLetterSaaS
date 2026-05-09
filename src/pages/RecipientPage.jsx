@@ -12,6 +12,7 @@ import MidnightLove from '../templates/MidnightLove';
 import RoseWhisper from '../templates/RoseWhisper';
 import GoldenPromise from '../templates/GoldenPromise';
 import DateInviteLetter from '../templates/DateInviteLetter';
+import IvaBirthday from '../templates/IvaBirthday';
 
 const TEMPLATES = {
   'kawaii-letter': KawaiiLetter,
@@ -23,6 +24,7 @@ const TEMPLATES = {
   'rose-whisper': RoseWhisper,
   'golden-promise': GoldenPromise,
   'date-invite': DateInviteLetter,
+  'iva-birthday': IvaBirthday,
 };
 
 const RecipientPage = () => {

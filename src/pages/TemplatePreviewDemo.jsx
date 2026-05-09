@@ -10,6 +10,7 @@ import MidnightLove from '../templates/MidnightLove';
 import RoseWhisper from '../templates/RoseWhisper';
 import GoldenPromise from '../templates/GoldenPromise';
 import DateInviteLetter from '../templates/DateInviteLetter';
+import IvaBirthday from '../templates/IvaBirthday';
 import { TEMPLATE_SCENE_DEFAULTS } from '../utils/createDraft';
 
 const TEMPLATES = {
@@ -22,6 +23,7 @@ const TEMPLATES = {
   'rose-whisper': RoseWhisper,
   'golden-promise': GoldenPromise,
   'date-invite': DateInviteLetter,
+  'iva-birthday': IvaBirthday,
 };
 
 const TEMPLATE_PRESENTATION = {
@@ -33,7 +35,8 @@ const TEMPLATE_PRESENTATION = {
   'midnight-love': { palette: 'navy', font: 'elegant' },
   'rose-whisper': { palette: 'lavender', font: 'elegant' },
   'golden-promise': { palette: 'gold', font: 'classic' },
-  'date-invite': { palette: 'pink', font: 'elegant' },
+  'date-invite': { palette: 'pink', font: 'playful' },
+  'iva-birthday': { palette: 'navy', font: 'playful' },
 };
 
 const DemoPreviewPage = () => {

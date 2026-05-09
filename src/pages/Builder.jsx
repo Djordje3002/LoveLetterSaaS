@@ -23,6 +23,8 @@ const QUICK_TONES = [
   { id: 'playful', label: 'Playful', note: 'Cute and smiley' },
 ];
 
+const REVEAL_FIRST_TEMPLATES = new Set(['kawaii-letter', 'dark-romance', 'midnight-love', 'date-invite']);
+
 const Builder = () => {
   const { templateId } = useParams();
   const [searchParams] = useSearchParams();
@@ -49,6 +51,11 @@ const Builder = () => {
   const [showQuickStart, setShowQuickStart] = useState(!draftId);
   const [quickRecipient, setQuickRecipient] = useState('');
   const [quickTone, setQuickTone] = useState('sweet');
+  const [livePreviewRevealed, setLivePreviewRevealed] = useState(!REVEAL_FIRST_TEMPLATES.has(templateId));
+
+  useEffect(() => {
+    setLivePreviewRevealed(!REVEAL_FIRST_TEMPLATES.has(templateId));
+  }, [templateId, draftId]);
 
   // Load draft from Firestore
   useEffect(() => {
@@ -129,7 +136,8 @@ const Builder = () => {
       'midnight-love': 'Midnight Love',
       'rose-whisper': 'Rose Whisper',
       'golden-promise': 'Golden Promise',
-      'date-invite': 'Date Invitation',
+      'date-invite': 'Will You Be My Valentine?',
+      'iva-birthday': 'IVA Birthday',
     };
     return names[id] || id;
   }
@@ -375,13 +383,19 @@ const Builder = () => {
 
   const fields = templateFields[templateId] || [];
   const isReasons = templateId === '100-reasons';
+  const requiresRevealBeforeMessage = REVEAL_FIRST_TEMPLATES.has(templateId);
+  const showLivePreviewMessage = !requiresRevealBeforeMessage || livePreviewRevealed;
   const livePreviewTitle = formData.scenes.scene2Header
-    || formData.scenes.inviteHeadline
+    || formData.scenes.homeTitle
+    || formData.scenes.questionTitle
+    || formData.scenes.introLine
     || formData.scenes.galleryTitle
     || formData.scenes.chapter1Title
+    || formData.scenes.reasonsTitle
     || templateName;
   const livePreviewSnippet = formData.scenes.letterText
-    || formData.scenes.inviteMessage
+    || formData.scenes.confession1Text
+    || formData.scenes.questionSubtitle
     || formData.scenes.introText
     || formData.scenes.chapter1Text
     || 'Start typing on the left to shape your message.';
@@ -486,9 +500,11 @@ const Builder = () => {
               <div className="h-[42%] bg-white p-4">
                 <div className="rounded-xl border border-card bg-slate-50 p-4 h-full">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{formatTemplateName(templateId)}</p>
-                  <h3 className="font-playfair text-base text-dark mb-2 line-clamp-2">{previewScenes.scene2Header || previewScenes.inviteHeadline || `A letter for ${quickRecipient || 'you'}`}</h3>
+                  <h3 className="font-playfair text-base text-dark mb-2 line-clamp-2">
+                    {previewScenes.scene2Header || previewScenes.questionTitle || previewScenes.introLine || `A letter for ${quickRecipient || 'you'}`}
+                  </h3>
                   <p className="text-xs leading-5 text-secondary line-clamp-5 whitespace-pre-line">
-                    {previewScenes.letterText || previewScenes.inviteMessage || 'Your personalized message will appear here.'}
+                    {previewScenes.letterText || previewScenes.confession1Text || previewScenes.questionSubtitle || 'Your personalized message will appear here.'}
                   </p>
                 </div>
               </div>
@@ -832,18 +848,30 @@ const Builder = () => {
             <div className="w-full max-w-sm aspect-[9/19] bg-white rounded-[40px] border-[8px] border-dark shadow-2xl overflow-hidden relative">
               <div className="absolute inset-0 flex flex-col bg-white text-center overflow-hidden">
                 <div className="h-[54%]">
-                  <TemplateMiniDemo templateId={templateId} />
+                  <TemplateMiniDemo
+                    templateId={templateId}
+                    interactive
+                    onRevealChange={setLivePreviewRevealed}
+                  />
                 </div>
                 <div className="h-[46%] bg-white border-t border-card p-5 text-left overflow-hidden">
                   <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">
                     {formatTemplateName(templateId)}
                   </p>
-                  <h3 className="font-playfair text-[1.03rem] text-dark leading-tight line-clamp-2 mb-2">
-                    {livePreviewTitle}
-                  </h3>
-                  <p className="text-xs text-secondary leading-5 line-clamp-6 whitespace-pre-line">
-                    {livePreviewSnippet}
-                  </p>
+                  {showLivePreviewMessage ? (
+                    <>
+                      <h3 className="font-playfair text-[1.03rem] text-dark leading-tight line-clamp-2 mb-2">
+                        {livePreviewTitle}
+                      </h3>
+                      <p className="text-xs text-secondary leading-5 line-clamp-6 whitespace-pre-line">
+                        {livePreviewSnippet}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="h-[78%] rounded-2xl border border-dashed border-primary-pink/35 bg-primary-light/30 p-4 flex items-center justify-center text-center">
+                      <p className="text-sm font-bold text-primary-pink/85">Tap the envelope above to reveal your message.</p>
+                    </div>
+                  )}
                   {formData.recipientName && (
                     <p className="text-[11px] text-primary-pink/70 mt-3 font-bold">For {formData.recipientName}</p>
                   )}
