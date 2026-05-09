@@ -1,3 +1,5 @@
+import { DEFAULT_LOVE_MUSIC_ID } from '../config/music'
+
 export const palettes = {
   pink:     { primary: '#F43F73', bg: '#FFF0F3', accent: '#FF8FA3', text: '#1A1A2E' },
   lavender: { primary: '#9B7FE8', bg: '#F3F0FF', accent: '#C4B0F0', text: '#1A1A2E' },
@@ -13,7 +15,9 @@ export const fonts = {
 }
 
 export function extractYouTubeId(url) {
-  if (!url) return null
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  return match ? match[1] : null
+  const raw = String(url || '').trim()
+  if (!raw) return DEFAULT_LOVE_MUSIC_ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw
+  const match = raw.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  return match ? match[1] : DEFAULT_LOVE_MUSIC_ID
 }

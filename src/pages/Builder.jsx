@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -10,6 +10,19 @@ import TemplateMiniDemo from '../components/TemplateMiniDemo';
 import { useAuth } from '../context/AuthContext';
 import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
+import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
+import KawaiiLetter from '../templates/KawaiiLetter';
+import ReasonsILoveYou from '../templates/ReasonsILoveYou';
+import OurGallery from '../templates/OurGallery';
+import DarkRomance from '../templates/DarkRomance';
+import OurStory from '../templates/OurStory';
+import MidnightLove from '../templates/MidnightLove';
+import RoseWhisper from '../templates/RoseWhisper';
+import GoldenPromise from '../templates/GoldenPromise';
+import DateInviteLetter from '../templates/DateInviteLetter';
+import IvaBirthday from '../templates/IvaBirthday';
+import SkyLove from '../templates/SkyLove';
+import ChatReveal from '../templates/ChatReveal';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -23,9 +36,25 @@ const QUICK_TONES = [
   { id: 'playful', label: 'Playful', note: 'Cute and smiley' },
 ];
 
-const REVEAL_FIRST_TEMPLATES = new Set(['kawaii-letter', 'dark-romance', 'midnight-love', 'date-invite']);
+const TEMPLATES_WITH_IMAGES = new Set(['our-gallery', 'our-story', 'date-invite', 'iva-birthday']);
+const TEMPLATES_WITHOUT_RECIPIENT_SETTING = new Set(['kawaii-letter', 'rose-whisper', 'golden-promise']);
+const TEMPLATES_WITHOUT_PALETTE_SETTING = new Set(['kawaii-letter', 'rose-whisper', 'golden-promise', 'chat-reveal']);
 const DEFAULT_TEMPLATE_ID = 'kawaii-letter';
 const resolveTemplateId = (id) => (TEMPLATE_STYLE_DEFAULTS[id] ? id : DEFAULT_TEMPLATE_ID);
+const LIVE_PREVIEW_TEMPLATES = {
+  'kawaii-letter': KawaiiLetter,
+  '100-reasons': ReasonsILoveYou,
+  'our-gallery': OurGallery,
+  'dark-romance': DarkRomance,
+  'our-story': OurStory,
+  'midnight-love': MidnightLove,
+  'rose-whisper': RoseWhisper,
+  'golden-promise': GoldenPromise,
+  'date-invite': DateInviteLetter,
+  'iva-birthday': IvaBirthday,
+  'sky-love': SkyLove,
+  'chat-reveal': ChatReveal,
+};
 
 const Builder = () => {
   const { templateId } = useParams();
@@ -54,12 +83,7 @@ const Builder = () => {
   const [showQuickStart, setShowQuickStart] = useState(!draftId);
   const [quickRecipient, setQuickRecipient] = useState('');
   const [quickTone, setQuickTone] = useState('sweet');
-  const [livePreviewRevealed, setLivePreviewRevealed] = useState(!REVEAL_FIRST_TEMPLATES.has(activeTemplateId));
-
-  useEffect(() => {
-    setLivePreviewRevealed(!REVEAL_FIRST_TEMPLATES.has(activeTemplateId));
-  }, [activeTemplateId, draftId]);
-
+  const [mobileWorkspaceView, setMobileWorkspaceView] = useState('editor');
   // Load draft from Firestore
   useEffect(() => {
     setLoading(true);
@@ -80,8 +104,12 @@ const Builder = () => {
           return;
         }
         const data = snap.data();
+        if (data.templateId && !TEMPLATE_STYLE_DEFAULTS[data.templateId]) {
+          navigate('/templates', { replace: true });
+          return;
+        }
         if (data.templateId && data.templateId !== activeTemplateId) {
-          navigate(`/create/${activeTemplateId}`, { replace: true });
+          navigate(`/create/${data.templateId}?draft=${draftId}`, { replace: true });
           return;
         }
         setFormData({
@@ -144,7 +172,9 @@ const Builder = () => {
       'rose-whisper': 'Rose Whisper',
       'golden-promise': 'Golden Promise',
       'date-invite': 'Will You Be My Valentine?',
-      'iva-birthday': 'IVA Birthday',
+      'iva-birthday': 'Full House of Love',
+      'sky-love': 'Sky Love',
+      'chat-reveal': 'Chat Reveal',
     };
     return names[id] || id;
   }
@@ -395,29 +425,63 @@ const Builder = () => {
 
   const tabs = [
     { id: 'Text', icon: <Type size={18} /> },
-    { id: 'Images', icon: <ImageIcon size={18} /> },
+    ...(TEMPLATES_WITH_IMAGES.has(activeTemplateId) ? [{ id: 'Images', icon: <ImageIcon size={18} /> }] : []),
     { id: 'Music', icon: <Music size={18} /> },
     { id: 'Settings', icon: <Settings size={18} /> },
   ];
+  const showRecipientSetting = !TEMPLATES_WITHOUT_RECIPIENT_SETTING.has(activeTemplateId);
+  const showPaletteSetting = !TEMPLATES_WITHOUT_PALETTE_SETTING.has(activeTemplateId);
+  const senderPlaceholder = user?.displayName
+    || user?.email?.split('@')[0]
+    || 'From your heart';
+  const recipientPlaceholder = 'Who is this for?';
+
+  useEffect(() => {
+    if (activeTab === 'Images' && !TEMPLATES_WITH_IMAGES.has(activeTemplateId)) {
+      setActiveTab('Text');
+    }
+  }, [activeTab, activeTemplateId]);
 
   const fields = templateFields[activeTemplateId] || [];
   const isReasons = activeTemplateId === '100-reasons';
-  const requiresRevealBeforeMessage = REVEAL_FIRST_TEMPLATES.has(activeTemplateId);
-  const showLivePreviewMessage = !requiresRevealBeforeMessage || livePreviewRevealed;
-  const livePreviewTitle = formData.scenes.scene2Header
-    || formData.scenes.homeTitle
-    || formData.scenes.questionTitle
-    || formData.scenes.introLine
-    || formData.scenes.galleryTitle
-    || formData.scenes.chapter1Title
-    || formData.scenes.reasonsTitle
-    || templateName;
-  const livePreviewSnippet = formData.scenes.letterText
-    || formData.scenes.confession1Text
-    || formData.scenes.questionSubtitle
-    || formData.scenes.introText
-    || formData.scenes.chapter1Text
-    || 'Start typing on the left to shape your message.';
+  const LivePreviewTemplate = LIVE_PREVIEW_TEMPLATES[activeTemplateId] || KawaiiLetter;
+
+  const useProfileForSender = () => {
+    const profileName = (user?.displayName || user?.email?.split('@')[0] || '').trim();
+    if (!profileName) return;
+    setFormData((prev) => ({ ...prev, senderName: profileName }));
+  };
+
+  const clearNames = () => {
+    setFormData((prev) => ({
+      ...prev,
+      recipientName: showRecipientSetting ? '' : prev.recipientName,
+      senderName: '',
+    }));
+  };
+
+  const swapNames = () => {
+    if (!showRecipientSetting) return;
+    setFormData((prev) => ({
+      ...prev,
+      recipientName: prev.senderName || '',
+      senderName: prev.recipientName || '',
+    }));
+  };
+
+  const resetStyleToTemplateDefault = () => {
+    const defaults = TEMPLATE_STYLE_DEFAULTS[activeTemplateId] || TEMPLATE_STYLE_DEFAULTS.kawaii-letter;
+    setFormData((prev) => ({
+      ...prev,
+      palette: defaults.palette,
+      font: defaults.font,
+      showSenderName: true,
+      showFooter: true,
+    }));
+  };
+
+  const showEditorPanel = mobileWorkspaceView === 'editor';
+  const showPreviewPanel = mobileWorkspaceView === 'preview';
 
   if (loading) {
     return (
@@ -537,59 +601,79 @@ const Builder = () => {
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top Bar */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-card shrink-0 bg-white z-10">
-        <div className="flex items-center gap-4">
+      <div className="h-16 flex items-center justify-between px-2.5 sm:px-3 md:px-6 border-b border-card shrink-0 bg-white z-10 gap-2">
+        <div className="flex items-center gap-3 min-w-0">
           <Link to={`/templates/${activeTemplateId}`} className="text-secondary hover:text-primary-pink transition-colors">
             <ArrowLeft size={20} />
           </Link>
-          <div className="flex flex-col">
-            <span className="font-bold text-dark text-sm">
-              {templateName} <span className="text-secondary font-normal ml-1">(Draft)</span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-dark text-sm whitespace-nowrap truncate">
+              {templateName} <span className="text-secondary font-normal ml-1 hidden sm:inline">(Draft)</span>
             </span>
             {expiryLabel && (
-              <span className="text-[10px] text-amber-600 font-bold">Expires in {expiryLabel}</span>
+              <span className="text-[10px] text-amber-600 font-bold whitespace-nowrap truncate">Expires in {expiryLabel}</span>
             )}
             {!draftId && (
-              <span className="text-[10px] text-primary-pink font-bold">Preview mode · sign in when saving</span>
+              <span className="text-[10px] text-primary-pink font-bold whitespace-nowrap truncate">Preview mode · sign in when saving</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {/* Save indicator */}
           <AnimatePresence mode="wait">
             {saveStatus === 'saving' && (
               <motion.span key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="text-xs text-secondary flex items-center gap-1">
+                className="hidden lg:flex text-xs text-secondary items-center gap-1">
                 <Loader2 size={12} className="animate-spin" /> Saving...
               </motion.span>
             )}
             {saveStatus === 'saved' && (
               <motion.span key="saved" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="text-xs text-green-600 flex items-center gap-1">
+                className="hidden lg:flex text-xs text-green-600 items-center gap-1">
                 <CheckCircle2 size={12} /> Saved ✓
               </motion.span>
             )}
             {saveStatus === 'error' && (
               <motion.span key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="text-xs text-red-500 font-medium">
+                className="hidden lg:inline text-xs text-red-500 font-medium">
                 Save failed
               </motion.span>
             )}
           </AnimatePresence>
 
-          <button onClick={handleSaveNow} className="flex items-center gap-2 btn-outline py-2 px-4 text-sm border">
-            <Save size={16} /> Save
+          <button onClick={handleSaveNow} className="flex items-center gap-1 md:gap-2 btn-outline py-2 px-2 sm:px-2.5 md:px-4 text-xs md:text-sm border">
+            <Save size={15} /> <span className="hidden sm:inline">Save</span>
           </button>
           <button onClick={handlePreviewPublish}
-            className="flex items-center gap-2 bg-amber-500 text-white px-5 py-2 rounded-pill font-bold text-sm hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 btn-shimmer">
-            Preview & Publish →
+            className="flex items-center gap-1 md:gap-2 bg-amber-500 text-white px-2.5 sm:px-3 md:px-5 py-2 rounded-pill font-bold text-xs md:text-sm hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 btn-shimmer whitespace-nowrap">
+            <span className="sm:hidden">Publish</span>
+            <span className="hidden sm:inline">Preview & Publish</span> →
+          </button>
+        </div>
+      </div>
+
+      <div className="md:hidden h-11 border-b border-card bg-white px-3 py-1.5">
+        <div className="h-full w-full rounded-full border border-card bg-slate-50 p-0.5 grid grid-cols-2 gap-1">
+          <button
+            type="button"
+            onClick={() => setMobileWorkspaceView('editor')}
+            className={`rounded-full text-xs font-bold uppercase tracking-wide transition-colors ${showEditorPanel ? 'bg-white text-primary-pink border border-primary-pink/20' : 'text-secondary'}`}
+          >
+            Editor
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileWorkspaceView('preview')}
+            className={`rounded-full text-xs font-bold uppercase tracking-wide transition-colors ${showPreviewPanel ? 'bg-white text-primary-pink border border-primary-pink/20' : 'text-secondary'}`}
+          >
+            Preview
           </button>
         </div>
       </div>
 
       <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
         {/* Left Panel */}
-        <div className="w-full md:w-[400px] border-r border-card flex flex-col bg-white overflow-hidden">
+        <div className={`${showEditorPanel ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] border-r border-card flex-col bg-white overflow-hidden`}>
           <div className="flex border-b border-card shrink-0">
             {tabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -636,8 +720,8 @@ const Builder = () => {
                           value={formData.scenes[field.key] || ''}
                           onChange={e => handleSceneInput(field.key, e.target.value)}
                           placeholder={field.placeholder}
-                          rows={6}
-                          className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all resize-none text-sm"
+                          rows={/letter|final|script/i.test(field.key) ? 10 : 6}
+                          className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all resize-y overflow-y-auto text-sm min-h-[120px] max-h-[420px]"
                         />
                       ) : (
                         <input
@@ -797,19 +881,72 @@ const Builder = () => {
               {activeTab === 'Settings' && (
                 <motion.div key="settings" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-secondary uppercase tracking-wider">Recipient Name</label>
-                      <input name="recipientName" value={formData.recipientName} onChange={handleInput}
-                        className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink" />
+                  <div className="space-y-4 rounded-2xl border border-card p-4 bg-white">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold text-secondary uppercase tracking-wider">Names & Signature</p>
+                      <div className="flex items-center gap-2">
+                        {user && (
+                          <button
+                            type="button"
+                            onClick={useProfileForSender}
+                            className="text-[10px] font-bold uppercase tracking-wide text-primary-pink border border-primary-pink/35 rounded-full px-2.5 py-1 hover:bg-primary-light/60"
+                          >
+                            Use my profile
+                          </button>
+                        )}
+                        {showRecipientSetting && (
+                          <button
+                            type="button"
+                            onClick={swapNames}
+                            className="text-[10px] font-bold uppercase tracking-wide text-secondary border border-card rounded-full px-2.5 py-1 hover:bg-slate-50"
+                          >
+                            Swap
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearNames}
+                          className="text-[10px] font-bold uppercase tracking-wide text-secondary border border-card rounded-full px-2.5 py-1 hover:bg-slate-50"
+                        >
+                          Clear
+                        </button>
+                      </div>
                     </div>
+                    {showRecipientSetting && (
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-secondary uppercase tracking-wider">Recipient Name</label>
+                        <input
+                          name="recipientName"
+                          value={formData.recipientName}
+                          onChange={handleInput}
+                          placeholder={recipientPlaceholder}
+                          className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                        />
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-secondary uppercase tracking-wider">Sender Name</label>
-                      <input name="senderName" value={formData.senderName} onChange={handleInput}
-                        className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink" />
+                      <input
+                        name="senderName"
+                        value={formData.senderName}
+                        onChange={handleInput}
+                        placeholder={senderPlaceholder}
+                        className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                      />
                     </div>
                   </div>
                   <div className="border-t border-card pt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-secondary uppercase tracking-wider">Visibility</p>
+                      <button
+                        type="button"
+                        onClick={resetStyleToTemplateDefault}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-secondary hover:text-dark"
+                      >
+                        <RefreshCw size={11} />
+                        Reset defaults
+                      </button>
+                    </div>
                     {[
                       { name: 'showSenderName', label: 'Show sender name on page' },
                       { name: 'showFooter', label: 'Show LovePage footer' },
@@ -821,23 +958,25 @@ const Builder = () => {
                       </div>
                     ))}
                   </div>
-                  <div className="border-t border-card pt-6 space-y-4">
-                    <label className="text-xs font-bold text-secondary uppercase tracking-wider">Color Palette</label>
-                    <div className="flex gap-3">
-                      {[
-                        { id: 'pink', color: '#F43F73' },
-                        { id: 'lavender', color: '#9B7FE8' },
-                        { id: 'mint', color: '#2DD4BF' },
-                        { id: 'gold', color: '#D4AF37' },
-                        { id: 'navy', color: '#3B5BDB' },
-                      ].map(p => (
-                        <button key={p.id} onClick={() => setFormData(prev => ({ ...prev, palette: p.id }))}
-                          className={`w-8 h-8 rounded-full border-2 transition-all ${
-                            formData.palette === p.id ? 'border-dark scale-110 shadow-lg' : 'border-transparent'
-                          }`} style={{ backgroundColor: p.color }} />
-                      ))}
+                  {showPaletteSetting && (
+                    <div className="border-t border-card pt-6 space-y-4">
+                      <label className="text-xs font-bold text-secondary uppercase tracking-wider">Color Palette</label>
+                      <div className="flex gap-3">
+                        {[
+                          { id: 'pink', color: '#F43F73' },
+                          { id: 'lavender', color: '#9B7FE8' },
+                          { id: 'mint', color: '#2DD4BF' },
+                          { id: 'gold', color: '#D4AF37' },
+                          { id: 'navy', color: '#3B5BDB' },
+                        ].map(p => (
+                          <button key={p.id} onClick={() => setFormData(prev => ({ ...prev, palette: p.id }))}
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${
+                              formData.palette === p.id ? 'border-dark scale-110 shadow-lg' : 'border-transparent'
+                            }`} style={{ backgroundColor: p.color }} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="space-y-4">
                     <label className="text-xs font-bold text-secondary uppercase tracking-wider">Font Style</label>
                     <div className="flex gap-2">
@@ -856,50 +995,40 @@ const Builder = () => {
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="flex-grow bg-slate-100 flex flex-col overflow-hidden">
+        <div className={`${showPreviewPanel ? 'flex' : 'hidden'} md:flex flex-grow bg-slate-100 flex-col overflow-hidden w-full`}>
           <div className="h-12 border-b border-card bg-white shrink-0 flex items-center justify-between px-6">
             <div className="flex items-center gap-2 text-secondary font-bold text-xs uppercase tracking-widest">
               <Eye size={16} className="text-primary-pink" /> Live Preview
             </div>
           </div>
 
-          <div className="flex-grow p-4 md:p-8 overflow-hidden flex items-center justify-center">
-            <div className="w-full max-w-sm aspect-[9/19] bg-white rounded-[40px] border-[8px] border-dark shadow-2xl overflow-hidden relative">
-              <div className="absolute inset-0 flex flex-col bg-white text-center overflow-hidden">
-                <div className="h-[54%]">
-                  <TemplateMiniDemo
-                    templateId={activeTemplateId}
-                    interactive
-                    onRevealChange={setLivePreviewRevealed}
-                  />
+          <div className="flex-grow overflow-hidden p-0 md:p-2">
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="w-full h-full max-w-full rounded-none md:rounded-[16px] border-0 md:border border-card shadow-none md:shadow-xl bg-white overflow-hidden relative">
+                <div className="builder-real-preview absolute inset-0 bg-white overflow-hidden">
+                <LivePreviewTemplate
+                  recipientName={formData.recipientName}
+                  senderName={formData.senderName}
+                  scenes={formData.scenes || {}}
+                  reasons={formData.reasons || []}
+                  palette={formData.palette || 'pink'}
+                  font={formData.font || 'playful'}
+                  showSenderName={formData.showSenderName ?? true}
+                  showFooter={formData.showFooter ?? true}
+                  musicEnabled
+                  musicUrl={formData.musicUrl || DEFAULT_LOVE_MUSIC_URL}
+                />
                 </div>
-                <div className="h-[46%] bg-white border-t border-card p-5 text-left overflow-hidden">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">
-                    {formatTemplateName(activeTemplateId)}
-                  </p>
-                  {showLivePreviewMessage ? (
-                    <>
-                      <h3 className="font-playfair text-[1.03rem] text-dark leading-tight line-clamp-2 mb-2">
-                        {livePreviewTitle}
-                      </h3>
-                      <p className="text-xs text-secondary leading-5 line-clamp-6 whitespace-pre-line">
-                        {livePreviewSnippet}
-                      </p>
-                    </>
-                  ) : (
-                    <div className="h-[78%] rounded-2xl border border-dashed border-primary-pink/35 bg-primary-light/30 p-4 flex items-center justify-center text-center">
-                      <p className="text-sm font-bold text-primary-pink/85">Tap the envelope above to reveal your message.</p>
-                    </div>
-                  )}
-                  {formData.recipientName && (
-                    <p className="text-[11px] text-primary-pink/70 mt-3 font-bold">For {formData.recipientName}</p>
-                  )}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                  <div className="rounded-full bg-black/60 backdrop-blur-md border border-white/30 px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-white shadow-lg">
+                    Special Gift Just For {String(formData.recipientName || '').trim() || 'you'}
+                  </div>
                 </div>
-              </div>
-              {/* DRAFT Watermark */}
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden rotate-[-30deg]">
-                <div className="whitespace-nowrap text-primary-pink/10 text-6xl font-black uppercase tracking-[1rem]">
-                  DRAFT DRAFT DRAFT DRAFT DRAFT
+                {/* DRAFT Watermark */}
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden rotate-[-30deg]">
+                  <div className="whitespace-nowrap text-primary-pink/10 text-6xl font-black uppercase tracking-[1rem]">
+                    DRAFT DRAFT DRAFT DRAFT DRAFT
+                  </div>
                 </div>
               </div>
             </div>

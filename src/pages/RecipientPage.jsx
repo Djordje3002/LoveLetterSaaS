@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Loader2, HeartCrack } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
 import KawaiiLetter from '../templates/KawaiiLetter';
 import ReasonsILoveYou from '../templates/ReasonsILoveYou';
 import OurGallery from '../templates/OurGallery';
@@ -13,6 +14,8 @@ import RoseWhisper from '../templates/RoseWhisper';
 import GoldenPromise from '../templates/GoldenPromise';
 import DateInviteLetter from '../templates/DateInviteLetter';
 import IvaBirthday from '../templates/IvaBirthday';
+import SkyLove from '../templates/SkyLove';
+import ChatReveal from '../templates/ChatReveal';
 
 const TEMPLATES = {
   'kawaii-letter': KawaiiLetter,
@@ -25,6 +28,8 @@ const TEMPLATES = {
   'golden-promise': GoldenPromise,
   'date-invite': DateInviteLetter,
   'iva-birthday': IvaBirthday,
+  'sky-love': SkyLove,
+  'chat-reveal': ChatReveal,
 };
 
 const RecipientPage = () => {
@@ -89,19 +94,28 @@ const RecipientPage = () => {
     );
   }
 
+  const giftRecipientName = String(pageData.recipientName || '').trim() || 'you';
+
   return (
-    <TemplateComponent
-      recipientName={pageData.recipientName}
-      senderName={pageData.senderName}
-      scenes={pageData.scenes || {}}
-      reasons={pageData.reasons || []}
-      palette={pageData.palette || 'pink'}
-      font={pageData.font || 'playful'}
-      showSenderName={pageData.showSenderName ?? true}
-      showFooter={pageData.showFooter ?? true}
-      musicEnabled={pageData.musicEnabled ?? false}
-      musicUrl={pageData.musicUrl || ''}
-    />
+    <>
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] pointer-events-none">
+        <div className="rounded-full bg-black/60 backdrop-blur-md border border-white/30 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
+          Special Gift Just For {giftRecipientName}
+        </div>
+      </div>
+      <TemplateComponent
+        recipientName={pageData.recipientName}
+        senderName={pageData.senderName}
+        scenes={pageData.scenes || {}}
+        reasons={pageData.reasons || []}
+        palette={pageData.palette || 'pink'}
+        font={pageData.font || 'playful'}
+        showSenderName={pageData.showSenderName ?? true}
+        showFooter={pageData.showFooter ?? true}
+        musicEnabled
+        musicUrl={pageData.musicUrl || DEFAULT_LOVE_MUSIC_URL}
+      />
+    </>
   );
 };
 

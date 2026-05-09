@@ -1,6 +1,7 @@
 import { db } from '../firebase'
 import { auth } from '../firebase'
 import { collection, doc, setDoc, Timestamp } from 'firebase/firestore'
+import { DEFAULT_LOVE_MUSIC_URL } from '../config/music'
 
 const BASE_REASON_LINES = [
   'You make ordinary moments feel special.',
@@ -32,7 +33,7 @@ export const TEMPLATE_SCENE_DEFAULTS = {
   'kawaii-letter': {
     hint: 'Tap the seal to open ♥',
     scene2Header: 'My sweetest letter to you',
-    letterText: "Every day with you feels softer, brighter, and more alive.\nYou make ordinary moments feel like little celebrations.\nThank you for being my calm, my laughter, and my favorite hello.",
+    letterText: "Every day with you feels softer, brighter, and more alive.\nYou make ordinary moments feel like little celebrations.\nI still smile when I remember the small things only we understand.\nYou make my heart feel safe, seen, and deeply at home.\nThank you for being my calm, my laughter, and my favorite hello.",
     scene3Header: 'Our favorite memories',
     polaroidCaption1: 'The day you made me laugh nonstop',
     polaroidCaption2: 'Our quiet walk and warm coffee',
@@ -44,24 +45,24 @@ export const TEMPLATE_SCENE_DEFAULTS = {
   'rose-whisper': {
     hint: 'A soft note waits for you...',
     scene2Header: 'A rose whisper from my heart',
-    letterText: "You make my world feel gentle and full of color.\nEven in silence, being near you feels like home.\nI hope this little page reminds you how deeply you are loved.",
+    letterText: "You make my world feel gentle and full of color.\nEven in silence, being near you feels like home.\nYour kindness turns heavy days into lighter ones.\nYour voice feels like a place I can always return to.\nI hope this little page reminds you how deeply you are loved.",
     scene3Header: 'Little moments of us',
     closingMessage: 'Forever in bloom, with you.',
   },
   'golden-promise': {
     hint: 'Open to read a promise ✨',
     scene2Header: 'A promise I mean with all my heart',
-    letterText: "I promise to choose you in loud days and quiet days.\nTo protect what we build and celebrate what we become.\nTo keep loving you with patience, honesty, and joy.",
+    letterText: "I promise to choose you in loud days and quiet days.\nI promise to protect what we build and celebrate what we become.\nI promise to listen with patience and speak with honesty.\nI promise to show up even when life feels messy.\nAnd I promise to keep loving you with intention, tenderness, and joy.",
     scene3Header: 'Memories I treasure',
     closingMessage: 'You are my always.',
   },
   'dark-romance': {
-    letterText: "In the quiet dark, your name still glows like fire.\nYou are the calm in my chaos and the spark in my silence.\nIf love had a heartbeat, mine would still whisper your name.",
+    letterText: "In the quiet dark, your name still glows like fire.\nYou are the calm in my chaos and the spark in my silence.\nEven when the room is still, my thoughts find you first.\nYou are the shadow that feels warm, never cold.\nIf love had a heartbeat, mine would still whisper your name.",
     closingMessage: 'Yours, in every lifetime.',
     hint: 'Break the wax seal to read',
   },
   'midnight-love': {
-    letterText: "Tonight the stars feel closer because I am thinking of you.\nEvery wish I make ends the same way: with your smile in it.\nIf the sky could read my heart, it would spell your name.",
+    letterText: "Tonight the stars feel closer because I am thinking of you.\nEvery wish I make ends the same way: with your smile in it.\nEven the moonlight feels softer when your name crosses my mind.\nYou are my favorite thought at the end of every day.\nIf the sky could read my heart, it would spell your name.",
     closingMessage: 'Yours under every star.',
     hint: 'Open under the stars',
   },
@@ -94,26 +95,24 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     celebrationText: 'Now we celebrate this moment and make it unforgettable.',
   },
   'iva-birthday': {
-    accessName: 'Iva',
-    accessPassword: 'volim te',
-    welcomeTitle: 'Dobro dosla, ljubavi 🩵',
-    welcomeSubtitle: 'Ovo je nas mali, privatni svet.',
-    questionTitle: 'Da li biras mene zauvek? 💍',
-    homeTitle: 'Srecan rodjendan, ljubavi 🩵',
-    homeSubtitle: 'Svaki klik je mali podsetnik koliko te volim.',
-    galleryTitle: 'Nasi trenuci 📸',
+    accessName: 'iva',
+    accessPassword: 'love',
+    welcomeTitle: 'Welcome, my love 💙',
+    welcomeSubtitle: 'This is our little private world.',
+    questionTitle: 'Will you keep choosing me forever? 💍',
+    homeTitle: 'Happy Birthday, my love 💙',
+    homeSubtitle: 'Every click is a little reminder of how much I love you.',
+    galleryTitle: 'Our Moments 📸',
     gallerySubtitle: 'A collection of our favorite memories.',
-    reasonsTitle: 'Razlozi zasto te volim 🩵',
-    diaryTitle: 'Mini dnevnik ✍️',
-    diarySubtitle: 'Write a tiny note and keep it here.',
+    reasonsTitle: 'Reasons I Love You 💙',
     sideCardTitle: 'Quick Memories',
-    letterText: "Srecan rodjendan, ljubavi.\nNapravio sam ovo malo mesto samo za tebe.\nHvala ti za svaki osmeh, svaki zagrljaj i svaki dan koji je lepsi zbog tebe.",
-    closingMessage: 'Volim te najvise.',
-    polaroidCaption1: 'Ti i tvoj najlepši osmeh',
-    polaroidCaption2: 'Dan koji pamtim zauvek',
-    polaroidCaption3: 'Najdraži trenutak',
-    polaroidCaption4: 'Još jedan razlog da se smejem',
-    polaroidCaption5: 'Mi, baš ovako',
+    letterText: "Happy birthday, my love.\nI made this little world just for you.\nThank you for every smile, every hug, and every gentle moment we share.\nYou make ordinary days feel golden and unforgettable.\nI am endlessly grateful for your heart, your warmth, and your love.",
+    closingMessage: 'I love you the most.',
+    polaroidCaption1: 'You and your beautiful smile',
+    polaroidCaption2: 'A day I will always remember',
+    polaroidCaption3: 'My favorite moment',
+    polaroidCaption4: 'Another reason to smile',
+    polaroidCaption5: 'Us, just like this',
     startDate: '2025-12-06',
   },
   '100-reasons': {
@@ -142,8 +141,39 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     polaroidCaption4: 'One ordinary day that felt magical',
     polaroidCaption5: 'My favorite photo of us',
     letterTitle: 'A Letter For You',
-    finalLetter: "If every page in this book had one truth, it would be this: loving you has changed my world for the better.\nThank you for being my calm, my joy, and my favorite chapter.",
+    finalLetter: "If every page in this book had one truth, it would be this: loving you has changed my world for the better.\nYou taught me that love can feel safe, playful, and steady all at once.\nThank you for being my calm, my joy, and my favorite chapter.\nNo matter where life takes us, I will keep choosing you.\nOur story is still becoming my favorite part of every day.",
     closingMessage: 'And our story is only getting better.',
+  },
+  'sky-love': {
+    hint: 'Tap the moon seal to open ✨',
+    scene2Header: 'For you, beneath the stars',
+    scene3Header: 'Tonight the sky keeps your name',
+    letterText: "Tonight the sky feels endless, and every star reminds me of you.\nIn the quiet hours, my heart still reaches for your warmth.\nYou are the softest part of my day and the calmest part of my night.\nI carry your smile with me like moonlight in my pocket.\nIf wishes come true, mine is always you.",
+    closingMessage: 'Always yours under this sky.',
+  },
+  'chat-reveal': {
+    chatSenderName: 'baby 🩷',
+    chatSenderAvatar: '🩷',
+    chatIntroTitle: 'you have a message',
+    chatIntroSubtitle: 'tap anywhere to open',
+    chatScript: "them: hey\n\
+them: are you awake right now\n\
+me: yes, what happened\n\
+them: nothing bad, promise\n\
+them: i have been carrying this in my heart for a while\n\
+me: omg now i am nervous\n\
+them: do not be\n\
+them: you are the person who makes heavy days feel lighter\n\
+them: you make ordinary moments feel warm and safe\n\
+them: when i am with you, i breathe easier\n\
+me: ...\n\
+them: you are my favorite hello and my calmest place\n\
+them: and i wanted to tell you properly\n\
+them: not rushed, not hidden, just honest\n\
+them: i admire your heart, your mind, and the way you love\n\
+them: i still smile when i see your name on my phone\n\
+them: every single day you make life brighter\n\
+them: love: i love you so much 🩷",
   },
 }
 
@@ -158,6 +188,8 @@ export const TEMPLATE_STYLE_DEFAULTS = {
   'golden-promise': { palette: 'gold', font: 'classic' },
   'date-invite': { palette: 'pink', font: 'playful' },
   'iva-birthday': { palette: 'navy', font: 'playful' },
+  'sky-love': { palette: 'navy', font: 'elegant' },
+  'chat-reveal': { palette: 'pink', font: 'playful' },
 }
 
 export function getInitialDraftFormData(templateId) {
@@ -173,8 +205,8 @@ export function getInitialDraftFormData(templateId) {
     font: styleDefaults.font,
     scenes: TEMPLATE_SCENE_DEFAULTS[templateId] ? { ...TEMPLATE_SCENE_DEFAULTS[templateId] } : {},
     reasons: defaultReasons,
-    musicEnabled: false,
-    musicUrl: '',
+    musicEnabled: true,
+    musicUrl: DEFAULT_LOVE_MUSIC_URL,
     volume: 60,
   }
 }
@@ -186,16 +218,22 @@ export function buildQuickPersonalizedScenes(templateId, { recipientName = '', t
       `Dear ${name}, I made this because you deserve something soft, thoughtful, and only yours.`,
       'You make ordinary moments feel warmer, and I hope this little page makes you smile today.',
       'Thank you for being someone my heart keeps choosing in the smallest ways.',
+      'I love the way life feels calmer and brighter when you are in it.',
+      'If this message could hug you, it would never let go.',
     ],
     deep: [
       `Dear ${name}, some feelings are too real to leave unsaid.`,
       'You stay with me in quiet moments, in the pauses, and in the way my day changes when I think of you.',
       'This is my small way of saying that you matter more than I always know how to explain.',
+      'You are not just in my memories, you are in the shape of my future.',
+      'Wherever life moves, my heart still moves toward you.',
     ],
     playful: [
       `Dear ${name}, this is your official reminder that you are dangerously easy to adore.`,
       'You make my days brighter, my smile less optional, and my brain a little ridiculous in the best way.',
       'So yes, this page exists because I wanted to make you grin.',
+      'You are my favorite distraction and my favorite destination.',
+      'If loving you is a game, I happily lose every round.',
     ],
   }
   const lines = toneLines[tone] || toneLines.sweet
@@ -234,6 +272,17 @@ export function buildQuickPersonalizedScenes(templateId, { recipientName = '', t
       chapter1Text: lines[0],
       chapter2Text: lines[1],
       finalLetter: `${lines.join('\n')}\n\nWith love, always.`,
+    },
+    'chat-reveal': {
+      chatSenderName: `${name} 🩷`,
+      chatScript: `them: hey ${name}\n\
+them: i wanted to tell you this in a sweet way\n\
+me: okay i am listening\n\
+them: you make my days warmer and my nights calmer\n\
+them: you are the person i think about in every quiet moment\n\
+them: you make life feel softer, safer, and brighter\n\
+them: and i never want to hide this from you again\n\
+them: love: i love you so much ${name} 🩷`,
     },
   }
 

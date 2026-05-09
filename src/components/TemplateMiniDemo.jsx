@@ -3,16 +3,16 @@ import { motion } from 'framer-motion';
 
 const loops = {
   float: {
-    animate: { y: [0, -8, 0], rotate: [0, -1.5, 1.5, 0] },
-    transition: { duration: 3.8, repeat: Infinity, ease: 'easeInOut' },
+    animate: { y: [0, -9, 0], rotate: [0, -1.8, 1.2, 0] },
+    transition: { duration: 4.2, repeat: Infinity, ease: 'easeInOut' },
   },
   open: {
-    animate: { rotateX: [0, 0, -158, -158, 0], y: [0, 0, -5, -5, 0] },
-    transition: { duration: 4.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.42, 0.72, 1] },
+    animate: { rotateX: [0, 0, -172, -172, 0], y: [0, 0, -6, -6, 0] },
+    transition: { duration: 5.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.38, 0.74, 1] },
   },
   letter: {
-    animate: { y: [34, 34, -36, -36, 34], scale: [0.96, 0.96, 1.03, 1.03, 0.96] },
-    transition: { duration: 4.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.42, 0.72, 1] },
+    animate: { y: [34, 34, -54, -40, 34], scale: [0.96, 0.96, 1.06, 1.02, 0.96], rotate: [0, 0, -2, -1, 0] },
+    transition: { duration: 5.2, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.38, 0.74, 1] },
   },
 };
 
@@ -118,6 +118,37 @@ const EnvelopeDemo = ({ mood = 'kawaii', interactive = false, onRevealChange }) 
           <div className="absolute left-4 right-6 top-9 h-px bg-[#9d7650]/20" />
           <div className="absolute left-4 right-8 top-[52px] h-px bg-[#9d7650]/20" />
         </motion.div>
+        {!interactive && (
+          <div className="pointer-events-none absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 z-30">
+            {['♥', '✦', '♥', '✧', '♥'].map((glyph, i) => (
+              <motion.span
+                key={`${glyph}-${i}`}
+                className="absolute text-[#d53f78] text-[11px] font-bold"
+                animate={{
+                  opacity: [0, 0, 0.95, 0, 0],
+                  scale: [0.3, 0.3, 1, 1.2, 1.2],
+                  x: [
+                    0,
+                    0,
+                    Math.cos((i / 5) * Math.PI * 2) * (14 + (i % 2) * 4),
+                    Math.cos((i / 5) * Math.PI * 2) * (18 + (i % 2) * 5),
+                    Math.cos((i / 5) * Math.PI * 2) * (18 + (i % 2) * 5),
+                  ],
+                  y: [
+                    0,
+                    0,
+                    Math.sin((i / 5) * Math.PI * 2) * (12 + (i % 2) * 4),
+                    Math.sin((i / 5) * Math.PI * 2) * (16 + (i % 2) * 5),
+                    Math.sin((i / 5) * Math.PI * 2) * (16 + (i % 2) * 5),
+                  ],
+                }}
+                transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                {glyph}
+              </motion.span>
+            ))}
+          </div>
+        )}
         <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-36 h-24">
           <div className={`absolute inset-0 rounded-xl bg-gradient-to-b ${theme.body} border border-white/20 shadow-xl`} />
           <div className={`absolute inset-x-0 bottom-0 h-16 bg-gradient-to-r ${theme.front} [clip-path:polygon(0_0,50%_84%,100%_0,100%_100%,0_100%)] rounded-b-xl z-10`} />
@@ -154,6 +185,87 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
   if (templateId === 'dark-romance') return <EnvelopeDemo mood="dark" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'midnight-love') return <EnvelopeDemo mood="midnight" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'kawaii-letter') return <EnvelopeDemo mood="kawaii" interactive={interactive} onRevealChange={onRevealChange} />;
+  if (templateId === 'sky-love') {
+    return (
+      <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#1f3b84] via-[#10245a] to-[#060f2c]">
+        {[12, 24, 36, 48, 62, 75, 88].map((left, i) => (
+          <span
+            key={left}
+            className="absolute rounded-full bg-white animate-twinkle"
+            style={{
+              top: `${14 + (i % 4) * 14}%`,
+              left: `${left}%`,
+              width: `${1 + (i % 3)}px`,
+              height: `${1 + (i % 3)}px`,
+              opacity: 0.35 + (i % 4) * 0.16,
+            }}
+          />
+        ))}
+        <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#fff9dd] shadow-[0_0_22px_rgba(255,255,210,0.65)]" />
+        <div className="relative w-40 h-28">
+          <div className="absolute inset-0 rounded-[9px] bg-gradient-to-b from-[#d7e2ff] via-[#b9c8f4] to-[#8fa8e4] border border-[#8ea4d4]" />
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-[#aebfe8] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-[#aebfe8] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+          <div className="absolute left-0 right-0 bottom-0 h-[56%] bg-[#c0cff2] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
+          <motion.div
+            className="absolute left-0 right-0 top-0 h-[56%] origin-top"
+            animate={{ rotateX: [0, 0, -170, -170, 0] }}
+            transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.2, 0.42, 0.72, 1] }}
+          >
+            <div className="w-full h-full bg-[#edf2ff] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[9px]" />
+          </motion.div>
+          <motion.div
+            className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-gradient-to-br from-[#6f87d6] to-[#3f56a6] text-white flex items-center justify-center text-[11px] font-black border border-white/80"
+            animate={{ scale: [1, 1.08, 1], opacity: [1, 1, 0, 0, 1] }}
+            transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', times: [0, 0.16, 0.36, 0.76, 1] }}
+          >
+            ☾
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+  if (templateId === 'chat-reveal') {
+    return (
+      <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,107,157,0.14),transparent_44%),radial-gradient(circle_at_80%_80%,rgba(196,77,255,0.14),transparent_44%)]" />
+        <div className="w-[82%] h-[78%] rounded-2xl border border-[#2f2f33] bg-[#0e0e10] p-3 flex flex-col justify-between shadow-xl">
+          <div className="space-y-1.5">
+            <motion.div
+              className="ml-auto w-[62%] rounded-2xl rounded-br-md bg-[#0a84ff] px-2.5 py-1.5 text-[9px] text-white"
+              animate={{ opacity: [0.35, 1, 1] }}
+              transition={{ duration: 3.8, repeat: Infinity, times: [0, 0.24, 1] }}
+            >
+              not really why
+            </motion.div>
+            <motion.div
+              className="w-[74%] rounded-2xl rounded-bl-md bg-[#2c2c2e] px-2.5 py-1.5 text-[9px] text-white"
+              animate={{ opacity: [0.25, 0.25, 1, 1] }}
+              transition={{ duration: 3.8, repeat: Infinity, times: [0, 0.35, 0.46, 1] }}
+            >
+              i have something to tell you
+            </motion.div>
+            <motion.div
+              className="w-[80%] rounded-2xl rounded-bl-md bg-gradient-to-r from-[#ff6b9d] via-[#ff4d8d] to-[#c44dff] px-2.5 py-1.5 text-[9px] text-white font-semibold"
+              animate={{ scale: [0.86, 1.02, 1], opacity: [0, 1, 1] }}
+              transition={{ duration: 3.8, repeat: Infinity, times: [0, 0.62, 1] }}
+            >
+              i love you so much 🩷
+            </motion.div>
+          </div>
+          <div className="flex items-center justify-center">
+            <motion.span
+              className="text-[#ff6b9d] text-xs font-black uppercase tracking-widest"
+              animate={{ opacity: [0.45, 1, 0.45] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              chat reveal
+            </motion.span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (templateId === '100-reasons') {
     return (
@@ -293,7 +405,11 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
     );
   }
 
-  return <EnvelopeDemo mood="kawaii" />;
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-[#fff4f7] to-[#eef0ff] flex items-center justify-center text-primary-pink text-xs font-bold uppercase tracking-wide">
+      Template preview
+    </div>
+  );
 };
 
 export default TemplateMiniDemo;

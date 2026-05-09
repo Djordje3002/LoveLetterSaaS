@@ -62,10 +62,16 @@ const TEMPLATE_DATA = {
     color: 'bg-gradient-to-br from-pink-200 via-rose-200 to-red-200',
   },
   'iva-birthday': {
-    name: 'IVA Birthday',
-    description: 'A private birthday-themed experience with a playful entry gate, love question, memory gallery, reasons grid, and mini diary.',
+    name: 'Full House of Love',
+    description: 'A private birthday-themed experience with a playful entry gate, love question, memory gallery, cinematic letter reveal, and a 100-style reasons grid.',
     emoji: '🎂',
     color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
+  },
+  'chat-reveal': {
+    name: 'Chat Reveal',
+    description: 'An iMessage-style love confession with typing dots, dramatic bubble reveals, floating hearts, and replay. Fully customizable with long chat scripts.',
+    emoji: '💬',
+    color: 'bg-gradient-to-br from-[#111111] to-[#2a1a3a]',
   },
 };
 
