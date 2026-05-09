@@ -5,13 +5,11 @@ const stripe = require('stripe')(functions.config().stripe.secret)
 admin.initializeApp()
 
 const APP_URL = functions.config().app?.url || 'https://lovepage.app'
-const BASE_PRICE_CENTS = 1200
-const DISCOUNT_CODE = 'love123'
-const DISCOUNT_PERCENT = 50
+const DEFAULT_PRICE_CENTS = 800
 
 // ─── Create Stripe Checkout Session ───────────────────────────────────────────
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
-  const { draftId, discountCode = '' } = data
+  const { draftId } = data
 
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to continue to payment')
@@ -37,11 +35,8 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     checkoutStartedAt: admin.firestore.Timestamp.now(),
   })
 
-  const normalizedCode = String(discountCode).trim().toLowerCase()
-  const discountApplied = normalizedCode === DISCOUNT_CODE
-  const unitAmount = discountApplied
-    ? Math.round(BASE_PRICE_CENTS * (1 - DISCOUNT_PERCENT / 100))
-    : BASE_PRICE_CENTS
+  const templateId = String(draft.data().templateId || '')
+  const unitAmount = DEFAULT_PRICE_CENTS
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -62,9 +57,9 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     cancel_url: `${APP_URL}/preview/${draftId}`,
     metadata: {
       draftId,
+      templateId,
       userId: context.auth.uid,
-      discountCode: discountApplied ? DISCOUNT_CODE : '',
-      discountPercent: discountApplied ? String(DISCOUNT_PERCENT) : '0',
+      unitAmount: String(unitAmount),
     },
   })
 
@@ -121,6 +116,52 @@ exports.verifyPayment = functions.https.onCall(async (data, context) => {
     stripeSessionId: sessionId,
     publishedAt: admin.firestore.Timestamp.now(),
     expiresAt: admin.firestore.FieldValue.delete(),
+  })
+
+  return { success: true }
+})
+
+// ─── Test Publish (Skip Payment) ──────────────────────────────────────────────
+exports.publishForTest = functions.https.onCall(async (data, context) => {
+  const { draftId, method } = data || {}
+
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to publish')
+  }
+
+  if (!draftId) {
+    throw new functions.https.HttpsError('invalid-argument', 'draftId is required')
+  }
+
+  const draftRef = admin.firestore().collection('pages').doc(draftId)
+  const draft = await draftRef.get()
+  if (!draft.exists) {
+    throw new functions.https.HttpsError('not-found', 'Draft not found')
+  }
+
+  const draftData = draft.data()
+  if (draftData.ownerUid !== context.auth.uid) {
+    throw new functions.https.HttpsError('permission-denied', 'You can only publish your own draft')
+  }
+
+  if (draftData.status === 'active') {
+    return { success: true, alreadyActive: true }
+  }
+
+  if (draftData.status !== 'pending') {
+    throw new functions.https.HttpsError('failed-precondition', 'Draft is not pending')
+  }
+
+  const safeMethod = String(method || 'instant').toLowerCase()
+
+  await draftRef.update({
+    status: 'active',
+    stripeSessionId: `test-skip-${safeMethod}`,
+    publishedAt: admin.firestore.Timestamp.now(),
+    expiresAt: admin.firestore.FieldValue.delete(),
+    checkoutOwnerUid: context.auth.uid,
+    checkoutOwnerEmail: context.auth.token.email || '',
+    checkoutStartedAt: admin.firestore.Timestamp.now(),
   })
 
   return { success: true }

@@ -13,6 +13,8 @@ const SuccessPage = () => {
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
   const draftId = searchParams.get('draft');
+  const testMode = searchParams.get('test') === '1';
+  const testMethod = searchParams.get('method') || 'instant';
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [copied, setCopied] = useState(false);
@@ -24,7 +26,16 @@ const SuccessPage = () => {
   const shareCaption = `I made something special for you. Open this when you have a quiet minute: ${pageUrl}`;
 
   useEffect(() => {
-    if (!sessionId || !draftId) {
+    if (!draftId) {
+      setStatus('error');
+      return;
+    }
+    if (testMode) {
+      setStatus('success');
+      trackEvent('published_test_mode', { draftId, method: testMethod });
+      return;
+    }
+    if (!sessionId) {
       setStatus('error');
       return;
     }
@@ -40,7 +51,7 @@ const SuccessPage = () => {
       }
     };
     verify();
-  }, [sessionId, draftId]);
+  }, [sessionId, draftId, testMode, testMethod]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(pageUrl);
@@ -107,8 +118,8 @@ const SuccessPage = () => {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="text-red-500" size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-dark mb-3">Payment verification failed</h1>
-          <p className="text-secondary mb-8">Something went wrong verifying your payment. If you were charged, please contact support.</p>
+          <h1 className="text-2xl font-bold text-dark mb-3">Could not open publish result</h1>
+          <p className="text-secondary mb-8">Something went wrong opening your share page. Please try again.</p>
           <div className="flex flex-col gap-3">
             {draftId && (
               <button onClick={() => navigate(`/preview/${draftId}`)}
@@ -134,8 +145,8 @@ const SuccessPage = () => {
             className="absolute inset-0 border-4 border-green-500 rounded-full animate-ping opacity-20" />
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-dark mb-3">🎉 Your page is live!</h1>
-        <p className="text-secondary mb-8">Share it and make their day unforgettable.</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-dark mb-3">{testMode ? '🎉 Your test page is live!' : '🎉 Your page is live!'}</h1>
+        <p className="text-secondary mb-8">{testMode ? 'Published without payment for testing. Share it now.' : 'Share it and make their day unforgettable.'}</p>
 
         <div className="w-full h-px bg-card mb-8" />
 
@@ -167,6 +178,13 @@ const SuccessPage = () => {
               <QRCodeSVG value={pageUrl} size={210} fgColor="#CC2D9A" bgColor="#ffffff" level="H" includeMargin />
             </div>
             <p className="text-[11px] text-secondary font-bold break-all">{pageUrl}</p>
+          </div>
+          <div className="relative bg-white rounded-[24px] border border-[#f5d5e5] p-5 shadow-[0_18px_40px_rgba(204,45,154,0.12)] max-w-[300px] mx-auto mt-4">
+            <p className="font-dancing text-3xl text-[#CC2D9A] mb-3">Heart QR style</p>
+            <div className="flex justify-center mb-2">
+              <DecorativeHeartQr size={230} color="#CC2D9A" />
+            </div>
+            <p className="text-[11px] text-secondary font-bold">Use the link copy above to share directly</p>
           </div>
           <button onClick={downloadQR}
             className="text-primary-pink font-bold text-sm flex items-center gap-2 mx-auto hover:underline">
