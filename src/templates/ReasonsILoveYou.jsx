@@ -4,6 +4,8 @@ import { Shuffle } from 'lucide-react';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 import confetti from 'canvas-confetti';
 
+const DEFAULT_REASONS = Array.from({ length: 100 }, (_, i) => `Reason ${i + 1}: You make life brighter.`);
+
 const ReasonsILoveYou = ({
   recipientName, senderName, reasons = [], scenes = {}, palette = 'pink',
   font = 'playful', showSenderName = true, showFooter = true,
@@ -13,10 +15,7 @@ const ReasonsILoveYou = ({
   const fnt = fonts[font] || fonts.playful;
   const videoId = extractYouTubeId(musicUrl);
 
-  const allReasons = reasons.length > 0 ? reasons : [
-    'Your laugh fills every room', 'The way you care', 'Your kindness',
-    'How you make me feel safe', 'Your beautiful eyes',
-  ];
+  const allReasons = reasons.length > 0 ? reasons : DEFAULT_REASONS;
 
   const [cards, setCards] = useState(allReasons.map((r, i) => ({ id: i, text: r, flipped: false })));
   const [revealed, setRevealed] = useState(0);

@@ -2,6 +2,32 @@ import { db } from '../firebase'
 import { auth } from '../firebase'
 import { collection, doc, setDoc, Timestamp } from 'firebase/firestore'
 
+const BASE_REASON_LINES = [
+  'You make ordinary moments feel special.',
+  'Your smile makes my whole day better.',
+  'You listen with your whole heart.',
+  'You believe in me when I doubt myself.',
+  'You make me laugh when I need it most.',
+  'You are kind even when nobody is watching.',
+  'You make hard days feel lighter.',
+  'You notice the little things.',
+  'You are my calm in chaos.',
+  'You make me want to be better.',
+  'You make home feel like a person.',
+  'You are gentle with my heart.',
+  'You make love feel safe.',
+  'You turn simple days into memories.',
+  'You are my favorite conversation.',
+  'You celebrate my wins like they are yours.',
+  'You stand by me through everything.',
+  'You make life feel brighter.',
+  'You are beautifully, unapologetically you.',
+  'You are my favorite part of every day.',
+]
+
+const buildDefaultReasons = (count = 100) =>
+  Array.from({ length: count }, (_, i) => `Reason ${i + 1}: ${BASE_REASON_LINES[i % BASE_REASON_LINES.length]}`)
+
 export const TEMPLATE_SCENE_DEFAULTS = {
   'kawaii-letter': {
     hint: 'Tap the seal to open ♥',
@@ -136,6 +162,7 @@ export const TEMPLATE_STYLE_DEFAULTS = {
 
 export function getInitialDraftFormData(templateId) {
   const styleDefaults = TEMPLATE_STYLE_DEFAULTS[templateId] || TEMPLATE_STYLE_DEFAULTS['kawaii-letter']
+  const defaultReasons = templateId === '100-reasons' ? buildDefaultReasons(100) : []
 
   return {
     recipientName: '',
@@ -145,7 +172,7 @@ export function getInitialDraftFormData(templateId) {
     palette: styleDefaults.palette,
     font: styleDefaults.font,
     scenes: TEMPLATE_SCENE_DEFAULTS[templateId] ? { ...TEMPLATE_SCENE_DEFAULTS[templateId] } : {},
-    reasons: [],
+    reasons: defaultReasons,
     musicEnabled: false,
     musicUrl: '',
     volume: 60,

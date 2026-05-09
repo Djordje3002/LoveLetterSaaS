@@ -39,6 +39,8 @@ const TEMPLATE_PRESENTATION = {
   'iva-birthday': { palette: 'navy', font: 'playful' },
 };
 
+const DEMO_REASONS = Array.from({ length: 100 }, (_, i) => `Reason ${i + 1}: You make life brighter.`);
+
 const DemoPreviewPage = () => {
   const { templateId } = useParams();
   const TemplateComponent = TEMPLATES[templateId] || TEMPLATES['kawaii-letter'];
@@ -61,7 +63,7 @@ const DemoPreviewPage = () => {
         recipientName="Your Love"
         senderName="From Me"
         scenes={defaultScenes}
-        reasons={Array.from({ length: 12 }, (_, i) => `Reason ${i + 1}: You make life brighter.`)}
+        reasons={DEMO_REASONS}
         palette={presentation.palette}
         font={presentation.font}
         showSenderName
