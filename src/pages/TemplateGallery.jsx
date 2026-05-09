@@ -9,6 +9,7 @@ const TemplateGallery = () => {
   const filters = ['All', 'Love', 'Reasons', 'Gallery', 'Story', 'Elegant', 'Date', 'Birthday'];
 
   const templates = [
+    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
     { id: 'kawaii-letter', name: 'Kawaii Letter', tags: ['Love', 'Letter'] },
     { id: '100-reasons', name: '100 Reasons', tags: ['Reasons', 'Love'] },
     { id: 'our-gallery', name: 'Our Gallery', tags: ['Gallery', 'Memories'] },
@@ -17,7 +18,6 @@ const TemplateGallery = () => {
     { id: 'midnight-love', name: 'Midnight Love', tags: ['Night', 'Elegant'] },
     { id: 'rose-whisper', name: 'Rose Whisper', tags: ['Love', 'Elegant'] },
     { id: 'golden-promise', name: 'Golden Promise', tags: ['Love', 'Letter'] },
-    { id: 'date-invite', name: 'Will You Be My Valentine?', tags: ['Date', 'Love'] },
     { id: 'iva-birthday', name: 'IVA Birthday', tags: ['Birthday', 'Love'] },
   ];
 
