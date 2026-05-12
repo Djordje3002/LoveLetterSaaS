@@ -1,4 +1,3 @@
-import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import HeartParticles from './HeartParticles';
@@ -6,7 +5,7 @@ import { motion } from 'framer-motion';
 
 const Layout = ({ children, showFooter = true, showParticles = true }) => {
   return (
-    <div className="min-h-screen relative flex flex-col">
+    <div className="min-h-screen relative flex flex-col overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc_0%,#fffefe_45%,#fff9fc_100%)]">
       <Navbar />
       
       {/* Background Blobs */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookHeart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { palettes, fonts, extractYouTubeId } from './palettes';

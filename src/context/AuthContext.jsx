@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { auth } from '../firebase'
 import {
   onAuthStateChanged,
@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from 'firebase/auth'
 
@@ -28,14 +29,32 @@ export const AuthProvider = ({ children }) => {
     return () => unsub()
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      return await signInWithPopup(auth, googleProvider)
+    } catch (err) {
+      const code = String(err?.code || '')
+      const canFallbackToRedirect =
+        code === 'auth/popup-blocked'
+        || code === 'auth/operation-not-supported-in-this-environment'
+        || code === 'auth/web-storage-unsupported'
+
+      if (canFallbackToRedirect) {
+        await signInWithRedirect(auth, googleProvider)
+        return null
+      }
+      throw err
+    }
+  }, [googleProvider])
+
   const value = useMemo(() => ({
     user,
     authLoading,
     signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
     signUp: (email, password) => createUserWithEmailAndPassword(auth, email, password),
-    signInWithGoogle: () => signInWithPopup(auth, googleProvider),
+    signInWithGoogle,
     signOutUser: () => signOut(auth),
-  }), [user, authLoading, googleProvider])
+  }), [user, authLoading, signInWithGoogle])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

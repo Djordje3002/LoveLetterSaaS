@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle } from 'lucide-react';
 import { palettes, fonts, extractYouTubeId } from './palettes';

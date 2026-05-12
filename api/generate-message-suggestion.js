@@ -52,12 +52,15 @@ function setCorsHeaders(req, res) {
     .filter(Boolean);
 
   const requestOrigin = req.headers.origin;
-  const allowAll = configuredOrigins.length === 0;
-  const allowed = allowAll || (requestOrigin && configuredOrigins.includes(requestOrigin));
+  const allowed = configuredOrigins.length === 0
+    || (requestOrigin && configuredOrigins.includes(requestOrigin));
 
-  if (allowed && requestOrigin) {
+  // Be permissive for browser clients to avoid blocked cross-origin AI calls.
+  if (requestOrigin) {
     res.setHeader('Access-Control-Allow-Origin', requestOrigin);
     res.setHeader('Vary', 'Origin');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -79,10 +82,7 @@ function parseBody(req) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const corsAllowed = setCorsHeaders(req, res);
-  if (!corsAllowed && req.headers.origin) {
-    return res.status(403).json({ error: 'Origin is not allowed.' });
-  }
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();

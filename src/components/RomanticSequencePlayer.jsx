@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DecorativeHeartQr from './DecorativeHeartQr';
 
 const LETTER_TEXT = `My Dearest,\n\n I never said this right, but you matter to me. It's in the quiet way you stay in my mind. In the way small things turn into thoughts of you. And how my day feels softer with you in it. Like I can just be, without trying too hard.`;
@@ -19,6 +19,12 @@ const RomanticSequencePlayer = () => {
     })),
     []
   );
+
+  const handleSealTap = useCallback(() => {
+    if (scene !== 2 || flapOpen) return;
+    setFlapOpen(true);
+    setScene(3);
+  }, [scene, flapOpen]);
 
   useEffect(() => {
     const timers = [];
@@ -53,7 +59,7 @@ const RomanticSequencePlayer = () => {
       );
     }
     return () => timers.forEach(clearTimeout);
-  }, [scene]);
+  }, [scene, handleSealTap]);
 
   useEffect(() => {
     if (scene !== 5) return;
@@ -66,12 +72,6 @@ const RomanticSequencePlayer = () => {
     }, 18);
     return () => clearInterval(iv);
   }, [scene]);
-
-  const handleSealTap = () => {
-    if (scene !== 2 || flapOpen) return;
-    setFlapOpen(true);
-    setScene(3);
-  };
 
   return (
     <div className="min-h-screen bg-[#f5f1ef] flex items-center justify-center p-4">

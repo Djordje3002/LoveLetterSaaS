@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Image as ImageIcon, Home, Lock, Shuffle, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';

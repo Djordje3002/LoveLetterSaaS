@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import EnvelopeRevealShell from './EnvelopeRevealShell';
 import { palettes, fonts, extractYouTubeId } from './palettes';

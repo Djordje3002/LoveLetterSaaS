@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import Layout from '../components/Layout'
@@ -40,6 +40,12 @@ const AuthPage = () => {
     }
     if (code === 'auth/unauthorized-domain') {
       return 'This domain is not authorized for Firebase Auth. Add it in Firebase Authentication settings.'
+    }
+    if (code === 'auth/operation-not-supported-in-this-environment') {
+      return 'Google sign-in is not supported in this browser context. Open the app in Chrome/Safari and try again.'
+    }
+    if (code === 'auth/web-storage-unsupported') {
+      return 'Browser storage is blocked, so Google sign-in cannot continue. Allow cookies/storage and try again.'
     }
     if (code === 'auth/popup-closed-by-user') return 'Google sign-in window was closed. Try again.'
     if (code === 'auth/popup-blocked') return 'Popup was blocked by your browser. Please allow popups and try again.'
@@ -86,10 +92,10 @@ const AuthPage = () => {
 
   return (
     <Layout showFooter={false} showParticles={false}>
-      <section className="min-h-[70vh] flex items-center justify-center px-6">
-        <div className="w-full max-w-md bg-white border border-card rounded-2xl shadow-xl p-7">
+      <section className="min-h-[70vh] flex items-start sm:items-center justify-center px-4 sm:px-6 pt-24 sm:pt-20 pb-8">
+        <div className="w-full max-w-md bg-white border border-card rounded-2xl shadow-xl p-5 sm:p-7">
           <p className="text-xs uppercase tracking-widest font-bold text-primary-pink mb-2">Account</p>
-          <h1 className="text-3xl font-bold text-dark mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-dark mb-2">
             {isSignup ? 'Create your account' : 'Welcome back'}
           </h1>
           <p className="text-secondary text-sm mb-6">
@@ -101,7 +107,7 @@ const AuthPage = () => {
               type="button"
               onClick={handleGoogleAuth}
               disabled={submitting}
-              className="w-full border-2 border-card rounded-xl py-2.5 font-semibold text-dark hover:bg-slate-50 transition-colors disabled:opacity-70"
+              className="w-full border-2 border-card rounded-xl py-2.5 text-sm sm:text-base font-semibold text-dark hover:bg-slate-50 transition-colors disabled:opacity-70"
             >
               Continue with Google
             </button>
@@ -119,7 +125,7 @@ const AuthPage = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
                 placeholder="you@example.com"
               />
             </div>
@@ -132,7 +138,7 @@ const AuthPage = () => {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
                 placeholder="••••••••"
               />
             </div>
@@ -146,18 +152,18 @@ const AuthPage = () => {
                   minLength={6}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                  className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
                   placeholder="••••••••"
                 />
               </div>
             )}
 
-            {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
+            {error && <p className="text-xs sm:text-sm text-red-500 font-medium break-words">{error}</p>}
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full btn-primary py-3 disabled:opacity-70 flex items-center justify-center gap-2"
+              className="w-full btn-primary py-3 text-sm sm:text-base disabled:opacity-70 flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
               {submitting ? 'Please wait...' : (isSignup ? 'Create account' : 'Sign in')}

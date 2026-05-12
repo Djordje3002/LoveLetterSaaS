@@ -2,6 +2,7 @@ import { db } from '../firebase'
 import { auth } from '../firebase'
 import { collection, doc, setDoc, Timestamp } from 'firebase/firestore'
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music'
+import { CURRENT_TEMPLATE_RENDER_VERSION } from './pagePayload'
 
 const BASE_REASON_LINES = [
   'You make ordinary moments feel special.',
@@ -206,6 +207,7 @@ export function getInitialDraftFormData(templateId) {
   const defaultReasons = templateId === '100-reasons' ? buildDefaultReasons(100) : []
 
   return {
+    templateVersion: CURRENT_TEMPLATE_RENDER_VERSION,
     recipientName: '',
     senderName: '',
     showSenderName: true,
@@ -427,7 +429,12 @@ them: love: i really, really love you`,
 }
 
 export async function createDraft(templateId, initialData = {}) {
-  const currentUser = auth.currentUser
+  let currentUser = auth.currentUser
+  if (!currentUser && typeof auth.authStateReady === 'function') {
+    await auth.authStateReady()
+    currentUser = auth.currentUser
+  }
+
   if (!currentUser) {
     throw new Error('Please sign in before creating a draft.')
   }
@@ -442,6 +449,7 @@ export async function createDraft(templateId, initialData = {}) {
     id,
     status: 'pending',
     templateId,
+    templateVersion: Number(initialData.templateVersion) || defaults.templateVersion || CURRENT_TEMPLATE_RENDER_VERSION,
     recipientName: initialData.recipientName ?? defaults.recipientName,
     senderName: initialData.senderName ?? defaults.senderName,
     showSenderName: initialData.showSenderName ?? defaults.showSenderName,
@@ -454,7 +462,6 @@ export async function createDraft(templateId, initialData = {}) {
     musicUrl: initialData.musicUrl ?? defaults.musicUrl,
     stripeSessionId: '',
     ownerUid: currentUser?.uid || '',
-    ownerEmail: currentUser?.email || '',
     createdAt: now,
     expiresAt,
   }

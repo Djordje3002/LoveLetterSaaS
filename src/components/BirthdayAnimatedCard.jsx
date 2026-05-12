@@ -379,14 +379,11 @@ const BirthdayAnimatedCard = ({
             {showSparkleBurst ? (
               <div style={{ position: 'absolute', left: '50%', top: 92 }}>
                 {sparkles.map((p) => {
-                  let node = null;
-                  if (p.shape === 'circle') {
-                    node = <span style={{ width: p.size, height: p.size, borderRadius: '50%', background: p.color, display: 'block' }} />;
-                  } else if (p.shape === 'rect') {
-                    node = <span style={{ width: p.size + 3, height: Math.max(3, p.size / 2.4), borderRadius: 2, background: p.color, display: 'block' }} />;
-                  } else {
-                    node = <span style={{ color: p.color, fontSize: p.size + 4, lineHeight: 1, display: 'block' }}>✦</span>;
-                  }
+                  const node = p.shape === 'circle'
+                    ? <span style={{ width: p.size, height: p.size, borderRadius: '50%', background: p.color, display: 'block' }} />
+                    : p.shape === 'rect'
+                      ? <span style={{ width: p.size + 3, height: Math.max(3, p.size / 2.4), borderRadius: 2, background: p.color, display: 'block' }} />
+                      : <span style={{ color: p.color, fontSize: p.size + 4, lineHeight: 1, display: 'block' }}>✦</span>;
 
                   return (
                     <span

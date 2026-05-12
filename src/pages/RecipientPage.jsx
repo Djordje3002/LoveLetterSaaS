@@ -3,8 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import { DEFAULT_TEMPLATE_ID, TEMPLATE_COMPONENTS } from '../templates/registry';
+import TemplateRenderer from '../components/TemplateRenderer';
+import { buildTemplatePayload } from '../utils/pagePayload';
+import { captureAppError } from '../utils/monitoring';
 
 const RecipientPage = () => {
   const { id } = useParams();
@@ -22,7 +23,7 @@ const RecipientPage = () => {
         setPageData(data);
         setStatus('found');
       } catch (err) {
-        console.error(err);
+        captureAppError(err, { scope: 'recipient.load', draftId: id });
         setStatus('not-found');
       }
     };
@@ -59,17 +60,8 @@ const RecipientPage = () => {
     );
   }
 
-  const templateId = pageData?.templateId || DEFAULT_TEMPLATE_ID;
-  const TemplateComponent = TEMPLATE_COMPONENTS[templateId];
-  if (!TemplateComponent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-secondary">Unknown template type.</p>
-      </div>
-    );
-  }
-
-  const giftRecipientName = String(pageData.recipientName || '').trim() || 'you';
+  const payload = buildTemplatePayload(pageData);
+  const giftRecipientName = String(payload.recipientName || '').trim() || 'you';
 
   return (
     <>
@@ -78,18 +70,7 @@ const RecipientPage = () => {
           Special Gift Just For {giftRecipientName}
         </div>
       </div>
-      <TemplateComponent
-        recipientName={pageData.recipientName}
-        senderName={pageData.senderName}
-        scenes={pageData.scenes || {}}
-        reasons={pageData.reasons || []}
-        palette={pageData.palette || 'pink'}
-        font={pageData.font || 'playful'}
-        showSenderName={pageData.showSenderName ?? true}
-        showFooter={pageData.showFooter ?? true}
-        musicEnabled
-        musicUrl={pageData.musicUrl || DEFAULT_LOVE_MUSIC_URL}
-      />
+      <TemplateRenderer pageData={pageData} musicEnabled />
     </>
   );
 };

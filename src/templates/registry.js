@@ -1,34 +1,5 @@
-import KawaiiLetter from './KawaiiLetter'
-import ReasonsILoveYou from './ReasonsILoveYou'
-import OurGallery from './OurGallery'
-import DarkRomance from './DarkRomance'
-import OurStory from './OurStory'
-import MidnightLove from './MidnightLove'
-import RoseWhisper from './RoseWhisper'
-import GoldenPromise from './GoldenPromise'
-import DateInviteLetter from './DateInviteLetter'
-import BirthdayCandles from './BirthdayCandles'
-import IvaBirthday from './IvaBirthday'
-import SkyLove from './SkyLove'
-import ChatReveal from './ChatReveal'
-
 export const DEFAULT_TEMPLATE_ID = 'kawaii-letter'
-
-export const TEMPLATE_COMPONENTS = {
-  'kawaii-letter': KawaiiLetter,
-  '100-reasons': ReasonsILoveYou,
-  'our-gallery': OurGallery,
-  'dark-romance': DarkRomance,
-  'our-story': OurStory,
-  'midnight-love': MidnightLove,
-  'rose-whisper': RoseWhisper,
-  'golden-promise': GoldenPromise,
-  'iva-birthday': IvaBirthday,
-  'birthday-candles': BirthdayCandles,
-  'date-invite': DateInviteLetter,
-  'sky-love': SkyLove,
-  'chat-reveal': ChatReveal,
-}
+export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['kawaii-letter', 'iva-birthday', 'date-invite']
 
 export const TEMPLATE_REGISTRY = [
   {
@@ -36,7 +7,7 @@ export const TEMPLATE_REGISTRY = [
     title: 'Love Letter',
     cardTitle: 'Love Letter',
     tags: ['Most Popular', 'Love'],
-    description: 'A kawaii digital letter experience featuring an interactive envelope, a heartfelt letter, draggable polaroid memories, a retro TV music player, and a flower explosion finale. All text and photos are fully customizable.',
+    description: 'A romantic love letter experience with an interactive envelope, heartfelt message reveal, draggable polaroid memories, a retro music player, and a flower finale. All text and photos are fully customizable.',
     emoji: '✉️',
     color: 'bg-[#FFD1DC]',
     supportsImages: false,
@@ -52,6 +23,18 @@ export const TEMPLATE_REGISTRY = [
     emoji: '💙',
     color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
     supportsImages: true,
+    hideRecipientSetting: false,
+    hidePaletteSetting: false,
+  },
+  {
+    id: '100-reasons',
+    title: '100 Reasons',
+    cardTitle: '100 Reasons',
+    tags: ['Reasons', 'Love'],
+    description: 'Flip beautifully animated cards revealing all the reasons you love someone. Includes confetti finale and playful interactions.',
+    emoji: '💯',
+    color: 'bg-gradient-to-br from-violet-200 to-rose-200',
+    supportsImages: false,
     hideRecipientSetting: false,
     hidePaletteSetting: false,
   },
@@ -99,18 +82,6 @@ export const TEMPLATE_REGISTRY = [
     description: 'A moonlit letter journey with glowing stars, celestial visuals, and a dreamy reveal crafted for heartfelt messages.',
     emoji: '🌌',
     color: 'bg-gradient-to-br from-[#0D1B3E] to-[#1A0533]',
-    supportsImages: false,
-    hideRecipientSetting: false,
-    hidePaletteSetting: false,
-  },
-  {
-    id: '100-reasons',
-    title: '100 Reasons',
-    cardTitle: '100 Reasons',
-    tags: ['Reasons', 'Love'],
-    description: 'Flip beautifully animated cards revealing all the reasons you love someone. Includes confetti finale and playful interactions.',
-    emoji: '💯',
-    color: 'bg-gradient-to-br from-violet-200 to-rose-200',
     supportsImages: false,
     hideRecipientSetting: false,
     hidePaletteSetting: false,
@@ -174,10 +145,15 @@ export const TEMPLATE_GALLERY_FILTERS = ['All', 'Love', 'Birthday', 'Chat', 'Rea
 
 export const getTemplateConfig = (templateId) => TEMPLATE_BY_ID[templateId] || TEMPLATE_BY_ID[DEFAULT_TEMPLATE_ID]
 
-export const getTemplateComponent = (templateId) => TEMPLATE_COMPONENTS[templateId] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE_ID]
+export const getTemplatePriceCents = (templateId) => (templateId === 'iva-birthday' ? 999 : 800)
 
 export const getTemplateCards = () => TEMPLATE_REGISTRY.map((template) => ({
   id: template.id,
   name: template.cardTitle,
   tags: template.tags,
 }))
+
+export const getShowcaseTemplateCards = () => {
+  const allowed = new Set(TEMPLATE_PUBLIC_SHOWCASE_IDS)
+  return getTemplateCards().filter((template) => allowed.has(template.id))
+}

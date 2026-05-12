@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-
+import { useEffect, useState } from 'react';
 const HeartParticles = ({ count = 15 }) => {
   const [particles, setParticles] = useState([]);
 

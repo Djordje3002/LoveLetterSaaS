@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
-import loveGiftsLogo from '../../LoveGiftsLogo.png';
 
 const Footer = () => {
   return (
@@ -12,7 +11,7 @@ const Footer = () => {
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="h-14 w-14 rounded-full bg-white border border-primary-light shadow-sm p-1.5 flex items-center justify-center">
                 <img
-                  src={loveGiftsLogo}
+                  src="/logo.png"
                   alt="LoveGifts"
                   className="h-full w-full object-contain rounded-full"
                 />
@@ -53,7 +52,7 @@ const Footer = () => {
         <div className="border-t border-primary-light pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-secondary text-sm">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-white border border-primary-light p-1 flex items-center justify-center">
-              <img src={loveGiftsLogo} alt="LoveGifts" className="h-full w-full object-contain rounded-full" />
+              <img src="/logo.png" alt="LoveGifts" className="h-full w-full object-contain rounded-full" />
             </div>
             <p>© 2025 LovePage. All rights reserved.</p>
           </div>

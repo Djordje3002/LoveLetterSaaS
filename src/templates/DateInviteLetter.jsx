@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { AnimatePresence, motion } from 'framer-motion';
 import { palettes, fonts, extractYouTubeId } from './palettes';

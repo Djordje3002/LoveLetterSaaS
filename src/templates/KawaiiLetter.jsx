@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { palettes, fonts, extractYouTubeId } from './palettes';
 
@@ -26,7 +26,7 @@ const linedPaperStyle = {
 const buildTypedLetter = ({ scenes, senderName, showSenderName }) => {
   const rawBody = String(scenes.letterText || '').trim();
   const hasGreetingInBody = /^\s*my\s+dearest/i.test(rawBody);
-  const greeting = hasGreetingInBody ? '' : (scenes.letterGreeting || 'My\ndearest,');
+  const greeting = hasGreetingInBody ? '' : (scenes.letterGreeting || 'My dearest,');
   const bridge = String(scenes.scene3Header || '').trim();
   const closing = String(scenes.closingMessage || '').trim();
   const signature = showSenderName && senderName ? `— ${senderName}` : '';
@@ -72,22 +72,13 @@ const KawaiiLetter = ({
   useEffect(() => {
     if (phase !== 'letter') return undefined;
     setTypedText('');
-    let cursor = 0;
-    let interval = null;
 
-    // Let the paper complete its entrance before typing begins.
+    // Let the paper complete its entrance before revealing text.
     const startTimer = window.setTimeout(() => {
-      interval = window.setInterval(() => {
-        cursor += 1;
-        setTypedText(typedLetter.slice(0, cursor));
-        if (cursor >= typedLetter.length && interval) window.clearInterval(interval);
-      }, 22);
+      setTypedText(typedLetter);
     }, 650);
 
-    return () => {
-      window.clearTimeout(startTimer);
-      if (interval) window.clearInterval(interval);
-    };
+    return () => window.clearTimeout(startTimer);
   }, [phase, typedLetter]);
 
   const handleOpen = useCallback(() => {
@@ -240,7 +231,7 @@ const KawaiiLetter = ({
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pt-8 md:pt-12 text-center text-[3rem] md:text-[4.4rem] leading-none text-[#b30553] font-dancing font-bold relative z-10"
+              className="pt-8 md:pt-12 text-center text-[2.35rem] sm:text-[2.7rem] md:text-[4rem] leading-none text-[#b30553] font-dancing font-bold relative z-10"
             >
               {heading}
             </motion.h1>
@@ -263,11 +254,10 @@ const KawaiiLetter = ({
 
               <div className="relative px-9 sm:px-14 py-14 sm:py-16">
                 <p
-                  className="font-dancing text-[#2b1a20] text-[2.2rem] sm:text-[2.6rem] leading-[1.46] whitespace-pre-line text-center"
+                  className="font-dancing text-[#2b1a20] text-[1.55rem] sm:text-[2rem] leading-[1.52] whitespace-pre-line text-left"
                   style={{ fontFamily: "'Dancing Script', 'Great Vibes', cursive", fontWeight: 700, letterSpacing: '0.01em' }}
                 >
                   {typedText}
-                  <span className="inline-block ml-1 animate-pulse text-[#7b2a4f]">|</span>
                 </p>
               </div>
             </motion.div>

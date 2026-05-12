@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../context/AuthContext'
 
 const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title = 'Continue' }) => {
@@ -28,6 +29,12 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
     if (code === 'auth/unauthorized-domain') {
       return 'This domain is not authorized for Firebase Auth. Add it in Firebase Authentication settings.'
     }
+    if (code === 'auth/operation-not-supported-in-this-environment') {
+      return 'Google sign-in is not supported in this browser context. Open the app in Chrome/Safari and try again.'
+    }
+    if (code === 'auth/web-storage-unsupported') {
+      return 'Browser storage is blocked, so Google sign-in cannot continue. Allow cookies/storage and try again.'
+    }
     if (code === 'auth/popup-closed-by-user') return 'Google sign-in window was closed. Try again.'
     if (code === 'auth/popup-blocked') return 'Popup was blocked by your browser. Please allow popups and try again.'
     if (code === 'auth/network-request-failed') return 'Network error. Check your internet connection and try again.'
@@ -36,6 +43,13 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
     if (code === 'auth/weak-password') return 'Password should be at least 6 characters.'
     return isGoogle ? 'Could not continue with Google. Please try again.' : 'Could not complete authentication. Please try again.'
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    setMode(initialMode)
+    setError('')
+    setSubmitting(false)
+  }, [initialMode, isOpen])
 
   if (!isOpen) return null
 
@@ -86,11 +100,13 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[120] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-card shadow-2xl p-6">
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[120] bg-black/45 flex items-start sm:items-center justify-center overflow-y-auto p-3 sm:p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-card shadow-2xl p-4 sm:p-6 my-2 sm:my-6 max-h-[calc(100vh-1rem)] sm:max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-xl font-bold text-dark">{title}</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-dark">{title}</h3>
           <button onClick={resetAndClose} className="text-secondary hover:text-dark">
             <X size={20} />
           </button>
@@ -101,7 +117,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
             type="button"
             onClick={handleGoogleAuth}
             disabled={submitting}
-            className="w-full border-2 border-card rounded-xl py-2.5 font-semibold text-dark hover:bg-slate-50 transition-colors disabled:opacity-70"
+            className="w-full border-2 border-card rounded-xl py-2.5 text-sm sm:text-base font-semibold text-dark hover:bg-slate-50 transition-colors disabled:opacity-70"
           >
             Continue with Google
           </button>
@@ -119,7 +135,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+              className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
               placeholder="you@example.com"
             />
           </div>
@@ -131,7 +147,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+              className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
               placeholder="••••••••"
             />
           </div>
@@ -145,18 +161,18 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full mt-1 px-4 py-2 border border-card rounded-xl focus:outline-none focus:border-primary-pink"
+                className="w-full mt-1 px-4 py-2.5 text-sm border border-card rounded-xl focus:outline-none focus:border-primary-pink"
                 placeholder="••••••••"
               />
             </div>
           )}
 
-          {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
+          {error && <p className="text-xs sm:text-sm text-red-500 font-medium break-words">{error}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full btn-primary py-3 disabled:opacity-70 flex items-center justify-center gap-2"
+            className="w-full btn-primary py-3 text-sm sm:text-base disabled:opacity-70 flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
             {submitting ? 'Please wait...' : actionLabel}
@@ -178,6 +194,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, initialMode = 'signin', title =
         </p>
       </div>
     </div>
+    , document.body
   )
 }
 

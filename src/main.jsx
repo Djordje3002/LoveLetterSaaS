@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import { Suspense, StrictMode, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -54,11 +54,11 @@ const AnimatedRoutes = () => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+  <StrictMode>
     <AuthProvider>
       <Router>
         <AnimatedRoutes />
       </Router>
     </AuthProvider>
-  </React.StrictMode>,
+  </StrictMode>,
 )

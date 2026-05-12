@@ -1,11 +1,52 @@
 const functions = require('firebase-functions')
 const admin = require('firebase-admin')
-const stripe = require('stripe')(functions.config().stripe.secret)
 
 admin.initializeApp()
 
-const APP_URL = functions.config().app?.url || 'https://lovepage.app'
+function normalizeAppUrl(rawUrl) {
+  const fallback = 'https://lovelettersaas.vercel.app'
+  const value = String(rawUrl || fallback).trim()
+  return value.replace(/\/+$/, '') || fallback
+}
+
+const APP_URL = normalizeAppUrl(functions.config().app?.url || 'https://lovelettersaas.vercel.app')
 const DEFAULT_PRICE_CENTS = 800
+const TEMPLATE_RENDER_VERSION = 2
+const PRICE_BY_TEMPLATE_CENTS = {
+  'iva-birthday': 999,
+}
+const SUPPORTED_TEMPLATE_IDS = new Set([
+  'kawaii-letter',
+  '100-reasons',
+  'our-gallery',
+  'dark-romance',
+  'our-story',
+  'midnight-love',
+  'rose-whisper',
+  'golden-promise',
+  'iva-birthday',
+  'birthday-candles',
+  'date-invite',
+  'sky-love',
+  'chat-reveal',
+])
+const ALLOW_TEST_PUBLISH = String(functions.config().features?.allow_test_publish || 'false').toLowerCase() === 'true'
+
+let stripeClient = null
+
+function getStripeClient() {
+  if (stripeClient) return stripeClient
+  const secret = functions.config().stripe?.secret
+  if (!secret) {
+    throw new functions.https.HttpsError('failed-precondition', 'Stripe is not configured on server')
+  }
+  stripeClient = require('stripe')(secret)
+  return stripeClient
+}
+
+function resolveDraftPrice(templateId) {
+  return PRICE_BY_TEMPLATE_CENTS[templateId] || DEFAULT_PRICE_CENTS
+}
 
 // ─── Create Stripe Checkout Session ───────────────────────────────────────────
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
@@ -31,13 +72,18 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
 
   await draftRef.update({
     checkoutOwnerUid: context.auth.uid,
-    checkoutOwnerEmail: context.auth.token.email || '',
     checkoutStartedAt: admin.firestore.Timestamp.now(),
+    checkoutOwnerEmail: admin.firestore.FieldValue.delete(),
+    ownerEmail: admin.firestore.FieldValue.delete(),
   })
 
   const templateId = String(draft.data().templateId || '')
-  const unitAmount = DEFAULT_PRICE_CENTS
+  if (!SUPPORTED_TEMPLATE_IDS.has(templateId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Unsupported template')
+  }
+  const unitAmount = resolveDraftPrice(templateId)
 
+  const stripe = getStripeClient()
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
@@ -97,6 +143,7 @@ exports.verifyPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('failed-precondition', 'Draft is not pending')
   }
 
+  const stripe = getStripeClient()
   const session = await stripe.checkout.sessions.retrieve(sessionId)
 
   if (session.payment_status !== 'paid') {
@@ -114,8 +161,11 @@ exports.verifyPayment = functions.https.onCall(async (data, context) => {
   await draftRef.update({
     status: 'active',
     stripeSessionId: sessionId,
+    templateVersion: Number(draftData.templateVersion) || TEMPLATE_RENDER_VERSION,
     publishedAt: admin.firestore.Timestamp.now(),
     expiresAt: admin.firestore.FieldValue.delete(),
+    ownerEmail: admin.firestore.FieldValue.delete(),
+    checkoutOwnerEmail: admin.firestore.FieldValue.delete(),
   })
 
   return { success: true }
@@ -124,6 +174,10 @@ exports.verifyPayment = functions.https.onCall(async (data, context) => {
 // ─── Test Publish (Skip Payment) ──────────────────────────────────────────────
 exports.publishForTest = functions.https.onCall(async (data, context) => {
   const { draftId, method } = data || {}
+
+  if (!ALLOW_TEST_PUBLISH) {
+    throw new functions.https.HttpsError('failed-precondition', 'Test publish is disabled')
+  }
 
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'You must be signed in to publish')
@@ -152,16 +206,18 @@ exports.publishForTest = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('failed-precondition', 'Draft is not pending')
   }
 
-  const safeMethod = String(method || 'instant').toLowerCase()
+  const safeMethod = String(method || 'instant').toLowerCase() === 'local' ? 'local' : 'instant'
 
   await draftRef.update({
     status: 'active',
     stripeSessionId: `test-skip-${safeMethod}`,
+    templateVersion: Number(draftData.templateVersion) || TEMPLATE_RENDER_VERSION,
     publishedAt: admin.firestore.Timestamp.now(),
     expiresAt: admin.firestore.FieldValue.delete(),
     checkoutOwnerUid: context.auth.uid,
-    checkoutOwnerEmail: context.auth.token.email || '',
     checkoutStartedAt: admin.firestore.Timestamp.now(),
+    ownerEmail: admin.firestore.FieldValue.delete(),
+    checkoutOwnerEmail: admin.firestore.FieldValue.delete(),
   })
 
   return { success: true }
@@ -170,7 +226,7 @@ exports.publishForTest = functions.https.onCall(async (data, context) => {
 // ─── Cleanup Expired Drafts (hourly) ──────────────────────────────────────────
 exports.cleanupExpiredDrafts = functions.pubsub
   .schedule('every 1 hours')
-  .onRun(async (context) => {
+  .onRun(async () => {
     const now = admin.firestore.Timestamp.now()
     const snapshot = await admin.firestore()
       .collection('pages')

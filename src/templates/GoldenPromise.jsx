@@ -1,4 +1,3 @@
-import React from 'react';
 import KawaiiLetter from './KawaiiLetter';
 
 const GoldenPromise = (props) => {

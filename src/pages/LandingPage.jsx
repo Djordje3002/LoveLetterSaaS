@@ -4,7 +4,7 @@ import { CheckCircle2, Sparkles, Palette, Share2, Quote } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import Layout from '../components/Layout';
 import TemplateCard from '../components/TemplateCard';
-import { getTemplateCards } from '../templates/registry';
+import { getShowcaseTemplateCards } from '../templates/registry';
 
 const StatCounter = ({ value, label }) => {
   const [count, setCount] = useState(0);
@@ -42,7 +42,7 @@ const StatCounter = ({ value, label }) => {
       ref={ref}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={isInView ? { opacity: 1, scale: 1 } : {}}
-      className="card-white text-center p-8"
+      className="text-center p-8 rounded-[24px] border border-[#f1dce5] bg-white/90 shadow-sm"
     >
       <div className="text-3xl md:text-4xl font-bold text-primary-pink mb-2">
         {hasDigits ? `${count}${suffix}` : value}
@@ -81,7 +81,7 @@ const LandingPage = () => {
     },
   ];
 
-  const templates = getTemplateCards();
+  const templates = getShowcaseTemplateCards();
 
   const testimonials = [
     {
@@ -139,22 +139,29 @@ const LandingPage = () => {
     <Layout>
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-[-120px] top-24 h-72 w-72 rounded-full bg-[#ff6fa3]/20 blur-3xl" />
+          <div className="absolute right-[-140px] top-44 h-80 w-80 rounded-full bg-[#ffd67b]/18 blur-3xl" />
+          <div className="absolute bottom-14 left-1/2 h-52 w-[80%] -translate-x-1/2 rounded-full bg-[#f43f73]/10 blur-3xl" />
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-pill border border-primary-pink text-primary-pink text-sm font-medium bg-primary-light/50"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f3bfd1] bg-white/70 px-4 py-1.5 text-sm font-semibold text-primary-pink shadow-sm backdrop-blur-sm"
         >
           <span className="w-2 h-2 rounded-full bg-primary-pink animate-pulse"></span>
-          Create beautiful love pages ✨
+          Design your own love experience
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-6xl md:text-8xl font-bold mb-6 leading-[0.95] text-dark"
+          className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-[0.95] text-dark font-display break-words"
         >
-          Make Your <span className="text-primary-pink">Love</span> Truly <span className="text-primary-pink">Unforgettable</span>
+          Turn Your Feelings
+          <br />
+          <span className="text-primary-pink">Into a Private Love Experience.</span>
         </motion.h1>
 
         <motion.p
@@ -163,8 +170,8 @@ const LandingPage = () => {
           transition={{ delay: 0.2 }}
           className="text-secondary text-lg md:text-xl max-w-2xl mb-10"
         >
-          Create a personalized interactive page your partner will never forget.
-          Share it with a link or QR code.
+          Build a personalized reveal page with your words, memories, and vibe.
+          Publish once, share forever with a link and QR code.
         </motion.p>
 
         <motion.div
@@ -173,8 +180,8 @@ const LandingPage = () => {
           transition={{ delay: 0.3 }}
           className="flex flex-wrap justify-center gap-4 mb-12"
         >
-          {['Super simple.', 'Mobile friendly', 'Link & QR code', 'Up to 100 reasons'].map((badge) => (
-            <div key={badge} className="flex items-center gap-1.5 bg-white border border-card px-4 py-2 rounded-pill text-sm font-medium shadow-sm">
+          {['Super easy', 'Unique URL + QR', 'Romantic templates', 'Fast setup'].map((badge) => (
+            <div key={badge} className="flex items-center gap-1.5 rounded-full border border-[#f0d5df] bg-white/95 px-4 py-2 text-sm font-medium shadow-sm">
               <CheckCircle2 size={16} className="text-primary-pink" />
               {badge}
             </div>
@@ -188,9 +195,9 @@ const LandingPage = () => {
           className="flex flex-col sm:flex-row gap-4"
         >
           <Link to="/templates" className="btn-primary btn-shimmer flex items-center gap-2 px-10 text-lg">
-            ✦ Create yours →
+            <span className="inline-block animate-spin [animation-duration:2.2s]" aria-hidden="true">✦</span> Create yours →
           </Link>
-          <Link to="/templates" className="btn-outline px-10 text-lg">
+          <Link to="/templates" className="btn-outline bg-white/90 px-10 text-lg shadow-sm">
             See templates
           </Link>
         </motion.div>
@@ -215,13 +222,13 @@ const LandingPage = () => {
           <p className="text-secondary text-lg">Create your personalized love page in just three simple steps</p>
         </div>
 
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 rounded-[36px] border border-[#f2dde6] bg-white/75 p-6 md:p-8 shadow-[0_20px_50px_rgba(244,63,115,0.08)]">
           {/* Dotted Line Background */}
           <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 border-t-2 border-dotted border-primary-pink opacity-20 -z-10"></div>
           
           {steps.map((step) => (
-            <div key={step.id} className="card-white relative pt-12">
-              <div className="absolute top-0 left-6 -translate-y-1/2 w-12 h-12 bg-primary-pink text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg shadow-primary-pink/30">
+            <div key={step.id} className="relative rounded-[24px] border border-[#f4d9e4] bg-[#fff9fc] p-6 pt-12 shadow-sm">
+              <div className="absolute top-0 left-6 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-[#f43f73] to-[#f973a5] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg shadow-primary-pink/30">
                 {step.id}
               </div>
               <div className="absolute top-6 right-6">
@@ -244,21 +251,23 @@ const LandingPage = () => {
           <p className="text-secondary text-lg">Each template is a unique interactive experience — perfect for any occasion</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {templates.slice(0, 3).map((template, i) => (
+        <div className="rounded-[36px] border border-[#f2dde6] bg-white/70 p-6 md:p-8 shadow-[0_20px_50px_rgba(244,63,115,0.08)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+          {templates.map((template, i) => (
             <TemplateCard key={template.id} template={template} index={i} />
           ))}
-        </div>
+          </div>
 
-        <div className="text-center">
-          <Link to="/templates" className="btn-outline inline-block">
-            See all templates →
-          </Link>
+          <div className="text-center">
+            <Link to="/templates" className="btn-outline inline-block bg-white">
+              See all templates →
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-primary-light/30 py-24 mb-32">
+      <section className="bg-gradient-to-b from-primary-light/20 to-white py-24 mb-32 border-y border-[#f3e1e8]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -277,7 +286,7 @@ const LandingPage = () => {
               transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
             >
               {slidingTestimonials.map((t, i) => (
-                <div key={`${t.initials}-${i}`} className="card-white relative w-[300px] shrink-0 bg-white md:w-[360px]">
+                <div key={`${t.initials}-${i}`} className="relative w-[300px] shrink-0 rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm md:w-[360px]">
                   <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
                   <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
                   <div className="flex items-center gap-3">
@@ -300,7 +309,7 @@ const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-6 mb-32">
         <motion.div 
           whileInView={{ scale: [0.95, 1], opacity: [0, 1] }}
-          className="bg-pink-gradient rounded-[24px] p-12 md:p-20 text-center relative overflow-hidden"
+          className="rounded-[36px] border border-[#f6b7cb] bg-gradient-to-br from-[#ff5f8f] via-[#f43f73] to-[#d63366] p-12 md:p-20 text-center relative overflow-hidden shadow-[0_30px_80px_rgba(244,63,115,0.35)]"
         >
           {/* Decorative shapes */}
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
@@ -318,7 +327,7 @@ const LandingPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/templates" className="bg-white text-primary-pink px-10 py-4 rounded-pill font-bold text-lg shadow-xl hover:scale-105 transition-transform inline-block btn-shimmer">
-              ✦ Create yours now →
+              <span className="inline-block animate-spin [animation-duration:2.2s]" aria-hidden="true">✦</span> Create yours now →
             </Link>
             <Link to="/dashboard" className="border-2 border-white/70 text-white px-10 py-4 rounded-pill font-bold text-lg bg-white/10 backdrop-blur hover:bg-white/20 transition-colors inline-block">
               My Dashboard

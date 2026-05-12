@@ -1,15 +1,14 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
 import { TEMPLATE_SCENE_DEFAULTS, TEMPLATE_STYLE_DEFAULTS } from '../utils/createDraft';
-import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, TEMPLATE_COMPONENTS } from '../templates/registry';
+import TemplateRenderer from '../components/TemplateRenderer';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID } from '../templates/registry';
 
 const DEMO_REASONS = Array.from({ length: 100 }, (_, i) => `Reason ${i + 1}: You make life brighter.`);
 
 const DemoPreviewPage = () => {
   const { templateId } = useParams();
   const safeTemplateId = templateId && TEMPLATE_BY_ID[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
-  const TemplateComponent = TEMPLATE_COMPONENTS[safeTemplateId] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE_ID];
   const defaultScenes = TEMPLATE_SCENE_DEFAULTS[safeTemplateId] ? { ...TEMPLATE_SCENE_DEFAULTS[safeTemplateId] } : {};
   const presentation = TEMPLATE_STYLE_DEFAULTS[safeTemplateId] || TEMPLATE_STYLE_DEFAULTS[DEFAULT_TEMPLATE_ID];
   const demoRecipientName = 'Your Love';
@@ -31,17 +30,19 @@ const DemoPreviewPage = () => {
         <ArrowLeft size={18} />
         Back
       </Link>
-      <TemplateComponent
-        recipientName={demoRecipientName}
-        senderName="From Me"
-        scenes={defaultScenes}
-        reasons={DEMO_REASONS}
-        palette={presentation.palette}
-        font={presentation.font}
-        showSenderName
-        showFooter
+      <TemplateRenderer
+        pageData={{
+          templateId: safeTemplateId,
+          recipientName: demoRecipientName,
+          senderName: 'From Me',
+          scenes: defaultScenes,
+          reasons: DEMO_REASONS,
+          palette: presentation.palette,
+          font: presentation.font,
+          showSenderName: true,
+          showFooter: true,
+        }}
         musicEnabled
-        musicUrl={DEFAULT_LOVE_MUSIC_URL}
       />
     </div>
   );

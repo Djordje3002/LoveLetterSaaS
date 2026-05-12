@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Copy, Check, MessageCircle, Send, Plus, Download, Loader2, AlertCircle } from 'lucide-react';
+import { Copy, Check, MessageCircle, Send, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { functions } from '../firebase';
+import { db, functions } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { QRCodeSVG } from 'qrcode.react';
 import DecorativeHeartQr from '../components/DecorativeHeartQr';
 import { trackEvent } from '../utils/analytics';
+import { getAppUrl } from '../utils/appUrl';
+import { captureAppError } from '../utils/monitoring';
 
 const SuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -21,71 +23,118 @@ const SuccessPage = () => {
   const [captionCopied, setCaptionCopied] = useState(false);
   const qrRef = useRef(null);
 
-  const appUrl = import.meta.env.VITE_APP_URL || 'https://lovepage.app';
+  const appUrl = getAppUrl();
   const pageUrl = `${appUrl}/p/${draftId}`;
   const shareCaption = `I made something special for you. Open this when you have a quiet minute: ${pageUrl}`;
 
+  const copyWithFallback = async (text) => {
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.warn('Clipboard API unavailable, using fallback copy method.', err);
+      }
+    }
+
+    try {
+      const helper = document.createElement('textarea');
+      helper.value = text;
+      helper.setAttribute('readonly', '');
+      helper.style.position = 'fixed';
+      helper.style.left = '-9999px';
+      document.body.appendChild(helper);
+      helper.select();
+      const copied = document.execCommand('copy');
+      document.body.removeChild(helper);
+      return copied;
+    } catch (fallbackErr) {
+      captureAppError(fallbackErr, { scope: 'success.copyFallback', draftId });
+      return false;
+    }
+  };
+
   useEffect(() => {
-    if (!draftId) {
-      setStatus('error');
-      return;
-    }
-    if (testMode) {
-      setStatus('success');
-      trackEvent('published_test_mode', { draftId, method: testMethod });
-      return;
-    }
-    if (!sessionId) {
-      setStatus('error');
-      return;
-    }
+    let cancelled = false;
+    const setStatusSafely = (nextStatus) => {
+      if (!cancelled) setStatus(nextStatus);
+    };
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const waitForActivePage = async () => {
+      if (!draftId) return false;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        try {
+          const snap = await getDoc(doc(db, 'pages', draftId));
+          if (snap.exists() && snap.data()?.status === 'active') {
+            return true;
+          }
+        } catch (err) {
+          captureAppError(err, { scope: 'success.checkActive', draftId });
+        }
+        await wait(280 * (attempt + 1));
+      }
+      return false;
+    };
+
     const verify = async () => {
+      if (!draftId) {
+        setStatusSafely('error');
+        return;
+      }
+
+      if (testMode) {
+        const isActive = await waitForActivePage();
+        if (isActive) {
+          setStatusSafely('success');
+          trackEvent('published_test_mode', { draftId, method: testMethod });
+        } else {
+          setStatusSafely('error');
+        }
+        return;
+      }
+
+      if (!sessionId) {
+        const isActive = await waitForActivePage();
+        setStatusSafely(isActive ? 'success' : 'error');
+        return;
+      }
+
       try {
         const verifyPayment = httpsCallable(functions, 'verifyPayment');
         await verifyPayment({ sessionId, draftId });
-        setStatus('success');
-        trackEvent('paid', { draftId });
+        const isActive = await waitForActivePage();
+        setStatusSafely(isActive ? 'success' : 'error');
+        if (isActive) {
+          trackEvent('paid', { draftId });
+        }
       } catch (err) {
-        console.error('Verification failed:', err);
-        setStatus('error');
+        captureAppError(err, { scope: 'success.verifyPayment', draftId, sessionId });
+        const isActive = await waitForActivePage();
+        setStatusSafely(isActive ? 'success' : 'error');
       }
     };
+
     verify();
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, draftId, testMode, testMethod]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(pageUrl);
+  const handleCopy = async () => {
+    const copiedOk = await copyWithFallback(pageUrl);
+    if (!copiedOk) return;
     trackEvent('share_link_copied', { draftId });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const copyCaption = () => {
-    navigator.clipboard.writeText(shareCaption);
+  const copyCaption = async () => {
+    const copiedOk = await copyWithFallback(shareCaption);
+    if (!copiedOk) return;
     trackEvent('share_caption_copied', { draftId });
     setCaptionCopied(true);
     setTimeout(() => setCaptionCopied(false), 2000);
-  };
-
-  const downloadQR = () => {
-    const svgEl = document.querySelector('#qr-code svg');
-    if (!svgEl) return;
-    const svgData = new XMLSerializer().serializeToString(svgEl);
-    const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = () => {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 400, 400);
-      ctx.drawImage(img, 0, 0, 400, 400);
-      const a = document.createElement('a');
-      a.download = 'lovepage-qr.png';
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const shareWhatsApp = () => {
@@ -137,12 +186,8 @@ const SuccessPage = () => {
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         className="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 text-center">
 
-        {/* Animated checkmark */}
-        <div className="w-24 h-24 border-4 border-green-500 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }} className="text-5xl">✅</motion.div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
-            className="absolute inset-0 border-4 border-green-500 rounded-full animate-ping opacity-20" />
+        <div className="w-24 h-24 border-4 border-green-500 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-8">
+          <Check size={44} className="text-green-600" strokeWidth={3} />
         </div>
 
         <h1 className="text-3xl md:text-4xl font-bold text-dark mb-3">{testMode ? '🎉 Your test page is live!' : '🎉 Your page is live!'}</h1>
@@ -168,28 +213,8 @@ const SuccessPage = () => {
         </div>
 
         {/* QR Code */}
-        <div className="relative overflow-hidden bg-[#fff7fb] rounded-[28px] p-7 border border-[#f1c9dc] inline-block mb-8 w-full shadow-inner">
-          <div className="absolute -right-10 -top-8 opacity-10 pointer-events-none">
-            <DecorativeHeartQr size={180} color="#CC2D9A" />
-          </div>
-          <div className="relative bg-white rounded-[24px] border border-[#f5d5e5] p-5 shadow-[0_18px_40px_rgba(204,45,154,0.12)] max-w-[300px] mx-auto">
-            <p className="font-dancing text-3xl text-[#CC2D9A] mb-3">Scan my letter</p>
-            <div id="qr-code" ref={qrRef} className="flex justify-center mb-4">
-              <QRCodeSVG value={pageUrl} size={210} fgColor="#CC2D9A" bgColor="#ffffff" level="H" includeMargin />
-            </div>
-            <p className="text-[11px] text-secondary font-bold break-all">{pageUrl}</p>
-          </div>
-          <div className="relative bg-white rounded-[24px] border border-[#f5d5e5] p-5 shadow-[0_18px_40px_rgba(204,45,154,0.12)] max-w-[300px] mx-auto mt-4">
-            <p className="font-dancing text-3xl text-[#CC2D9A] mb-3">Heart QR style</p>
-            <div className="flex justify-center mb-2">
-              <DecorativeHeartQr size={230} color="#CC2D9A" />
-            </div>
-            <p className="text-[11px] text-secondary font-bold">Use the link copy above to share directly</p>
-          </div>
-          <button onClick={downloadQR}
-            className="text-primary-pink font-bold text-sm flex items-center gap-2 mx-auto hover:underline">
-            <Download size={16} /> Download QR Code
-          </button>
+        <div ref={qrRef} className="flex justify-center mb-8">
+          <DecorativeHeartQr size={196} value={pageUrl} />
         </div>
 
         <div className="w-full h-px bg-card mb-8" />
@@ -219,6 +244,9 @@ const SuccessPage = () => {
         <Link to="/templates" className="flex items-center justify-center gap-2 text-primary-pink font-bold hover:gap-3 transition-all">
           <Plus size={20} /> Create another page
         </Link>
+        <p className="text-xs text-secondary mt-5">
+          Want a fully custom page or website? <span className="text-primary-pink font-bold">Contact me.</span>
+        </p>
       </motion.div>
     </div>
   );

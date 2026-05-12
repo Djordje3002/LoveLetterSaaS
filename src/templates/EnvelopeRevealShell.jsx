@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const DEFAULT_BACKGROUND_STYLE = { backgroundColor: '#ffdbe6' };

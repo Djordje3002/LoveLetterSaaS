@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,23 +7,119 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { templateFields } from '../templates/fields';
 import AuthModal from '../components/AuthModal';
 import TemplateMiniDemo from '../components/TemplateMiniDemo';
+import TemplateRenderer from '../components/TemplateRenderer';
 import { useAuth } from '../context/AuthContext';
 import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, buildCreativeDirectionScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import { DEFAULT_TEMPLATE_ID, TEMPLATE_COMPONENTS, getTemplateConfig } from '../templates/registry';
+import { DEFAULT_TEMPLATE_ID, getTemplateConfig } from '../templates/registry';
+import { normalizeTemplateVersion } from '../utils/pagePayload';
+import { captureAppError } from '../utils/monitoring';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-const AI_SUGGEST_ENDPOINT = import.meta.env.VITE_AI_SUGGEST_ENDPOINT || '/api/generate-message-suggestion';
+const DEFAULT_AI_SUGGEST_PATH = '/api/generate-message-suggestion';
+const RAW_AI_SUGGEST_ENDPOINT = String(import.meta.env.VITE_AI_SUGGEST_ENDPOINT || '').trim();
+
+const isAbsoluteHttpUrl = (value) => /^https?:\/\//i.test(String(value || '').trim());
+
+const buildAiSuggestEndpoints = () => {
+  const endpoints = [];
+  const add = (endpoint) => {
+    const normalized = String(endpoint || '').trim();
+    if (!normalized || endpoints.includes(normalized)) return;
+    endpoints.push(normalized);
+  };
+
+  if (RAW_AI_SUGGEST_ENDPOINT) {
+    if (typeof window !== 'undefined' && isAbsoluteHttpUrl(RAW_AI_SUGGEST_ENDPOINT)) {
+      try {
+        const endpointUrl = new URL(RAW_AI_SUGGEST_ENDPOINT);
+        if (endpointUrl.host !== window.location.host) {
+          add(DEFAULT_AI_SUGGEST_PATH);
+          add(RAW_AI_SUGGEST_ENDPOINT);
+          return endpoints;
+        }
+      } catch {
+        // Ignore parse errors and keep fallback ordering below.
+      }
+    }
+    add(RAW_AI_SUGGEST_ENDPOINT);
+  }
+
+  add(DEFAULT_AI_SUGGEST_PATH);
+  return endpoints;
+};
 
 const QUICK_TONES = [
   { id: 'sweet', label: 'Sweet', note: 'Warm and tender' },
   { id: 'deep', label: 'Deep', note: 'Emotional and sincere' },
   { id: 'playful', label: 'Playful', note: 'Cute and smiley' },
 ];
+
+const ONBOARDING_MUSIC_OPTIONS = [
+  {
+    id: 'lovepage-default',
+    title: 'LovePage Romantic',
+    note: 'Soft lo-fi mood',
+    url: DEFAULT_LOVE_MUSIC_URL,
+  },
+  {
+    id: 'thousand-years',
+    title: 'A Thousand Years',
+    note: 'Dreamy slow romance',
+    url: 'https://www.youtube.com/watch?v=rtOvBOTyX00',
+  },
+  {
+    id: 'cant-help-falling',
+    title: "Can't Help Falling in Love",
+    note: 'Classic love vibe',
+    url: 'https://www.youtube.com/watch?v=vGJTaP6anOU',
+  },
+  {
+    id: 'all-of-me',
+    title: 'All of Me',
+    note: 'Modern piano-pop',
+    url: 'https://www.youtube.com/watch?v=450p7goxZqg',
+  },
+];
+
+const ONBOARDING_BASE_STEPS = [
+  { id: 'recipient', kind: 'recipient', title: 'Who is this for?', subtitle: "Your loved one's name" },
+  { id: 'tone', kind: 'tone', title: 'Choose the vibe', subtitle: 'Pick the tone you want this page to feel like' },
+];
+
+const getOnboardingFieldSubtitle = (field) => {
+  const key = String(field?.key || '');
+  if (/password/i.test(key)) return 'Keep it simple so they can open the page easily.';
+  if (/date/i.test(key)) return 'Use a clear date format so it reads nicely.';
+  if (/caption/i.test(key)) return 'Short and specific works best here.';
+  if (field?.type === 'textarea') return 'Write it exactly how you want it to appear.';
+  return 'Set this value for your template.';
+};
+
+const buildTemplateOnboardingSteps = (templateId) => {
+  const templateSpecificSteps = (templateFields[templateId] || []).map((field) => ({
+    id: `scene:${field.key}`,
+    kind: 'scene',
+    field,
+    title: field.label,
+    subtitle: getOnboardingFieldSubtitle(field),
+  }));
+
+  return [
+    ...ONBOARDING_BASE_STEPS,
+    ...templateSpecificSteps,
+    {
+      id: 'music',
+      kind: 'music',
+      title: 'Add music?',
+      subtitle: 'Optional, but it makes the reveal feel more cinematic',
+    },
+  ];
+};
 
 const CREATIVE_DIRECTIONS = [
   { id: 'cinematic', label: 'Cinematic', note: 'Big visual moments and dramatic lines' },
@@ -55,11 +151,13 @@ const Builder = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const draftId = searchParams.get('draft');
+  const forceOnboarding = searchParams.get('onboarding') === '1';
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('Text');
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+  const [saveErrorMessage, setSaveErrorMessage] = useState('');
   const [expiryLabel, setExpiryLabel] = useState('');
   const [formData, setFormData] = useState(() => getInitialDraftFormData(activeTemplateId));
   const [templateName, setTemplateName] = useState('');
@@ -73,10 +171,18 @@ const Builder = () => {
   const [aiErrorByField, setAiErrorByField] = useState({});
   const [authOpen, setAuthOpen] = useState(false);
   const [pendingAuthAction, setPendingAuthAction] = useState('');
-  const [showQuickStart, setShowQuickStart] = useState(!draftId);
-  const [quickRecipient, setQuickRecipient] = useState('');
-  const [quickTone, setQuickTone] = useState('sweet');
+  const [showQuickStart, setShowQuickStart] = useState(forceOnboarding || !draftId);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [onboardingData, setOnboardingData] = useState({
+    recipientName: '',
+    tone: 'sweet',
+    musicEnabled: false,
+    musicUrl: '',
+    scenes: {},
+  });
   const [mobileWorkspaceView, setMobileWorkspaceView] = useState('editor');
+  const onboardingSceneFields = useMemo(() => templateFields[activeTemplateId] || [], [activeTemplateId]);
+  const onboardingSteps = useMemo(() => buildTemplateOnboardingSteps(activeTemplateId), [activeTemplateId]);
   const startExpiryTimer = useCallback((expiresAtDate) => {
     if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
     const tick = () => {
@@ -119,6 +225,7 @@ const Builder = () => {
           return;
         }
         setFormData({
+          templateVersion: normalizeTemplateVersion(data.templateVersion),
           recipientName: data.recipientName || '',
           senderName: data.senderName || '',
           showSenderName: data.showSenderName ?? true,
@@ -132,33 +239,68 @@ const Builder = () => {
           volume: 60,
         });
         setTemplateName(getTemplateConfig(data.templateId || activeTemplateId).title);
-        setShowQuickStart(false);
+        setShowQuickStart(forceOnboarding);
         // Expiry countdown
         if (data.expiresAt) startExpiryTimer(data.expiresAt.toDate());
       } catch (err) {
-        console.error('Failed to load draft:', err);
+        captureAppError(err, { scope: 'builder.loadDraft', draftId, templateId: activeTemplateId });
         navigate('/templates');
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [activeTemplateId, draftId, navigate, startExpiryTimer, templateConfig.title]);
+  }, [activeTemplateId, draftId, forceOnboarding, navigate, startExpiryTimer, templateConfig.title]);
 
   useEffect(() => {
     trackEvent('builder_opened', { templateId: activeTemplateId, hasDraft: Boolean(draftId) });
   }, [activeTemplateId, draftId]);
+
+  useEffect(() => {
+    if (!showQuickStart) return;
+    const recipient = String(formData.recipientName || '').trim();
+    const generatedDefaults = buildQuickPersonalizedScenes(activeTemplateId, {
+      recipientName: recipient,
+      tone: 'sweet',
+    });
+    const initialScenes = onboardingSceneFields.reduce((acc, field) => {
+      const existingValue = formData.scenes?.[field.key];
+      const generatedValue = generatedDefaults[field.key];
+      acc[field.key] = String(existingValue ?? generatedValue ?? '');
+      return acc;
+    }, {});
+
+    setOnboardingStep(0);
+    setOnboardingData({
+      recipientName: recipient,
+      tone: 'sweet',
+      musicEnabled: Boolean(formData.musicEnabled),
+      musicUrl: String(formData.musicUrl || ''),
+      scenes: initialScenes,
+    });
+  }, [
+    showQuickStart,
+    activeTemplateId,
+    onboardingSceneFields,
+    formData.recipientName,
+    formData.musicEnabled,
+    formData.musicUrl,
+    formData.scenes,
+  ]);
 
   useEffect(() => () => {
     if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
   }, []);
 
   // Save to Firestore
-  const saveToFirestore = useCallback(async (data, targetDraftId = draftId) => {
+  const saveToFirestore = useCallback(async (data, targetDraftId = draftId, options = {}) => {
+    const { syncRoute = true } = options;
     if (!targetDraftId) return null;
     setSaveStatus('saving');
+    setSaveErrorMessage('');
     try {
       await updateDoc(doc(db, 'pages', targetDraftId), {
+        templateVersion: normalizeTemplateVersion(data.templateVersion),
         recipientName: data.recipientName,
         senderName: data.senderName,
         showSenderName: data.showSenderName,
@@ -174,11 +316,42 @@ const Builder = () => {
       setTimeout(() => setSaveStatus('idle'), 2000);
       return targetDraftId;
     } catch (err) {
-      console.error('Save failed:', err);
+      captureAppError(err, { scope: 'builder.saveDraft', draftId: targetDraftId, templateId: activeTemplateId });
+      const errorCode = String(err?.code || '');
+      const canRecoverWithNewDraft = Boolean(
+        user
+        && targetDraftId === draftId
+        && (errorCode.includes('permission-denied') || errorCode.includes('not-found'))
+      );
+
+      if (canRecoverWithNewDraft) {
+        try {
+          const recreatedDraftId = await createDraft(activeTemplateId, data);
+          trackEvent('draft_recreated_after_save_failure', {
+            templateId: activeTemplateId,
+            draftId: recreatedDraftId,
+            originalDraftId: targetDraftId,
+          });
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+          if (syncRoute) {
+            navigate(`/create/${activeTemplateId}?draft=${recreatedDraftId}`, { replace: true });
+          }
+          return recreatedDraftId;
+        } catch (recoveryErr) {
+          captureAppError(recoveryErr, { scope: 'builder.recoverDraft', draftId: targetDraftId, templateId: activeTemplateId });
+        }
+      }
+
+      setSaveErrorMessage(
+        errorCode.includes('permission-denied')
+          ? 'This draft is locked. Try saving again to continue with a fresh draft.'
+          : 'Could not save right now. Please try again.'
+      );
       setSaveStatus('error');
       return null;
     }
-  }, [draftId]);
+  }, [activeTemplateId, draftId, navigate, user]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -190,62 +363,183 @@ const Builder = () => {
 
   const handleInput = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSceneInput = (key, value) => {
     setFormData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: value } }));
   };
 
-  const applyQuickPersonalize = () => {
-    const personalizedScenes = buildQuickPersonalizedScenes(activeTemplateId, {
-      recipientName: quickRecipient,
-      tone: quickTone,
-    });
-    setFormData(prev => ({
+  const onboardingPreviewScenes = {
+    ...formData.scenes,
+    ...buildQuickPersonalizedScenes(activeTemplateId, {
+      recipientName: onboardingData.recipientName,
+      tone: onboardingData.tone,
+    }),
+    ...onboardingData.scenes,
+  };
+
+  const currentOnboardingStep = onboardingSteps[onboardingStep] || onboardingSteps[0];
+  const isCurrentStepValid = (() => {
+    if (!currentOnboardingStep) return true;
+    if (currentOnboardingStep.kind === 'recipient') return Boolean(onboardingData.recipientName.trim());
+    if (currentOnboardingStep.kind === 'scene') {
+      const value = onboardingData.scenes?.[currentOnboardingStep.field.key];
+      return Boolean(String(value || '').trim());
+    }
+    return true;
+  })();
+
+  const updateOnboardingValue = (key, value) => {
+    setOnboardingData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateOnboardingSceneValue = (key, value) => {
+    setOnboardingData((prev) => ({ ...prev, scenes: { ...prev.scenes, [key]: value } }));
+  };
+
+  const applyOnboardingAndContinue = () => {
+    const normalizedSceneValues = onboardingSceneFields.reduce((acc, field) => {
+      const value = String(onboardingData.scenes?.[field.key] || '').trim();
+      if (value) acc[field.key] = value;
+      return acc;
+    }, {});
+
+    setFormData((prev) => ({
       ...prev,
-      recipientName: quickRecipient.trim(),
-      scenes: { ...prev.scenes, ...personalizedScenes },
+      recipientName: onboardingData.recipientName.trim(),
+      musicEnabled: Boolean(onboardingData.musicEnabled),
+      musicUrl: onboardingData.musicEnabled
+        ? String(onboardingData.musicUrl || '').trim() || DEFAULT_LOVE_MUSIC_URL
+        : String(onboardingData.musicUrl || '').trim(),
+      scenes: {
+        ...prev.scenes,
+        ...buildQuickPersonalizedScenes(activeTemplateId, {
+          recipientName: onboardingData.recipientName.trim(),
+          tone: onboardingData.tone,
+        }),
+        ...normalizedSceneValues,
+      },
     }));
     setActiveTab('Text');
     setShowQuickStart(false);
-    trackEvent('quick_personalize_applied', { templateId: activeTemplateId, tone: quickTone, hasRecipient: Boolean(quickRecipient.trim()) });
+    trackEvent('onboarding_completed', {
+      templateId: activeTemplateId,
+      tone: onboardingData.tone,
+      hasRecipient: Boolean(onboardingData.recipientName.trim()),
+      fieldsCompleted: Object.keys(normalizedSceneValues).length,
+      musicEnabled: Boolean(onboardingData.musicEnabled),
+    });
+  };
+
+  const goToNextOnboardingStep = () => {
+    if (!isCurrentStepValid) return;
+    if (onboardingStep >= onboardingSteps.length - 1) {
+      applyOnboardingAndContinue();
+      return;
+    }
+    setOnboardingStep((current) => Math.min(current + 1, onboardingSteps.length - 1));
+  };
+
+  const goToPreviousOnboardingStep = () => {
+    setOnboardingStep((current) => Math.max(current - 1, 0));
+  };
+
+  const requestSuggestion = async ({
+    fieldType,
+    fieldKey,
+    fieldLabel,
+    currentValue,
+    recipientName,
+    senderName,
+  }) => {
+    const suggestionDraftId = draftId || localDraftKeyRef.current;
+    const requestBody = {
+      fieldType,
+      draftId: suggestionDraftId,
+      fieldKey,
+      fieldLabel,
+      currentValue,
+      recipientName,
+      senderName,
+      templateId: activeTemplateId,
+    };
+    const endpoints = buildAiSuggestEndpoints();
+    let lastError = null;
+
+    for (let index = 0; index < endpoints.length; index += 1) {
+      const endpoint = endpoints[index];
+      const hasFallback = index < endpoints.length - 1;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const apiMessage = typeof payload?.error === 'string'
+            ? payload.error
+            : payload?.error?.message;
+          const error = new Error(apiMessage || `AI request failed (${response.status})`);
+          error.status = response.status;
+          throw error;
+        }
+
+        const suggestion = String(payload?.suggestion || '').trim();
+        if (!suggestion) {
+          const error = new Error('No suggestion returned');
+          error.status = 502;
+          throw error;
+        }
+        return suggestion;
+      } catch (err) {
+        lastError = err;
+        const message = String(err?.message || '').toLowerCase();
+        const status = Number(err?.status || 0);
+        const retryable = (
+          status === 0
+          || status === 403
+          || status === 404
+          || status === 405
+          || status === 502
+          || message.includes('failed to fetch')
+          || message.includes('load failed')
+          || message.includes('networkerror')
+          || message.includes('origin is not allowed')
+          || message.includes('no suggestion returned')
+        );
+
+        if (hasFallback && retryable) continue;
+        throw err;
+      }
+    }
+
+    if (lastError) throw lastError;
+    throw new Error('AI suggestion failed. Please try again.');
   };
 
   const handleGenerateSuggestion = async (field) => {
-    const suggestionDraftId = draftId || localDraftKeyRef.current;
     setAiErrorByField(prev => ({ ...prev, [field.key]: '' }));
     setGeneratingByField(prev => ({ ...prev, [field.key]: true }));
     try {
-      const response = await fetch(AI_SUGGEST_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fieldType: field.type,
-          draftId: suggestionDraftId,
-          fieldKey: field.key,
-          fieldLabel: field.label,
-          currentValue: formData.scenes[field.key] || '',
-          recipientName: formData.recipientName || '',
-          senderName: formData.senderName || '',
-          templateId: activeTemplateId,
-        }),
+      const suggestion = await requestSuggestion({
+        fieldType: field.type,
+        fieldKey: field.key,
+        fieldLabel: field.label,
+        currentValue: formData.scenes[field.key] || '',
+        recipientName: formData.recipientName || '',
+        senderName: formData.senderName || '',
       });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (response.status === 404 && AI_SUGGEST_ENDPOINT.startsWith('/api/')) {
-          throw new Error('Set VITE_AI_SUGGEST_ENDPOINT to your deployed Vercel API URL.');
-        }
-        throw new Error(payload?.error || 'AI request failed');
-      }
-
-      const suggestion = payload?.suggestion || '';
-      if (!suggestion) throw new Error('No suggestion returned');
       handleSceneInput(field.key, suggestion);
     } catch (err) {
-      console.error('Suggestion generation failed:', err);
-      const message = err?.message?.includes('AI endpoint is not configured')
+      captureAppError(err, { scope: 'builder.aiSuggestion', fieldKey: field.key, templateId: activeTemplateId });
+      const normalizedMessage = String(err?.message || '').toLowerCase();
+      const message = normalizedMessage.includes('failed to fetch') || normalizedMessage.includes('load failed')
+        ? 'AI is unavailable right now on this network/domain. Please try again in a moment.'
+        : err?.message?.includes('AI endpoint is not configured')
         ? 'AI endpoint is not configured yet.'
         : err?.message || 'AI suggestion failed. Please try again.';
       setAiErrorByField(prev => ({ ...prev, [field.key]: message }));
@@ -280,7 +574,7 @@ const Builder = () => {
         if (existingSnap.exists()) {
           const existingData = existingSnap.data();
           if ((existingData?.templateId || '') === activeTemplateId) {
-            return saveToFirestore(formData, draftId);
+            return saveToFirestore(formData, draftId, { syncRoute });
           }
         }
       } catch (err) {
@@ -299,7 +593,7 @@ const Builder = () => {
       }
       return createdDraftId;
     } catch (err) {
-      console.error('Draft creation failed:', err);
+      captureAppError(err, { scope: 'builder.createDraft', templateId: activeTemplateId });
       setSaveStatus('error');
       return null;
     }
@@ -408,7 +702,7 @@ const Builder = () => {
 
       setPhotoUrl(slot, payload.secure_url);
     } catch (err) {
-      console.error('Image upload failed:', err);
+      captureAppError(err, { scope: 'builder.uploadImage', slot, templateId: activeTemplateId });
       setUploadError('Upload failed. Check Cloudinary setup and try again.');
     } finally {
       setUploadingBySlot(prev => ({ ...prev, [slot]: false }));
@@ -440,7 +734,6 @@ const Builder = () => {
   const sectionOrder = ['Birthday Setup', 'Private Gate', 'Chat Setup', 'Confession Flow', 'Question Flow', 'Story Timeline', 'Gallery', 'Memories', 'Reasons', 'Letter', 'Content'];
   const orderedSections = sectionOrder.filter((name) => groupedFields[name]?.length > 0);
   const isReasons = activeTemplateId === '100-reasons';
-  const LivePreviewTemplate = TEMPLATE_COMPONENTS[activeTemplateId] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE_ID];
 
   const useProfileForSender = () => {
     const profileName = (user?.displayName || user?.email?.split('@')[0] || '').trim();
@@ -491,100 +784,265 @@ const Builder = () => {
   }
 
   if (showQuickStart) {
-    const previewScenes = {
-      ...formData.scenes,
-      ...buildQuickPersonalizedScenes(activeTemplateId, { recipientName: quickRecipient, tone: quickTone }),
-    };
+    const safeStepsCount = Math.max(onboardingSteps.length, 1);
+    const progressPercent = Math.round(((onboardingStep + 1) / safeStepsCount) * 100);
+    const previewHeadline = onboardingPreviewScenes.scene2Header
+      || onboardingPreviewScenes.headline
+      || onboardingPreviewScenes.storyTitle
+      || onboardingPreviewScenes.galleryTitle
+      || onboardingPreviewScenes.questionTitle
+      || onboardingPreviewScenes.introLine
+      || `A letter for ${onboardingData.recipientName || 'you'}`;
+    const previewBody = onboardingPreviewScenes.letterText
+      || onboardingPreviewScenes.introText
+      || onboardingPreviewScenes.chapter1Text
+      || onboardingPreviewScenes.subheadline
+      || onboardingPreviewScenes.questionSubtitle
+      || onboardingPreviewScenes.chatScript
+      || 'Your message preview will appear here.';
+    const previewRecipient = onboardingData.recipientName.trim() || 'your love';
+    const isLastStep = onboardingStep === onboardingSteps.length - 1;
+    const isFirstOnboardingScreen = onboardingStep === 0;
+    const currentStepId = currentOnboardingStep?.id;
 
     return (
-      <div className="min-h-screen bg-[#fff8f4] flex items-center justify-center px-6 py-10">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-center">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_15%_15%,#2b2144_0%,#171b2a_45%,#0f1320_100%)] text-white px-4 md:px-8 py-5 md:py-8">
+        <div className="mx-auto max-w-[1440px] mb-6">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <Link to={`/templates/${activeTemplateId}`} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/80 hover:bg-white/10 transition-colors">
+              <ArrowLeft size={15} /> Templates
+            </Link>
+            <p className="hidden md:block text-[11px] uppercase tracking-[0.25em] text-[#f5bad3] font-bold">{templateConfig.title} onboarding</p>
+          </div>
+          <div>
+            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-[#f06ea9] via-[#f68bb7] to-[#f3b1ca]"
+                initial={false}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ type: 'spring', stiffness: 220, damping: 28 }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.2em] text-white/45">
+              <span>Step {onboardingStep + 1}</span>
+              <span>{progressPercent}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full max-w-[1440px] mx-auto grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-6 xl:gap-10 items-stretch">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-[#f0ddd4] shadow-[0_24px_70px_rgba(124,74,63,0.12)] rounded-[28px] p-8 md:p-10"
+            className="rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[0_30px_90px_rgba(8,10,20,0.52)] p-6 md:p-8 xl:p-10 backdrop-blur-xl"
           >
-            <Link to={`/templates/${activeTemplateId}`} className="inline-flex items-center gap-2 text-secondary hover:text-primary-pink text-sm font-bold mb-8">
-              <ArrowLeft size={16} /> Back to template
-            </Link>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-pink mb-3">Quick personalize</p>
-            <h1 className="text-4xl md:text-5xl font-bold text-dark mb-4">Make the first draft feel personal.</h1>
-            <p className="text-secondary text-lg mb-8 max-w-2xl">
-              Add their name and choose the mood. We will fill the starter message, then you can edit every word in the full builder.
-            </p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#f6a8c9] mb-3">Quick personalize</p>
+            {isFirstOnboardingScreen ? (
+              <>
+                <h1 className="text-5xl md:text-6xl font-bold mb-3 font-display">{currentOnboardingStep.title}</h1>
+                <p className="text-white/75 text-xl md:text-2xl mb-8 max-w-3xl">{currentOnboardingStep.subtitle}</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl md:text-5xl font-bold mb-3 font-display">{currentOnboardingStep.title}</h2>
+                <p className="text-white/55 text-sm md:text-base mb-8 max-w-2xl">{currentOnboardingStep.subtitle}</p>
+              </>
+            )}
 
-            <div className="space-y-6">
-              <div>
-                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Recipient name</label>
-                <input
-                  value={quickRecipient}
-                  onChange={(e) => setQuickRecipient(e.target.value)}
-                  placeholder="e.g. Sofia"
-                  className="mt-2 w-full max-w-md px-4 py-3 border border-card rounded-xl focus:outline-none focus:border-primary-pink text-lg"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-secondary uppercase tracking-wider">Tone</label>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {QUICK_TONES.map((tone) => (
-                    <button
-                      key={tone.id}
-                      type="button"
-                      onClick={() => setQuickTone(tone.id)}
-                      className={`text-left rounded-2xl border p-4 transition-all ${
-                        quickTone === tone.id
-                          ? 'border-primary-pink bg-primary-light text-dark shadow-sm'
-                          : 'border-card bg-white text-secondary hover:border-primary-pink/50'
-                      }`}
-                    >
-                      <span className="block font-black">{tone.label}</span>
-                      <span className="text-xs">{tone.note}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 mt-9">
-              <button
-                onClick={applyQuickPersonalize}
-                className="btn-primary btn-shimmer px-7 py-4 text-base font-bold flex items-center justify-center gap-2"
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStepId}
+                initial={{ opacity: 0, x: 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -18 }}
+                className="space-y-5"
               >
-                <Sparkles size={18} /> Fill my message
-              </button>
+                {currentOnboardingStep?.kind === 'recipient' && (
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">Loved one&apos;s name *</label>
+                    <input
+                      value={onboardingData.recipientName}
+                      onChange={(e) => updateOnboardingValue('recipientName', e.target.value)}
+                      placeholder="Enter the name"
+                      className="mt-2 w-full max-w-2xl px-4 py-4 rounded-2xl border border-white/15 bg-white/5 text-white text-xl placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9]"
+                      autoFocus
+                    />
+                    <p className="mt-2 text-xs text-white/45">{onboardingData.recipientName.length} / 150</p>
+                  </div>
+                )}
+                {currentOnboardingStep?.kind === 'tone' && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2] mb-3">Tone selection</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {QUICK_TONES.map((tone) => (
+                        <button
+                          key={tone.id}
+                          type="button"
+                          onClick={() => updateOnboardingValue('tone', tone.id)}
+                          className={`text-left rounded-2xl border p-4 transition-all ${
+                            onboardingData.tone === tone.id
+                              ? 'border-[#f6a8c9] bg-[#f6a8c9]/15 text-white shadow-lg'
+                              : 'border-white/15 bg-white/5 text-white/80 hover:border-[#f6a8c9]/65'
+                          }`}
+                        >
+                          <span className="block text-lg font-bold">{tone.label}</span>
+                          <span className="text-xs text-white/65">{tone.note}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {currentOnboardingStep?.kind === 'scene' && (
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">
+                      {currentOnboardingStep.field.label} *
+                    </label>
+                    {currentOnboardingStep.field.type === 'textarea' ? (
+                      <textarea
+                        value={onboardingData.scenes?.[currentOnboardingStep.field.key] || ''}
+                        onChange={(e) => updateOnboardingSceneValue(currentOnboardingStep.field.key, e.target.value)}
+                        placeholder={currentOnboardingStep.field.placeholder || `Write ${currentOnboardingStep.field.label.toLowerCase()}...`}
+                        rows={7}
+                        className="mt-2 w-full max-w-3xl px-4 py-4 rounded-2xl border border-white/15 bg-white/5 text-white text-lg placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9] resize-none"
+                        autoFocus
+                      />
+                    ) : (
+                      <input
+                        value={onboardingData.scenes?.[currentOnboardingStep.field.key] || ''}
+                        onChange={(e) => updateOnboardingSceneValue(currentOnboardingStep.field.key, e.target.value)}
+                        placeholder={currentOnboardingStep.field.placeholder || `Enter ${currentOnboardingStep.field.label.toLowerCase()}`}
+                        className="mt-2 w-full max-w-2xl px-4 py-4 rounded-2xl border border-white/15 bg-white/5 text-white text-xl placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9]"
+                        autoFocus
+                      />
+                    )}
+                    <p className="mt-2 text-xs text-white/45">
+                      {String(onboardingData.scenes?.[currentOnboardingStep.field.key] || '').length}
+                      {' / '}
+                      {currentOnboardingStep.field.type === 'textarea' ? '1600' : '180'}
+                    </p>
+                  </div>
+                )}
+                {currentOnboardingStep?.kind === 'music' && (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between p-4 rounded-2xl border border-white/15 bg-white/5">
+                      <div>
+                        <p className="text-sm font-bold text-white">Background music</p>
+                        <p className="text-xs text-white/60">Play music when the page opens</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={onboardingData.musicEnabled}
+                          onChange={(e) => updateOnboardingValue('musicEnabled', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-white/25 rounded-full peer peer-checked:bg-[#f06ea9] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all" />
+                      </label>
+                    </div>
+
+                    <div className={`${onboardingData.musicEnabled ? 'opacity-100' : 'opacity-60'} transition-opacity`}>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2] mb-2.5">Pick a track</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        {ONBOARDING_MUSIC_OPTIONS.map((track) => {
+                          const isActive = onboardingData.musicEnabled && String(onboardingData.musicUrl || '').trim() === track.url;
+                          return (
+                            <button
+                              key={track.id}
+                              type="button"
+                              onClick={() => {
+                                updateOnboardingValue('musicEnabled', true);
+                                updateOnboardingValue('musicUrl', track.url);
+                              }}
+                              className={`text-left rounded-2xl border px-4 py-3 transition-all ${
+                                isActive
+                                  ? 'border-[#f6a8c9] bg-[#f6a8c9]/18 text-white shadow-lg'
+                                  : 'border-white/15 bg-white/5 text-white/80 hover:border-[#f6a8c9]/65'
+                              }`}
+                            >
+                              <span className="block text-sm font-bold">{track.title}</span>
+                              <span className="text-[11px] text-white/65">{track.note}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">YouTube URL (optional)</label>
+                      <input
+                        value={onboardingData.musicUrl}
+                        onChange={(e) => updateOnboardingValue('musicUrl', e.target.value)}
+                        placeholder="https://youtube.com/watch?v=..."
+                        className="mt-2 w-full max-w-2xl px-4 py-4 rounded-2xl border border-white/15 bg-white/5 text-white text-base placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9]"
+                        disabled={!onboardingData.musicEnabled}
+                      />
+                      <p className="mt-2 text-xs text-white/45">
+                        {onboardingData.musicEnabled
+                          ? 'Leave empty to use the default romantic track.'
+                          : 'Turn music on if you want a soundtrack.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
               <button
-                onClick={() => {
-                  setShowQuickStart(false);
-                  trackEvent('quick_personalize_skipped', { templateId: activeTemplateId });
-                }}
-                className="btn-outline px-7 py-4 text-base font-bold"
+                type="button"
+                onClick={goToPreviousOnboardingStep}
+                disabled={onboardingStep === 0}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-bold text-white/80 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Skip and edit manually
+                <ArrowLeft size={16} /> Back
               </button>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickStart(false);
+                    trackEvent('quick_personalize_skipped', { templateId: activeTemplateId });
+                  }}
+                  className="rounded-full border border-white/15 px-5 py-3 text-sm font-bold text-white/70 hover:bg-white/5"
+                >
+                  Skip and edit manually
+                </button>
+                <button
+                  type="button"
+                  onClick={goToNextOnboardingStep}
+                  disabled={!isCurrentStepValid}
+                  className="btn-primary px-6 py-3 text-sm font-bold disabled:opacity-55 disabled:cursor-not-allowed"
+                >
+                  {isLastStep ? 'Create my page →' : 'Next →'}
+                </button>
+              </div>
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 24, rotate: 1.5 }}
+            initial={{ opacity: 0, y: 24, rotate: 1 }}
             animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{ delay: 0.15 }}
-            className="hidden lg:block rounded-[34px] bg-[#1f1520] p-4 shadow-[0_30px_80px_rgba(44,21,35,0.28)]"
+            transition={{ delay: 0.1 }}
+            className="hidden xl:flex rounded-[36px] border border-white/12 bg-[#0f1422]/90 p-5 shadow-[0_30px_90px_rgba(6,10,28,0.6)] flex-col"
           >
-            <div className="aspect-[9/16] rounded-[26px] overflow-hidden bg-white relative">
-              <div className="h-[58%] border-b border-card/70">
-                <TemplateMiniDemo templateId={activeTemplateId} />
-              </div>
-              <div className="h-[42%] bg-white p-4">
-                <div className="rounded-xl border border-card bg-slate-50 p-4 h-full">
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-primary-pink mb-2">{templateConfig.title}</p>
-                  <h3 className="font-playfair text-base text-dark mb-2 line-clamp-2">
-                    {previewScenes.scene2Header || previewScenes.questionTitle || previewScenes.introLine || `A letter for ${quickRecipient || 'you'}`}
-                  </h3>
-                  <p className="text-xs leading-5 text-secondary line-clamp-5 whitespace-pre-line">
-                    {previewScenes.letterText || previewScenes.confession1Text || previewScenes.questionSubtitle || 'Your personalized message will appear here.'}
-                  </p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs uppercase tracking-[0.24em] font-bold text-[#f5bad3]">Live preview</p>
+              <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white/60">Mobile</span>
+            </div>
+            <div className="relative mx-auto w-[280px] h-[590px] rounded-[40px] border border-[#5f4d78]/55 bg-[linear-gradient(180deg,#131a2d_0%,#101827_100%)] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[38%] h-1.5 rounded-full bg-white/20" />
+              <div className="h-full rounded-[30px] overflow-hidden border border-white/10 bg-[radial-gradient(circle_at_25%_20%,rgba(246,168,201,0.26),transparent_36%),#131a2c] flex flex-col">
+                <div className="px-4 py-3 border-b border-white/10">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#f8b6d2] font-bold truncate">{templateConfig.title}</p>
+                  <p className="text-[13px] text-white/90 font-semibold truncate">For {previewRecipient}</p>
+                </div>
+                <div className="flex-1 px-3 pt-3">
+                  <div className="rounded-2xl border border-white/10 overflow-hidden">
+                    <TemplateMiniDemo templateId={activeTemplateId} />
+                  </div>
+                </div>
+                <div className="px-4 py-4">
+                  <h3 className="text-sm font-display text-white mb-1 line-clamp-2">{previewHeadline}</h3>
+                  <p className="text-xs leading-5 text-white/70 line-clamp-4 whitespace-pre-line">{previewBody}</p>
                 </div>
               </div>
             </div>
@@ -632,7 +1090,7 @@ const Builder = () => {
             {saveStatus === 'error' && (
               <motion.span key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="hidden lg:inline text-xs text-red-500 font-medium">
-                Save failed
+                {saveErrorMessage || 'Save failed'}
               </motion.span>
             )}
           </AnimatePresence>
@@ -1030,17 +1488,21 @@ const Builder = () => {
             <div className="w-full h-full flex items-center justify-center">
               <div className="w-full h-full max-w-full rounded-none md:rounded-[16px] border-0 md:border border-card shadow-none md:shadow-xl bg-white overflow-hidden relative">
                 <div className="builder-real-preview absolute inset-0 bg-white overflow-hidden">
-                <LivePreviewTemplate
-                  recipientName={formData.recipientName}
-                  senderName={formData.senderName}
-                  scenes={formData.scenes || {}}
-                  reasons={formData.reasons || []}
-                  palette={formData.palette || 'pink'}
-                  font={formData.font || 'playful'}
-                  showSenderName={formData.showSenderName ?? true}
-                  showFooter={formData.showFooter ?? true}
+                <TemplateRenderer
+                  pageData={{
+                    templateId: activeTemplateId,
+                    templateVersion: formData.templateVersion,
+                    recipientName: formData.recipientName,
+                    senderName: formData.senderName,
+                    scenes: formData.scenes || {},
+                    reasons: formData.reasons || [],
+                    palette: formData.palette || 'pink',
+                    font: formData.font || 'playful',
+                    showSenderName: formData.showSenderName ?? true,
+                    showFooter: formData.showFooter ?? true,
+                    musicUrl: formData.musicUrl || DEFAULT_LOVE_MUSIC_URL,
+                  }}
                   musicEnabled
-                  musicUrl={formData.musicUrl || DEFAULT_LOVE_MUSIC_URL}
                 />
                 </div>
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none">

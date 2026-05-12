@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { palettes, fonts, extractYouTubeId } from './palettes';
@@ -29,7 +29,7 @@ const OurGallery = ({
   const prev = useCallback(() => setCurrent(c => (c - 1 + photos.length) % photos.length), [photos.length]);
   const next = useCallback(() => setCurrent(c => (c + 1) % photos.length), [photos.length]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handle = (e) => { if (e.key === 'ArrowLeft') prev(); if (e.key === 'ArrowRight') next(); };
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);

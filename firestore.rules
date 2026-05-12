@@ -5,6 +5,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function validTemplateId(id) {
+      return id == 'kawaii-letter'
+        || id == '100-reasons'
+        || id == 'our-gallery'
+        || id == 'dark-romance'
+        || id == 'our-story'
+        || id == 'midnight-love'
+        || id == 'rose-whisper'
+        || id == 'golden-promise'
+        || id == 'iva-birthday'
+        || id == 'birthday-candles'
+        || id == 'date-invite'
+        || id == 'sky-love'
+        || id == 'chat-reveal';
+    }
+
     function isOwnerPending() {
       return isSignedIn()
         && resource.data.status == 'pending'
@@ -12,53 +28,23 @@ service cloud.firestore {
     }
 
     function isOwnerTestPublish() {
-      return isSignedIn()
-        && resource.data.status == 'pending'
-        && resource.data.ownerUid == request.auth.uid
+      return isOwnerPending()
         && request.resource.data.status == 'active'
-        && request.resource.data.id == resource.data.id
-        && request.resource.data.templateId == resource.data.templateId
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.ownerEmail == resource.data.ownerEmail
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.recipientName == resource.data.recipientName
-        && request.resource.data.senderName == resource.data.senderName
-        && request.resource.data.showSenderName == resource.data.showSenderName
-        && request.resource.data.showFooter == resource.data.showFooter
-        && request.resource.data.palette == resource.data.palette
-        && request.resource.data.font == resource.data.font
-        && request.resource.data.scenes == resource.data.scenes
-        && request.resource.data.reasons == resource.data.reasons
-        && request.resource.data.musicEnabled == resource.data.musicEnabled
-        && request.resource.data.musicUrl == resource.data.musicUrl
         && request.resource.data.stripeSessionId.matches('test-skip-.*')
         && request.resource.data.checkoutOwnerUid == request.auth.uid
-        && request.resource.data.publishedAt == request.time
-        && request.resource.data.checkoutStartedAt == request.time
+        && request.resource.data.publishedAt is timestamp
+        && request.resource.data.checkoutStartedAt is timestamp
         && request.resource.data.expiresAt == null
-        && request.resource.data.keys().hasOnly([
-          'id',
+        && !request.resource.data.keys().hasAny(['ownerEmail', 'checkoutOwnerEmail'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status',
-          'templateId',
-          'recipientName',
-          'senderName',
-          'showSenderName',
-          'showFooter',
-          'palette',
-          'font',
-          'scenes',
-          'reasons',
-          'musicEnabled',
-          'musicUrl',
           'stripeSessionId',
-          'ownerUid',
-          'ownerEmail',
-          'createdAt',
           'expiresAt',
           'checkoutOwnerUid',
-          'checkoutOwnerEmail',
           'checkoutStartedAt',
-          'publishedAt'
+          'publishedAt',
+          'ownerEmail',
+          'checkoutOwnerEmail'
         ]);
     }
 
@@ -71,11 +57,13 @@ service cloud.firestore {
       allow create: if isSignedIn()
                     && request.resource.data.status == 'pending'
                     && request.resource.data.id == pageId
+                    && validTemplateId(request.resource.data.templateId)
                     && request.resource.data.ownerUid == request.auth.uid
                     && request.resource.data.keys().hasOnly([
                       'id',
                       'status',
                       'templateId',
+                      'templateVersion',
                       'recipientName',
                       'senderName',
                       'showSenderName',
@@ -88,7 +76,6 @@ service cloud.firestore {
                       'musicUrl',
                       'stripeSessionId',
                       'ownerUid',
-                      'ownerEmail',
                       'createdAt',
                       'expiresAt'
                     ]);
@@ -96,20 +83,10 @@ service cloud.firestore {
       // Owners can edit only mutable draft fields while status is pending.
       allow update: if (
                       isOwnerPending()
+                      && validTemplateId(request.resource.data.templateId)
                       && request.resource.data.status == 'pending'
-                      && request.resource.data.id == resource.data.id
-                      && request.resource.data.templateId == resource.data.templateId
-                      && request.resource.data.ownerUid == resource.data.ownerUid
-                      && request.resource.data.ownerEmail == resource.data.ownerEmail
-                      && request.resource.data.createdAt == resource.data.createdAt
-                      && request.resource.data.expiresAt == resource.data.expiresAt
-                      && request.resource.data.checkoutOwnerUid == resource.data.checkoutOwnerUid
-                      && request.resource.data.checkoutOwnerEmail == resource.data.checkoutOwnerEmail
-                      && request.resource.data.checkoutStartedAt == resource.data.checkoutStartedAt
-                      && request.resource.data.keys().hasOnly([
-                        'id',
-                        'status',
-                        'templateId',
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                        'templateVersion',
                         'recipientName',
                         'senderName',
                         'showSenderName',
@@ -121,17 +98,13 @@ service cloud.firestore {
                         'musicEnabled',
                         'musicUrl',
                         'stripeSessionId',
-                        'ownerUid',
-                        'ownerEmail',
-                        'createdAt',
-                        'expiresAt',
                         'checkoutOwnerUid',
-                        'checkoutOwnerEmail',
                         'checkoutStartedAt'
                       ])
                     ) || isOwnerTestPublish();
 
-      // Only Cloud Functions (admin SDK) can set status to 'active'
+      // Active publish is server-driven. Test-mode fallback can activate owner drafts
+      // only with tightly scoped fields via isOwnerTestPublish().
     }
   }
 }
