@@ -93,9 +93,17 @@ const ONBOARDING_BASE_STEPS = [
 
 const getOnboardingFieldSubtitle = (field) => {
   const key = String(field?.key || '');
+  if (/coverTag|coverTitle|coverSubtitle/i.test(key)) return 'These lines appear on the front cover.';
+  if (/recapTitle|recapSticker|collageTitle/i.test(key)) return 'Short words look best for scrapbook stickers.';
+  if (/noteTo|noteFrom|endTitle|endSubtitle|endFootnote/i.test(key)) return 'This appears on the handwritten card pages.';
+  if (/bouquetTitle|bouquetFlowers|bouquetNote/i.test(key)) return 'These fields build your personalized bouquet card.';
   if (/password/i.test(key)) return 'Keep it simple so they can open the page easily.';
+  if (/youtube/i.test(key)) return 'Paste a YouTube link to place your favorite clip sticker.';
+  if (/spotify|track|artist/i.test(key)) return 'This appears on the mini music card.';
+  if (/mapPlace|memorySubtitle|voiceLabel/i.test(key)) return 'Used inside the memory spotlight card.';
   if (/date/i.test(key)) return 'Use a clear date format so it reads nicely.';
   if (/caption/i.test(key)) return 'Short and specific works best here.';
+  if (/closingSubmessage/i.test(key)) return 'Small line under the final badge.';
   if (field?.type === 'textarea') return 'Write it exactly how you want it to appear.';
   return 'Set this value for your template.';
 };
@@ -133,6 +141,15 @@ const resolveTemplateId = (id) => (TEMPLATE_STYLE_DEFAULTS[id] ? id : DEFAULT_TE
 const getFieldSectionLabel = (templateId, key) => {
   if (/^age|^headline|^subheadline|^wishLine/i.test(key)) return 'Birthday Setup';
   if (/^chat/i.test(key)) return 'Chat Setup';
+  if (templateId === 'our-year-book' && /^scene2Header$/i.test(key)) return 'Scrapbook';
+  if (/^coverTag|^coverTitle|^coverSubtitle/i.test(key)) return 'Cover';
+  if (/^recapTitle|^recapSticker|^collageTitle/i.test(key)) return 'Scrapbook';
+  if (/^noteTo|^noteFrom|^endTitle|^endSubtitle|^endFootnote/i.test(key)) return 'Note & Ending';
+  if (/^bouquetTitle|^bouquetFlowers|^bouquetNote/i.test(key)) return 'Personal Bouquet';
+  if (/^lockFromLabel|^lockToLabel|^envelopeHint/i.test(key)) return 'Gate & Envelope';
+  if (/^favoriteLabel|^youtubeUrl|^spotifyTrackTitle|^spotifyArtist|^scene2Header/i.test(key)) return 'Mood Board';
+  if (/^scratchLabel|^photo\d+Url/i.test(key)) return 'Scratch Memories';
+  if (/^mapTitle|^mapPlace|^memorySubtitle|^voiceLabel/i.test(key)) return 'Memory Map';
   if (/^access/i.test(key) || /^welcome/i.test(key)) return 'Private Gate';
   if (/^question|^yesLabel|^noLabel|^noTaunt|^celebration/i.test(key)) return 'Question Flow';
   if (/^confession|^introLine|^continueLabel|^questionCta/i.test(key)) return 'Confession Flow';

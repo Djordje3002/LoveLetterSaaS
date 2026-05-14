@@ -15,20 +15,20 @@ const DemoPreviewPage = () => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1 rounded-full bg-black/70 text-white text-xs font-bold uppercase tracking-widest">
+      <div className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1 rounded-full bg-black/70 text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest">
         Demo Preview
       </div>
-      <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+      <div className="hidden sm:block fixed top-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
         <div className="rounded-full bg-black/60 backdrop-blur-md border border-white/30 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
           Special Gift Just For {demoRecipientName}
         </div>
       </div>
       <Link
         to={`/templates/${safeTemplateId}`}
-        className="fixed top-4 left-4 z-50 h-11 pl-3 pr-4 rounded-full bg-white/90 border border-card flex items-center justify-center gap-2 text-primary-pink shadow-lg hover:scale-105 transition-transform text-sm font-bold"
+        className="fixed top-3 sm:top-4 left-3 sm:left-4 z-50 h-10 sm:h-11 pl-2.5 sm:pl-3 pr-3 sm:pr-4 rounded-full bg-white/90 border border-card flex items-center justify-center gap-1.5 sm:gap-2 text-primary-pink shadow-lg hover:scale-105 transition-transform text-xs sm:text-sm font-bold"
       >
         <ArrowLeft size={18} />
-        Back
+        <span className="hidden sm:inline">Back</span>
       </Link>
       <TemplateRenderer
         pageData={{

@@ -1,5 +1,5 @@
 export const DEFAULT_TEMPLATE_ID = 'kawaii-letter'
-export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['kawaii-letter', 'iva-birthday', 'date-invite']
+export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['kawaii-letter', 'iva-birthday', 'bouquet-garden', 'our-year-book', 'date-invite']
 
 export const TEMPLATE_REGISTRY = [
   {
@@ -22,6 +22,30 @@ export const TEMPLATE_REGISTRY = [
     description: 'A private love-themed experience with a playful entry gate, love question, memory gallery, cinematic letter reveal, and a 100-style reasons grid.',
     emoji: '💙',
     color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
+    supportsImages: true,
+    hideRecipientSetting: false,
+    hidePaletteSetting: false,
+  },
+  {
+    id: 'bouquet-garden',
+    title: 'Bouquet Garden',
+    cardTitle: 'Bouquet Garden',
+    tags: ['Love', 'Story'],
+    description: 'A cinematic private-board journey with a passcode lock, envelope reveal, scratch memories, music stickers, and a scrapbook-style love board.',
+    emoji: '🌹',
+    color: 'bg-gradient-to-br from-[#7f0d27] via-[#a31e45] to-[#5f0b1f]',
+    supportsImages: true,
+    hideRecipientSetting: false,
+    hidePaletteSetting: false,
+  },
+  {
+    id: 'our-year-book',
+    title: 'Our Year Book',
+    cardTitle: 'Our Year Book',
+    tags: ['Love', 'Story'],
+    description: 'A scrapbook-inspired sliding storybook with collage spreads, memory photos, a handwritten note page, and a cinematic ending cover.',
+    emoji: '📔',
+    color: 'bg-gradient-to-br from-[#d9c1ea] via-[#c69fe0] to-[#ab7cc8]',
     supportsImages: true,
     hideRecipientSetting: false,
     hidePaletteSetting: false,

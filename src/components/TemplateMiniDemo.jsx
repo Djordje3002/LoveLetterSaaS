@@ -246,6 +246,71 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
       </div>
     );
   }
+  if (templateId === 'bouquet-garden') {
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundColor: '#7f0d27',
+          backgroundImage:
+            'radial-gradient(circle at 15% 14%, rgba(196,61,89,0.45), transparent 38%), radial-gradient(circle at 72% 20%, rgba(255,255,255,0.08), transparent 36%), radial-gradient(circle at 44% 70%, rgba(0,0,0,0.22), transparent 44%)',
+        }}
+      >
+        <div className="absolute top-4 left-4 rounded-full bg-black/30 px-2.5 py-1 text-[8px] tracking-[0.15em] uppercase text-[#ffd9e4] font-bold">
+          Secret Garden
+        </div>
+        <div className="absolute top-5 right-5 rounded-md bg-[#f6e8d7] px-2 py-1 shadow-md">
+          <span className="text-[10px] leading-none italic text-[#892046]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            Favorite
+          </span>
+        </div>
+        <div className="absolute left-4 top-[34%] h-10 w-[52%] rounded-md border border-white/25 bg-black/45" />
+        <div className="absolute right-4 top-[34%] h-10 w-[32%] rounded-md border border-white/20 bg-[#212229]/85" />
+        <div className="absolute left-4 bottom-12 h-16 w-[54%] rounded-md border border-[#f6e4de] bg-[#1f1b23]/88" />
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={`garden-polaroid-${i}`}
+            className="absolute h-16 w-12 rounded-sm border border-[#efe3d9] bg-[#f6efe3] p-1 shadow-lg"
+            style={{
+              right: `${12 + i * 16}%`,
+              top: `${54 + i * 8}%`,
+              transform: `rotate(${i === 1 ? 9 : i === 2 ? -6 : -10}deg)`,
+            }}
+            animate={{ y: [0, -2, 0] }}
+            transition={{ duration: 2.2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <div className="h-10 rounded-[2px] bg-gradient-to-br from-[#d8cfd4] via-[#c3bac0] to-[#ac9fa7]" />
+            <div className="mt-1 h-1 rounded-full bg-[#d1c6bf]" />
+          </motion.div>
+        ))}
+      </div>
+    );
+  }
+  if (templateId === 'our-year-book') {
+    return (
+      <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-[#f4eedf]">
+        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-r from-[#f2a7be] via-[#e38eb0] to-[#efc7d7]" />
+        <div className="relative h-[80%] w-[62%] rounded-[10px] border border-[#cdb8da] bg-gradient-to-br from-[#c8a8dd] via-[#b893d2] to-[#d9bee9] p-2 shadow-[10px_12px_26px_rgba(64,40,88,0.25)]">
+          <div className="h-full rounded-[7px] border border-white/35 bg-[#f8f1e7] p-2">
+            <div className="text-[7px] uppercase tracking-[0.16em] text-[#7c5d8f]">a love letter</div>
+            <div className="mt-1 text-[15px] leading-[0.82] italic text-[#4f2f67]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              our year.
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1">
+              {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                  key={`year-mini-${i}`}
+                  className="aspect-square rounded-[3px] border border-[#dccde8] bg-gradient-to-br from-[#e2d8ea] via-[#d2c4df] to-[#c8b4d4]"
+                  animate={{ y: [0, -1.5, 0] }}
+                  transition={{ duration: 2 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (templateId === 'sky-love') {
     return (
       <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#1f3b84] via-[#10245a] to-[#060f2c]">
