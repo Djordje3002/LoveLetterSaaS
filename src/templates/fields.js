@@ -1,10 +1,19 @@
 export const templateFields = {
   'kawaii-letter': [
     { key: 'hint', label: 'Scene 1 Hint', type: 'input', placeholder: 'Tap seal to open ♥' },
-    { key: 'scene2Header', label: 'Scene 2 Header', type: 'input', placeholder: 'A letter for you...' },
+    { key: 'scene2Header', label: 'Letter Header', type: 'input', placeholder: 'My sweetest letter to you' },
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your letter here...' },
-    { key: 'scene3Header', label: 'Letter Bridge Line', type: 'input', placeholder: 'Our favorite memories' },
-    { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'Forever yours ♥' },
+    { key: 'scene3Header', label: 'Memories Header', type: 'input', placeholder: 'Our favorite memories' },
+    { key: 'polaroidCaption1', label: 'Memory Caption 1', type: 'input', placeholder: 'The day you made me laugh nonstop' },
+    { key: 'polaroidCaption2', label: 'Memory Caption 2', type: 'input', placeholder: 'Our quiet walk and warm coffee' },
+    { key: 'polaroidCaption3', label: 'Memory Caption 3', type: 'input', placeholder: 'That perfect golden-hour photo' },
+    { key: 'polaroidCaption4', label: 'Memory Caption 4', type: 'input', placeholder: 'A tiny moment I never forgot' },
+    { key: 'polaroidCaption5', label: 'Memory Caption 5', type: 'input', placeholder: 'My favorite smile in the world' },
+    { key: 'memoriesButtonLabel', label: 'Letter Button Text', type: 'input', placeholder: 'See our memories' },
+    { key: 'finalButtonLabel', label: 'Memories Button Text', type: 'input', placeholder: 'Read the last note' },
+    { key: 'closingMessage', label: 'Letter Sign-off', type: 'input', placeholder: 'Forever yours ♥' },
+    { key: 'finalTitle', label: 'Final Message Title', type: 'input', placeholder: 'For you, always' },
+    { key: 'finalMessage', label: 'Final Message', type: 'textarea', placeholder: 'Write the final note that appears after the photos...' },
   ],
   '100-reasons': [
     { key: 'introText', label: 'Intro Message', type: 'textarea', placeholder: 'Before you read these...' },
@@ -107,8 +116,8 @@ export const templateFields = {
     { key: 'wishLine', label: 'Wish Line', type: 'input', placeholder: 'Make a wish and smile big ✨' },
     { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'To your happiest year yet.' },
   ],
-  'iva-birthday': [
-    { key: 'accessName', label: 'Gate Name', type: 'input', placeholder: 'iva' },
+  'full-house-love': [
+    { key: 'accessName', label: 'Gate Name', type: 'input', placeholder: 'love' },
     { key: 'accessPassword', label: 'Gate Password', type: 'input', placeholder: 'love' },
     { key: 'welcomeTitle', label: 'Welcome Title', type: 'input', placeholder: 'Welcome, my love 💙' },
     { key: 'welcomeSubtitle', label: 'Welcome Subtitle', type: 'input', placeholder: 'This is our little private world.' },

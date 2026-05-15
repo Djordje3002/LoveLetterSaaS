@@ -16,6 +16,21 @@ const loops = {
   },
 };
 
+const STATIC_PREVIEW_THEME = {
+  'kawaii-letter': { bg: 'from-[#ffdbe8] via-[#ffe9f1] to-[#fff4f8]', accent: '#d94178', label: 'Love Letter', note: 'Letter, photos, final note.' },
+  'full-house-love': { bg: 'from-[#0b1627] via-[#13263f] to-[#27466f]', accent: '#7fd8ff', label: 'Full House of Love', note: 'Gate, gallery, reasons, letter.' },
+  'bouquet-garden': { bg: 'from-[#7f0d27] via-[#a31e45] to-[#5f0b1f]', accent: '#ffd9e4', label: 'Bouquet Garden', note: 'Passcode bouquet and board.' },
+  'our-year-book': { bg: 'from-[#d9c1ea] via-[#c69fe0] to-[#ab7cc8]', accent: '#fff1fb', label: 'Our Year Book', note: 'Sliding pages and memories.' },
+  'date-invite': { bg: 'from-[#ffe3ee] via-[#ffd2e5] to-[#ffc3dc]', accent: '#c93f75', label: 'Will You Be My Valentine?', note: 'Playful yes/no reveal.' },
+};
+
+const FULL_HOUSE_PREVIEW_CARDS = [
+  { title: 'Private Gate', message: 'name + password', color: '#77d7ff' },
+  { title: 'Love Letter', message: 'open the envelope', color: '#ff91b8' },
+  { title: 'Memories', message: 'photo placeholders', color: '#ffe0a3' },
+  { title: 'Reasons', message: '100 tiny proofs', color: '#a7f2dd' },
+];
+
 const EnvelopeDemo = ({ mood = 'kawaii', interactive = false, onRevealChange }) => {
   const themes = {
     kawaii: {
@@ -199,13 +214,32 @@ const EnvelopeDemo = ({ mood = 'kawaii', interactive = false, onRevealChange }) 
   );
 };
 
-const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) => {
+const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange, reduceMotion = false }) => {
+  if (reduceMotion) {
+    const theme = STATIC_PREVIEW_THEME[templateId] || { bg: 'from-[#fff1f7] via-[#ffffff] to-[#fff6fa]', accent: '#d94679', label: 'Love Template', note: 'Personal page preview.' };
+    return (
+      <div className={`w-full h-full bg-gradient-to-br ${theme.bg} relative overflow-hidden`}>
+        <div className="absolute inset-0 opacity-35" style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 55%)' }} />
+        <div className="absolute left-3 top-3 rounded-full bg-white/80 px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.15em]" style={{ color: theme.accent }}>
+          Preview
+        </div>
+        <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded-xl border border-white/70 bg-white/35 p-3 backdrop-blur-sm">
+          <div className="h-2.5 w-2.5 rounded-full mb-2" style={{ backgroundColor: theme.accent }} />
+          <p className="text-[11px] font-bold leading-tight" style={{ color: theme.accent }}>{theme.label}</p>
+          <p className="mt-1.5 text-[9px] font-semibold leading-snug text-slate-600/80">{theme.note}</p>
+          <div className="mt-2 h-1.5 rounded-full bg-white/70" />
+          <div className="mt-1.5 h-1.5 w-3/4 rounded-full bg-white/70" />
+        </div>
+      </div>
+    );
+  }
+
   if (templateId === 'dark-romance') return <EnvelopeDemo mood="dark" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'midnight-love') return <EnvelopeDemo mood="midnight" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'kawaii-letter') return <EnvelopeDemo mood="kawaii" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'rose-whisper') return <EnvelopeDemo mood="rose" interactive={interactive} onRevealChange={onRevealChange} />;
   if (templateId === 'golden-promise') return <EnvelopeDemo mood="golden" interactive={interactive} onRevealChange={onRevealChange} />;
-  if (templateId === 'iva-birthday') {
+  if (templateId === 'full-house-love') {
     return (
       <div className="w-full h-full bg-gradient-to-br from-[#0b1627] via-[#13263f] to-[#27466f] relative overflow-hidden flex items-center justify-center">
         {[10, 24, 38, 54, 68, 84].map((left, i) => (
@@ -217,7 +251,12 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
             ✦
           </span>
         ))}
-        <div className="w-[84%] h-[78%] rounded-2xl border border-[#3a5678] bg-[#0f1b2d]/92 p-3 shadow-xl">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.14) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
+        <motion.div
+          className="w-[84%] h-[78%] rounded-2xl border border-[#3a5678] bg-[#0f1b2d]/92 p-3 shadow-xl"
+          animate={{ y: [0, -3, 0], boxShadow: ['0 18px 36px rgba(0,0,0,0.28)', '0 22px 44px rgba(119,215,255,0.18)', '0 18px 36px rgba(0,0,0,0.28)'] }}
+          transition={{ duration: 4.4, repeat: Infinity, ease: 'easeInOut' }}
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#7fd8ff]">full house</span>
             <span className="text-[9px] text-[#b6ddff]">Together</span>
@@ -233,16 +272,21 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange }) =
             ))}
           </div>
           <div className="grid grid-cols-2 gap-1.5 h-[66%]">
-            {[0, 1, 2, 3].map((i) => (
+            {FULL_HOUSE_PREVIEW_CARDS.map((card, i) => (
               <motion.div
-                key={i}
-                className="rounded-md border border-[#3a5169] bg-gradient-to-br from-[#1a2a40] to-[#0c1727]"
-                animate={{ y: [0, -2, 0] }}
-                transition={{ duration: 2.4 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
-              />
+                key={card.title}
+                className="relative overflow-hidden rounded-lg border border-white/12 bg-gradient-to-br from-[#1a2a40] to-[#0c1727] p-2"
+                animate={{ y: [0, -3, 0], scale: [1, 1.025, 1] }}
+                transition={{ duration: 2.5 + i * 0.22, delay: i * 0.18, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <span className="absolute -right-3 -top-3 h-8 w-8 rounded-full opacity-25" style={{ backgroundColor: card.color }} />
+                <div className="relative h-1.5 w-8 rounded-full mb-1.5" style={{ backgroundColor: card.color }} />
+                <p className="relative text-[8px] font-black uppercase tracking-[0.08em] text-white/88 leading-tight">{card.title}</p>
+                <p className="relative mt-0.5 text-[7px] font-semibold text-white/52 leading-tight">{card.message}</p>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }

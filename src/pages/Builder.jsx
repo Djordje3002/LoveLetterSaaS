@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Save, Type, Image as ImageIcon, Music, Settings, Upload, X, Eye, Volume2, Plus, Trash2, CheckCircle2, Loader2, Sparkles, RefreshCw, Play, Square } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { templateFields } from '../templates/fields';
@@ -12,9 +12,11 @@ import { useAuth } from '../context/AuthContext';
 import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, buildCreativeDirectionScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
-import { DEFAULT_TEMPLATE_ID, getTemplateConfig } from '../templates/registry';
+import { DEFAULT_TEMPLATE_ID, getTemplateConfig, normalizeTemplateId } from '../templates/registry';
 import { normalizeTemplateVersion } from '../utils/pagePayload';
 import { captureAppError } from '../utils/monitoring';
+import useIsMobile from '../hooks/useIsMobile';
+import { extractYouTubeId } from '../templates/palettes';
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -136,7 +138,10 @@ const CREATIVE_DIRECTIONS = [
   { id: 'playful', label: 'Playful', note: 'Flirty, fun, and smile-first vibes' },
 ];
 
-const resolveTemplateId = (id) => (TEMPLATE_STYLE_DEFAULTS[id] ? id : DEFAULT_TEMPLATE_ID);
+const resolveTemplateId = (id) => {
+  const normalizedId = normalizeTemplateId(id);
+  return TEMPLATE_STYLE_DEFAULTS[normalizedId] ? normalizedId : DEFAULT_TEMPLATE_ID;
+};
 
 const getFieldSectionLabel = (templateId, key) => {
   if (/^age|^headline|^subheadline|^wishLine/i.test(key)) return 'Birthday Setup';
@@ -170,6 +175,9 @@ const Builder = () => {
   const draftId = searchParams.get('draft');
   const forceOnboarding = searchParams.get('onboarding') === '1';
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
+  const simplifyMobileVisuals = isMobile || prefersReducedMotion;
 
   const [activeTab, setActiveTab] = useState('Text');
   const [loading, setLoading] = useState(true);
@@ -197,9 +205,17 @@ const Builder = () => {
     musicUrl: '',
     scenes: {},
   });
+  const [previewTrackId, setPreviewTrackId] = useState('');
   const [mobileWorkspaceView, setMobileWorkspaceView] = useState('editor');
   const onboardingSceneFields = useMemo(() => templateFields[activeTemplateId] || [], [activeTemplateId]);
   const onboardingSteps = useMemo(() => buildTemplateOnboardingSteps(activeTemplateId), [activeTemplateId]);
+
+  useEffect(() => {
+    if (!templateId || templateId === activeTemplateId) return;
+    const queryString = searchParams.toString();
+    navigate(`/create/${activeTemplateId}${queryString ? `?${queryString}` : ''}`, { replace: true });
+  }, [activeTemplateId, navigate, searchParams, templateId]);
+
   const startExpiryTimer = useCallback((expiresAtDate) => {
     if (expiryIntervalRef.current) clearInterval(expiryIntervalRef.current);
     const tick = () => {
@@ -233,12 +249,14 @@ const Builder = () => {
           return;
         }
         const data = snap.data();
-        if (data.templateId && !TEMPLATE_STYLE_DEFAULTS[data.templateId]) {
+        const normalizedDraftTemplateId = normalizeTemplateId(data.templateId || activeTemplateId);
+        if (data.templateId && !TEMPLATE_STYLE_DEFAULTS[normalizedDraftTemplateId]) {
           navigate('/templates', { replace: true });
           return;
         }
-        if (data.templateId && data.templateId !== activeTemplateId) {
-          navigate(`/create/${data.templateId}?draft=${draftId}`, { replace: true });
+        const draftTemplateId = resolveTemplateId(normalizedDraftTemplateId);
+        if (draftTemplateId !== activeTemplateId) {
+          navigate(`/create/${draftTemplateId}?draft=${draftId}`, { replace: true });
           return;
         }
         setFormData({
@@ -255,7 +273,7 @@ const Builder = () => {
           musicUrl: data.musicUrl || '',
           volume: 60,
         });
-        setTemplateName(getTemplateConfig(data.templateId || activeTemplateId).title);
+        setTemplateName(getTemplateConfig(draftTemplateId).title);
         setShowQuickStart(forceOnboarding);
         // Expiry countdown
         if (data.expiresAt) startExpiryTimer(data.expiresAt.toDate());
@@ -317,6 +335,7 @@ const Builder = () => {
     setSaveErrorMessage('');
     try {
       await updateDoc(doc(db, 'pages', targetDraftId), {
+        templateId: activeTemplateId,
         templateVersion: normalizeTemplateVersion(data.templateVersion),
         recipientName: data.recipientName,
         senderName: data.senderName,
@@ -788,6 +807,8 @@ const Builder = () => {
 
   const showEditorPanel = mobileWorkspaceView === 'editor';
   const showPreviewPanel = mobileWorkspaceView === 'preview';
+  const previewTrack = ONBOARDING_MUSIC_OPTIONS.find((track) => track.id === previewTrackId);
+  const previewVideoId = previewTrack ? extractYouTubeId(previewTrack.url) : '';
 
   if (loading) {
     return (
@@ -823,7 +844,7 @@ const Builder = () => {
     const currentStepId = currentOnboardingStep?.id;
 
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_15%_15%,#2b2144_0%,#171b2a_45%,#0f1320_100%)] text-white px-4 md:px-8 py-5 md:py-8">
+      <div className={`min-h-screen text-white px-4 md:px-8 py-5 md:py-8 ${simplifyMobileVisuals ? 'bg-[#111629]' : 'bg-[radial-gradient(circle_at_15%_15%,#2b2144_0%,#171b2a_45%,#0f1320_100%)]'}`}>
         <div className="mx-auto max-w-[1440px] mb-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <Link to={`/templates/${activeTemplateId}`} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/80 hover:bg-white/10 transition-colors">
@@ -851,7 +872,7 @@ const Builder = () => {
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[0_30px_90px_rgba(8,10,20,0.52)] p-6 md:p-8 xl:p-10 backdrop-blur-xl"
+            className={`rounded-[30px] border p-6 md:p-8 xl:p-10 ${simplifyMobileVisuals ? 'border-white/12 bg-[#1a2238] shadow-none' : 'border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[0_30px_90px_rgba(8,10,20,0.52)] backdrop-blur-xl'}`}
           >
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[#f6a8c9] mb-3">Quick personalize</p>
             {isFirstOnboardingScreen ? (
@@ -957,31 +978,71 @@ const Builder = () => {
                       </label>
                     </div>
 
-                    <div className={`${onboardingData.musicEnabled ? 'opacity-100' : 'opacity-60'} transition-opacity`}>
+                    <div className={`${onboardingData.musicEnabled ? 'opacity-100' : 'opacity-60'} ${simplifyMobileVisuals ? '' : 'transition-opacity'}`}>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2] mb-2.5">Pick a track</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                         {ONBOARDING_MUSIC_OPTIONS.map((track) => {
                           const isActive = onboardingData.musicEnabled && String(onboardingData.musicUrl || '').trim() === track.url;
+                          const isPreviewing = previewTrackId === track.id;
                           return (
-                            <button
+                            <div
                               key={track.id}
-                              type="button"
-                              onClick={() => {
-                                updateOnboardingValue('musicEnabled', true);
-                                updateOnboardingValue('musicUrl', track.url);
-                              }}
-                              className={`text-left rounded-2xl border px-4 py-3 transition-all ${
+                              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
                                 isActive
                                   ? 'border-[#f6a8c9] bg-[#f6a8c9]/18 text-white shadow-lg'
                                   : 'border-white/15 bg-white/5 text-white/80 hover:border-[#f6a8c9]/65'
                               }`}
                             >
-                              <span className="block text-sm font-bold">{track.title}</span>
-                              <span className="text-[11px] text-white/65">{track.note}</span>
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateOnboardingValue('musicEnabled', true);
+                                  updateOnboardingValue('musicUrl', track.url);
+                                }}
+                                className="min-w-0 flex-1 text-left"
+                              >
+                                <span className="block text-sm font-bold">{track.title}</span>
+                                <span className="text-[11px] text-white/65">{track.note}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewTrackId(isPreviewing ? '' : track.id)}
+                                className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border ${
+                                  isPreviewing
+                                    ? 'border-[#f6a8c9] bg-[#f6a8c9] text-[#121827]'
+                                    : 'border-white/20 bg-white/10 text-white hover:border-[#f6a8c9]/70'
+                                }`}
+                                aria-label={isPreviewing ? `Stop preview ${track.title}` : `Preview ${track.title}`}
+                                title={isPreviewing ? 'Stop preview' : 'Preview song'}
+                              >
+                                {isPreviewing ? <Square size={14} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
+
+                      {previewTrack && previewVideoId && (
+                        <div className="mt-3 overflow-hidden rounded-2xl border border-white/15 bg-black/25">
+                          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+                            <p className="truncate text-xs font-bold text-white/80">Previewing {previewTrack.title}</p>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewTrackId('')}
+                              className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#f8b6d2]"
+                            >
+                              Stop
+                            </button>
+                          </div>
+                          <iframe
+                            key={previewTrack.id}
+                            src={`https://www.youtube.com/embed/${previewVideoId}?autoplay=1&controls=1&rel=0`}
+                            title={`${previewTrack.title} preview`}
+                            allow="autoplay; encrypted-media"
+                            className="h-[96px] w-full border-0"
+                          />
+                        </div>
+                      )}
 
                       <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">YouTube URL (optional)</label>
                       <input
@@ -1054,7 +1115,7 @@ const Builder = () => {
                 </div>
                 <div className="flex-1 px-3 pt-3">
                   <div className="rounded-2xl border border-white/10 overflow-hidden">
-                    <TemplateMiniDemo templateId={activeTemplateId} />
+                    <TemplateMiniDemo templateId={activeTemplateId} reduceMotion={simplifyMobileVisuals} />
                   </div>
                 </div>
                 <div className="px-4 py-4">
@@ -1070,9 +1131,9 @@ const Builder = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-screen md:h-auto min-h-screen flex flex-col bg-white overflow-hidden md:overflow-visible">
       {/* Top Bar */}
-      <div className="h-16 flex items-center justify-between px-2.5 sm:px-3 md:px-6 border-b border-card shrink-0 bg-white z-10 gap-2">
+      <div className="h-16 flex items-center justify-between px-2.5 sm:px-3 md:px-6 border-b border-card shrink-0 bg-white sticky top-0 z-30 gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <Link to={`/templates/${activeTemplateId}`} className="text-secondary hover:text-primary-pink transition-colors">
             <ArrowLeft size={20} />
@@ -1142,9 +1203,9 @@ const Builder = () => {
         </div>
       </div>
 
-      <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-grow flex flex-col md:flex-row overflow-hidden md:overflow-visible">
         {/* Left Panel */}
-        <div className={`${showEditorPanel ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] border-r border-card flex-col bg-white overflow-hidden`}>
+        <div className={`${showEditorPanel ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] md:shrink-0 md:min-h-[calc(100vh-4rem)] border-r border-card flex-col bg-white overflow-hidden md:overflow-visible`}>
           <div className="flex border-b border-card shrink-0">
             {tabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -1160,7 +1221,7 @@ const Builder = () => {
             ))}
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6 space-y-5">
+          <div className="flex-grow overflow-y-auto md:overflow-visible p-6 space-y-5">
             <AnimatePresence mode="wait">
 
               {/* TEXT TAB */}
@@ -1494,7 +1555,7 @@ const Builder = () => {
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className={`${showPreviewPanel ? 'flex' : 'hidden'} md:flex flex-grow bg-slate-100 flex-col overflow-hidden w-full`}>
+        <div className={`${showPreviewPanel ? 'flex' : 'hidden'} md:flex flex-grow bg-slate-100 flex-col overflow-hidden w-full md:sticky md:top-16 md:h-[calc(100vh-4rem)]`}>
           <div className="h-12 border-b border-card bg-white shrink-0 flex items-center justify-between px-6">
             <div className="flex items-center gap-2 text-secondary font-bold text-xs uppercase tracking-widest">
               <Eye size={16} className="text-primary-pink" /> Live Preview
