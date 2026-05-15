@@ -16,10 +16,11 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import Layout from '../components/Layout'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
+import { normalizeTemplateId } from '../templates/registry'
 
 const TEMPLATE_NAMES = {
   'kawaii-letter': 'Love Letter',
-  'iva-birthday': 'Full House of Love',
+  'full-house-love': 'Full House of Love',
   'birthday-candles': 'Birthday Candles',
   '100-reasons': '100 Reasons',
   'our-gallery': 'Our Gallery',
@@ -70,7 +71,8 @@ const getExpiryMeta = (expiresAt) => {
 
 const TemplateStatusCard = ({ item }) => {
   const isPending = item.status === 'pending'
-  const templateName = TEMPLATE_NAMES[item.templateId] || item.templateId
+  const resolvedTemplateId = normalizeTemplateId(item.templateId)
+  const templateName = TEMPLATE_NAMES[resolvedTemplateId] || resolvedTemplateId
   const title = isPending ? `${templateName} (Draft)` : templateName
   const expiryMeta = isPending ? getExpiryMeta(item.expiresAt) : null
 
@@ -103,8 +105,8 @@ const TemplateStatusCard = ({ item }) => {
         <div className="grid grid-cols-2 gap-3">
           {isPending ? (
             <>
-              <Link
-                to={`/create/${item.templateId}?draft=${item.id}`}
+	              <Link
+	                to={`/create/${resolvedTemplateId}?draft=${item.id}`}
                 className="border-2 border-[#f4c4d3] text-primary-pink bg-white rounded-pill px-4 py-3 font-bold text-center hover:bg-primary-light transition-colors"
               >
                 <Edit3 size={16} className="inline mr-1" />
@@ -126,8 +128,8 @@ const TemplateStatusCard = ({ item }) => {
                 <ExternalLink size={16} className="inline mr-1" />
                 Open Site
               </Link>
-              <Link
-                to={`/templates/${item.templateId}`}
+	              <Link
+	                to={`/templates/${resolvedTemplateId}`}
                 className="bg-pink-gradient text-white rounded-pill px-4 py-3 font-bold text-center hover:brightness-105 transition-all"
               >
                 New From Template

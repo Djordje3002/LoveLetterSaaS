@@ -3,32 +3,45 @@ import { auth } from '../firebase'
 import { collection, doc, setDoc, Timestamp } from 'firebase/firestore'
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music'
 import { CURRENT_TEMPLATE_RENDER_VERSION } from './pagePayload'
+import { normalizeTemplateId } from '../templates/registry'
 
-const BASE_REASON_LINES = [
-  'You make ordinary moments feel special.',
-  'Your smile makes my whole day better.',
-  'You listen with your whole heart.',
-  'You believe in me when I doubt myself.',
-  'You make me laugh when I need it most.',
-  'You are kind even when nobody is watching.',
-  'You make hard days feel lighter.',
-  'You notice the little things.',
-  'You are my calm in chaos.',
-  'You make me want to be better.',
-  'You make home feel like a person.',
-  'You are gentle with my heart.',
-  'You make love feel safe.',
-  'You turn simple days into memories.',
-  'You are my favorite conversation.',
-  'You celebrate my wins like they are yours.',
-  'You stand by me through everything.',
-  'You make life feel brighter.',
-  'You are beautifully, unapologetically you.',
-  'You are my favorite part of every day.',
+const REASON_DETAILS = [
+  'your laugh',
+  'the way you listen',
+  'your sleepy good mornings',
+  'how you make small plans feel exciting',
+  'your kindness',
+  'your random stories',
+  'your hugs',
+  'your brave heart',
+  'your silly jokes',
+  'your voice',
+  'how you remember little things',
+  'your honest eyes',
+  'the calm you bring',
+  'your tiny habits',
+  'how you cheer for me',
+  'your warm messages',
+  'your smile',
+  'the way you dream',
+  'your patience',
+  'the home I feel with you',
 ]
 
-const buildDefaultReasons = (count = 100) =>
-  Array.from({ length: count }, (_, i) => `Reason ${i + 1}: ${BASE_REASON_LINES[i % BASE_REASON_LINES.length]}`)
+const REASON_ENDINGS = [
+  'turns normal days into something I want to keep',
+  'makes me feel safe, chosen, and understood',
+  'reminds me that love can be soft and real',
+  'brings light into places I did not know needed it',
+  'makes every ordinary moment feel like ours',
+]
+
+export const buildDefaultReasons = (count = 100) =>
+  Array.from({ length: count }, (_, i) => {
+    const detail = REASON_DETAILS[i % REASON_DETAILS.length]
+    const ending = REASON_ENDINGS[Math.floor(i / REASON_DETAILS.length) % REASON_ENDINGS.length]
+    return `I love ${detail} because it ${ending}.`
+  })
 
 export const TEMPLATE_SCENE_DEFAULTS = {
   'kawaii-letter': {
@@ -41,7 +54,11 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     polaroidCaption3: 'That perfect golden-hour photo',
     polaroidCaption4: 'A tiny moment I never forgot',
     polaroidCaption5: 'My favorite smile in the world',
+    memoriesButtonLabel: 'See our memories',
+    finalButtonLabel: 'Read the last note',
     closingMessage: 'Forever yours, always.',
+    finalTitle: 'For you, always',
+    finalMessage: 'Every little piece of this page is here for one reason: you are loved, deeply and completely.',
   },
   'rose-whisper': {
     hint: 'A soft note waits for you...',
@@ -103,8 +120,8 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     wishLine: 'Make a wish and smile big ✨',
     closingMessage: 'To your happiest year yet.',
   },
-  'iva-birthday': {
-    accessName: 'iva',
+  'full-house-love': {
+    accessName: 'love',
     accessPassword: 'love',
     welcomeTitle: 'Welcome, my love 💙',
     welcomeSubtitle: 'This is our little private world.',
@@ -242,7 +259,7 @@ export const TEMPLATE_STYLE_DEFAULTS = {
   'midnight-love': { palette: 'navy', font: 'elegant' },
   'rose-whisper': { palette: 'lavender', font: 'elegant' },
   'golden-promise': { palette: 'gold', font: 'classic' },
-  'iva-birthday': { palette: 'navy', font: 'playful' },
+  'full-house-love': { palette: 'navy', font: 'playful' },
   'bouquet-garden': { palette: 'pink', font: 'classic' },
   'our-year-book': { palette: 'lavender', font: 'classic' },
   'date-invite': { palette: 'pink', font: 'playful' },
@@ -252,8 +269,9 @@ export const TEMPLATE_STYLE_DEFAULTS = {
 }
 
 export function getInitialDraftFormData(templateId) {
-  const styleDefaults = TEMPLATE_STYLE_DEFAULTS[templateId] || TEMPLATE_STYLE_DEFAULTS['kawaii-letter']
-  const defaultReasons = templateId === '100-reasons' ? buildDefaultReasons(100) : []
+  const normalizedTemplateId = normalizeTemplateId(templateId)
+  const styleDefaults = TEMPLATE_STYLE_DEFAULTS[normalizedTemplateId] || TEMPLATE_STYLE_DEFAULTS['kawaii-letter']
+  const defaultReasons = ['100-reasons', 'full-house-love'].includes(normalizedTemplateId) ? buildDefaultReasons(100) : []
 
   return {
     templateVersion: CURRENT_TEMPLATE_RENDER_VERSION,
@@ -263,7 +281,7 @@ export function getInitialDraftFormData(templateId) {
     showFooter: true,
     palette: styleDefaults.palette,
     font: styleDefaults.font,
-    scenes: TEMPLATE_SCENE_DEFAULTS[templateId] ? { ...TEMPLATE_SCENE_DEFAULTS[templateId] } : {},
+    scenes: TEMPLATE_SCENE_DEFAULTS[normalizedTemplateId] ? { ...TEMPLATE_SCENE_DEFAULTS[normalizedTemplateId] } : {},
     reasons: defaultReasons,
     musicEnabled: true,
     musicUrl: DEFAULT_LOVE_MUSIC_URL,
@@ -272,6 +290,7 @@ export function getInitialDraftFormData(templateId) {
 }
 
 export function buildQuickPersonalizedScenes(templateId, { recipientName = '', tone = 'sweet' } = {}) {
+  const normalizedTemplateId = normalizeTemplateId(templateId)
   const name = String(recipientName || '').trim() || 'you'
   const toneLines = {
     sweet: [
@@ -299,6 +318,13 @@ export function buildQuickPersonalizedScenes(templateId, { recipientName = '', t
   const lines = toneLines[tone] || toneLines.sweet
 
   const byTemplate = {
+    'kawaii-letter': {
+      scene2Header: `My sweetest letter to ${name}`,
+      letterText: lines.join('\n'),
+      scene3Header: `${name}, our favorite memories`,
+      finalTitle: `For ${name}, always`,
+      finalMessage: `I made this so you could open it anytime and remember how much you mean to me, ${name}.`,
+    },
     'dark-romance': {
       letterText: lines.join('\n'),
       closingMessage: 'Yours, in every lifetime.',
@@ -321,7 +347,7 @@ export function buildQuickPersonalizedScenes(templateId, { recipientName = '', t
       questionSubtitle: 'One tap on yes and we celebrate properly.',
       celebrationText: `You said yes, ${name}. This just became one of my favorite memories.`,
     },
-    'iva-birthday': {
+    'full-house-love': {
       homeTitle: `${name}, this is for you 💙`,
       homeSubtitle: 'I made this little private world just for you.',
       letterText: lines.join('\n'),
@@ -380,11 +406,12 @@ them: love: i love you so much ${name} 🩷`,
     scene2Header: `A letter for ${name}`,
     letterText: lines.join('\n'),
     closingMessage: 'Made just for you.',
-    ...(byTemplate[templateId] || {}),
+    ...(byTemplate[normalizedTemplateId] || {}),
   }
 }
 
 export function buildCreativeDirectionScenes(templateId, { recipientName = '', direction = 'cinematic' } = {}) {
+  const normalizedTemplateId = normalizeTemplateId(templateId)
   const name = String(recipientName || '').trim() || 'you'
   const directions = {
     cinematic: {
@@ -431,6 +458,13 @@ export function buildCreativeDirectionScenes(templateId, { recipientName = '', d
 
   const preset = directions[direction] || directions.cinematic
   const byTemplate = {
+    'kawaii-letter': {
+      scene2Header: preset.header,
+      letterText: preset.lines.join('\n'),
+      scene3Header: 'Little memories I keep',
+      finalTitle: `For ${name}, always`,
+      finalMessage: preset.closing,
+    },
     'date-invite': {
       introLine: `${name}, there is one question I have been waiting to ask...`,
       confessionTitle: 'Before I ask, read this first...',
@@ -462,7 +496,7 @@ export function buildCreativeDirectionScenes(templateId, { recipientName = '', d
       polaroidCaption4: 'My favorite little memory',
       polaroidCaption5: 'Still smiling at this one',
     },
-    'iva-birthday': {
+    'full-house-love': {
       homeTitle: `${name}, this is for you 💙`,
       homeSubtitle: 'I made this little private world just for us.',
       letterText: preset.lines.join('\n'),
@@ -514,11 +548,12 @@ them: love: i really, really love you`,
     scene2Header: preset.header,
     letterText: preset.lines.join('\n'),
     closingMessage: preset.closing,
-    ...(byTemplate[templateId] || {}),
+    ...(byTemplate[normalizedTemplateId] || {}),
   }
 }
 
 export async function createDraft(templateId, initialData = {}) {
+  const normalizedTemplateId = normalizeTemplateId(templateId)
   let currentUser = auth.currentUser
   if (!currentUser && typeof auth.authStateReady === 'function') {
     await auth.authStateReady()
@@ -533,12 +568,12 @@ export async function createDraft(templateId, initialData = {}) {
   const id = draftRef.id
   const now = Timestamp.now()
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000))
-  const defaults = getInitialDraftFormData(templateId)
+  const defaults = getInitialDraftFormData(normalizedTemplateId)
 
   const draftData = {
     id,
     status: 'pending',
-    templateId,
+    templateId: normalizedTemplateId,
     templateVersion: Number(initialData.templateVersion) || defaults.templateVersion || CURRENT_TEMPLATE_RENDER_VERSION,
     recipientName: initialData.recipientName ?? defaults.recipientName,
     senderName: initialData.senderName ?? defaults.senderName,

@@ -1,5 +1,8 @@
 export const DEFAULT_TEMPLATE_ID = 'kawaii-letter'
-export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['kawaii-letter', 'iva-birthday', 'bouquet-garden', 'our-year-book', 'date-invite']
+export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['full-house-love', 'kawaii-letter', 'bouquet-garden', 'our-year-book', 'date-invite']
+export const TEMPLATE_ID_ALIASES = {
+  'iva-birthday': 'full-house-love',
+}
 
 export const TEMPLATE_REGISTRY = [
   {
@@ -15,11 +18,11 @@ export const TEMPLATE_REGISTRY = [
     hidePaletteSetting: true,
   },
   {
-    id: 'iva-birthday',
+    id: 'full-house-love',
     title: 'Full House of Love',
-    cardTitle: 'Full Love',
+    cardTitle: 'Full House of Love',
     tags: ['Full Experience', 'Love'],
-    description: 'A private love-themed experience with a playful entry gate, love question, memory gallery, cinematic letter reveal, and a 100-style reasons grid.',
+    description: 'A private love-themed experience with a playful entry gate, full-screen letter page, memory gallery, and a 100-style reasons grid.',
     emoji: '💙',
     color: 'bg-gradient-to-br from-[#13263f] to-[#2c4f7c]',
     supportsImages: true,
@@ -167,9 +170,14 @@ export const TEMPLATE_BY_ID = TEMPLATE_REGISTRY.reduce((acc, template) => {
 
 export const TEMPLATE_GALLERY_FILTERS = ['All', 'Love', 'Birthday', 'Chat', 'Reasons', 'Gallery', 'Story', 'Elegant', 'Date', 'Night']
 
-export const getTemplateConfig = (templateId) => TEMPLATE_BY_ID[templateId] || TEMPLATE_BY_ID[DEFAULT_TEMPLATE_ID]
+export const normalizeTemplateId = (templateId) => {
+  const rawId = String(templateId || DEFAULT_TEMPLATE_ID)
+  return TEMPLATE_ID_ALIASES[rawId] || rawId
+}
 
-export const getTemplatePriceCents = (templateId) => (templateId === 'iva-birthday' ? 999 : 800)
+export const getTemplateConfig = (templateId) => TEMPLATE_BY_ID[normalizeTemplateId(templateId)] || TEMPLATE_BY_ID[DEFAULT_TEMPLATE_ID]
+
+export const getTemplatePriceCents = (templateId) => (normalizeTemplateId(templateId) === 'full-house-love' ? 999 : 800)
 
 export const getTemplateCards = () => TEMPLATE_REGISTRY.map((template) => ({
   id: template.id,
@@ -178,6 +186,9 @@ export const getTemplateCards = () => TEMPLATE_REGISTRY.map((template) => ({
 }))
 
 export const getShowcaseTemplateCards = () => {
-  const allowed = new Set(TEMPLATE_PUBLIC_SHOWCASE_IDS)
-  return getTemplateCards().filter((template) => allowed.has(template.id))
+  const cardsById = getTemplateCards().reduce((acc, template) => {
+    acc[template.id] = template
+    return acc
+  }, {})
+  return TEMPLATE_PUBLIC_SHOWCASE_IDS.map((id) => cardsById[id]).filter(Boolean)
 }

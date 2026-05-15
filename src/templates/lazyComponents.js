@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { DEFAULT_TEMPLATE_ID } from './registry'
+import { DEFAULT_TEMPLATE_ID, normalizeTemplateId } from './registry'
 
 export const TEMPLATE_COMPONENT_LAZY = {
   'kawaii-letter': lazy(() => import('./KawaiiLetter')),
@@ -10,7 +10,7 @@ export const TEMPLATE_COMPONENT_LAZY = {
   'midnight-love': lazy(() => import('./MidnightLove')),
   'rose-whisper': lazy(() => import('./RoseWhisper')),
   'golden-promise': lazy(() => import('./GoldenPromise')),
-  'iva-birthday': lazy(() => import('./IvaBirthday')),
+  'full-house-love': lazy(() => import('./FullHouseLove')),
   'bouquet-garden': lazy(() => import('./BouquetGarden')),
   'our-year-book': lazy(() => import('./OurYearBook')),
   'birthday-candles': lazy(() => import('./BirthdayCandles')),
@@ -20,5 +20,5 @@ export const TEMPLATE_COMPONENT_LAZY = {
 }
 
 export function getLazyTemplateComponent(templateId) {
-  return TEMPLATE_COMPONENT_LAZY[templateId] || TEMPLATE_COMPONENT_LAZY[DEFAULT_TEMPLATE_ID]
+  return TEMPLATE_COMPONENT_LAZY[normalizeTemplateId(templateId)] || TEMPLATE_COMPONENT_LAZY[DEFAULT_TEMPLATE_ID]
 }

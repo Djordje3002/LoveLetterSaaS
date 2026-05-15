@@ -1,17 +1,26 @@
-import { Link, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { TEMPLATE_SCENE_DEFAULTS, TEMPLATE_STYLE_DEFAULTS } from '../utils/createDraft';
+import { buildDefaultReasons, TEMPLATE_SCENE_DEFAULTS, TEMPLATE_STYLE_DEFAULTS } from '../utils/createDraft';
 import TemplateRenderer from '../components/TemplateRenderer';
-import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID } from '../templates/registry';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, normalizeTemplateId } from '../templates/registry';
 
-const DEMO_REASONS = Array.from({ length: 100 }, (_, i) => `Reason ${i + 1}: You make life brighter.`);
+const DEMO_REASONS = buildDefaultReasons(100);
 
 const DemoPreviewPage = () => {
   const { templateId } = useParams();
-  const safeTemplateId = templateId && TEMPLATE_BY_ID[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
+  const navigate = useNavigate();
+  const normalizedTemplateId = normalizeTemplateId(templateId);
+  const safeTemplateId = normalizedTemplateId && TEMPLATE_BY_ID[normalizedTemplateId] ? normalizedTemplateId : DEFAULT_TEMPLATE_ID;
   const defaultScenes = TEMPLATE_SCENE_DEFAULTS[safeTemplateId] ? { ...TEMPLATE_SCENE_DEFAULTS[safeTemplateId] } : {};
   const presentation = TEMPLATE_STYLE_DEFAULTS[safeTemplateId] || TEMPLATE_STYLE_DEFAULTS[DEFAULT_TEMPLATE_ID];
   const demoRecipientName = 'Your Love';
+
+  useEffect(() => {
+    if (templateId && templateId !== safeTemplateId) {
+      navigate(`/preview-demo/${safeTemplateId}`, { replace: true });
+    }
+  }, [navigate, safeTemplateId, templateId]);
 
   return (
     <div className="relative min-h-screen">

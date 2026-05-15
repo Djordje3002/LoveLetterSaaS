@@ -1,12 +1,12 @@
 import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
-import { DEFAULT_TEMPLATE_ID } from '../templates/registry'
+import { DEFAULT_TEMPLATE_ID, normalizeTemplateId } from '../templates/registry'
 import { TEMPLATE_COMPONENT_LAZY } from '../templates/lazyComponents'
 import { buildTemplatePayload } from '../utils/pagePayload'
 
 const TemplateRenderer = ({ pageData, musicEnabled = true }) => {
   const payload = buildTemplatePayload(pageData)
-  const TemplateComponent = TEMPLATE_COMPONENT_LAZY[payload.templateId] || TEMPLATE_COMPONENT_LAZY[DEFAULT_TEMPLATE_ID]
+  const TemplateComponent = TEMPLATE_COMPONENT_LAZY[normalizeTemplateId(payload.templateId)] || TEMPLATE_COMPONENT_LAZY[DEFAULT_TEMPLATE_ID]
 
   return (
     <Suspense

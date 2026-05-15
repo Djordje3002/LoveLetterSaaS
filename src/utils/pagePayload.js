@@ -1,5 +1,5 @@
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music'
-import { DEFAULT_TEMPLATE_ID } from '../templates/registry'
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, normalizeTemplateId } from '../templates/registry'
 
 export const CURRENT_TEMPLATE_RENDER_VERSION = 2
 export const LEGACY_TEMPLATE_RENDER_VERSION = 1
@@ -11,7 +11,8 @@ export function normalizeTemplateVersion(value) {
 }
 
 export function buildTemplatePayload(rawData = {}) {
-  const templateId = String(rawData.templateId || DEFAULT_TEMPLATE_ID)
+  const normalizedTemplateId = normalizeTemplateId(rawData.templateId || DEFAULT_TEMPLATE_ID)
+  const templateId = TEMPLATE_BY_ID[normalizedTemplateId] ? normalizedTemplateId : DEFAULT_TEMPLATE_ID
 
   return {
     templateId,

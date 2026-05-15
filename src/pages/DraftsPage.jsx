@@ -5,10 +5,11 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import Layout from '../components/Layout';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { normalizeTemplateId } from '../templates/registry';
 
 const TEMPLATE_NAMES = {
   'kawaii-letter': 'Love Letter',
-  'iva-birthday': 'Full House of Love',
+  'full-house-love': 'Full House of Love',
   'birthday-candles': 'Birthday Candles',
   '100-reasons': '100 Reasons',
   'our-gallery': 'Our Gallery',
@@ -30,7 +31,8 @@ const formatDate = (timestamp) => {
 };
 
 const DraftCard = ({ draft }) => {
-  const templateName = TEMPLATE_NAMES[draft.templateId] || draft.templateId;
+  const resolvedTemplateId = normalizeTemplateId(draft.templateId);
+  const templateName = TEMPLATE_NAMES[resolvedTemplateId] || resolvedTemplateId;
   const isPending = draft.status === 'pending';
   const statusDate = isPending ? draft.createdAt : (draft.publishedAt || draft.createdAt);
 
@@ -55,7 +57,7 @@ const DraftCard = ({ draft }) => {
       <div className="flex flex-wrap gap-2">
         {isPending ? (
           <>
-            <Link to={`/create/${draft.templateId}?draft=${draft.id}`} className="btn-primary py-2 px-4 text-sm inline-flex items-center gap-2">
+            <Link to={`/create/${resolvedTemplateId}?draft=${draft.id}`} className="btn-primary py-2 px-4 text-sm inline-flex items-center gap-2">
               <Edit3 size={14} /> Continue editing
             </Link>
             <Link to={`/preview/${draft.id}`} className="btn-outline py-2 px-4 text-sm inline-flex items-center gap-2">
@@ -67,7 +69,7 @@ const DraftCard = ({ draft }) => {
             <Link to={`/p/${draft.id}`} className="btn-primary py-2 px-4 text-sm inline-flex items-center gap-2">
               <ExternalLink size={14} /> Open live page
             </Link>
-            <Link to={`/templates/${draft.templateId}`} className="btn-outline py-2 px-4 text-sm inline-flex items-center gap-2">
+            <Link to={`/templates/${resolvedTemplateId}`} className="btn-outline py-2 px-4 text-sm inline-flex items-center gap-2">
               <Edit3 size={14} /> Start new draft
             </Link>
           </>

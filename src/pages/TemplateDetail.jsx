@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Star, Play, Sparkles, Image, Music, Zap, Globe, Share2, Smartphone, ThumbsUp, Loader2 } from 'lucide-react';
 import Layout from '../components/Layout';
 import { createDraft } from '../utils/createDraft';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../utils/analytics';
-import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, getTemplateConfig } from '../templates/registry';
+import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, getTemplateConfig, normalizeTemplateId } from '../templates/registry';
 
 const TemplateDetail = () => {
   const navigate = useNavigate();
@@ -13,7 +13,14 @@ const TemplateDetail = () => {
   const [createError, setCreateError] = useState('');
   const { templateId } = useParams();
   const { user } = useAuth();
-  const resolvedTemplateId = TEMPLATE_BY_ID[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
+  const normalizedTemplateId = normalizeTemplateId(templateId);
+  const resolvedTemplateId = TEMPLATE_BY_ID[normalizedTemplateId] ? normalizedTemplateId : DEFAULT_TEMPLATE_ID;
+
+  useEffect(() => {
+    if (templateId && templateId !== resolvedTemplateId) {
+      navigate(`/templates/${resolvedTemplateId}`, { replace: true });
+    }
+  }, [navigate, resolvedTemplateId, templateId]);
 
   const createDraftAndNavigate = async (target) => {
     if (creatingEditor) return;
