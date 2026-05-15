@@ -3,9 +3,14 @@ import TemplateCard from '../components/TemplateCard';
 import { AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
 import { getShowcaseTemplateCards, TEMPLATE_GALLERY_FILTERS } from '../templates/registry';
+import useIsMobile from '../hooks/useIsMobile';
+import { useReducedMotion } from 'framer-motion';
 
 const TemplateGallery = () => {
   const [activeFilter, setActiveFilter] = useState('All');
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
+  const simplifyMobileVisuals = isMobile || prefersReducedMotion;
 
   const templates = getShowcaseTemplateCards();
   const visibleTags = new Set(templates.flatMap((template) => template.tags));
@@ -43,15 +48,23 @@ const TemplateGallery = () => {
         </div>
 
         {/* Grid */}
-        <div className="rounded-[32px] border border-[#f1dce5] bg-[linear-gradient(180deg,#ffffff_0%,#fff8fb_55%,#fff4f9_100%)] p-4 md:p-6">
+        <div className={`rounded-[32px] border border-[#f1dce5] p-4 md:p-6 ${simplifyMobileVisuals ? 'bg-white' : 'bg-[linear-gradient(180deg,#ffffff_0%,#fff8fb_55%,#fff4f9_100%)]'}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence mode="popLayout">
-            {templates
-              .filter((t) => activeFilter === 'All' || t.tags.includes(activeFilter))
-              .map((template, i) => (
-                <TemplateCard key={template.id} template={template} index={i} />
-              ))}
-          </AnimatePresence>
+            {simplifyMobileVisuals ? (
+              templates
+                .filter((t) => activeFilter === 'All' || t.tags.includes(activeFilter))
+                .map((template, i) => (
+                  <TemplateCard key={template.id} template={template} index={i} />
+                ))
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {templates
+                  .filter((t) => activeFilter === 'All' || t.tags.includes(activeFilter))
+                  .map((template, i) => (
+                    <TemplateCard key={template.id} template={template} index={i} />
+                  ))}
+              </AnimatePresence>
+            )}
           </div>
         </div>
       </div>

@@ -3,14 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BookHeart, Camera, ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
 import { extractYouTubeId } from './palettes';
 
-const FALLBACK_PHOTOS = [
-  '/templates/iva-birthday/IMG_5107.PNG',
-  '/templates/iva-birthday/IMG_5109.PNG',
-  '/templates/iva-birthday/IMG_4977.PNG',
-  '/templates/iva-birthday/IMG_5086.PNG',
-  '/templates/iva-birthday/IMG_5089.PNG',
-];
-
 const STICKERS = ['✿', '✦', '♥', '✧', '❀', '✶'];
 
 const Polaroid = ({ photoUrl, caption, className = '', rotate = '-2deg' }) => (
@@ -50,9 +42,9 @@ const OurYearBook = ({
   const hiddenMusicId = extractYouTubeId(musicUrl);
 
   const photos = useMemo(
-    () => [1, 2, 3, 4, 5].map((slot, idx) => ({
+    () => [1, 2, 3, 4, 5].map((slot) => ({
       id: slot,
-      src: String(scenes[`photo${slot}Url`] || FALLBACK_PHOTOS[idx] || '').trim(),
+      src: String(scenes[`photo${slot}Url`] || '').trim(),
       caption: String(scenes[`polaroidCaption${slot}`] || `Memory ${slot}`).trim(),
     })),
     [scenes]

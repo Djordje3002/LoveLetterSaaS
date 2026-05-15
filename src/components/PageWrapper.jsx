@@ -1,6 +1,15 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import useIsMobile from '../hooks/useIsMobile';
 
 const PageWrapper = ({ children }) => {
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
+  const disableMotion = isMobile || prefersReducedMotion;
+
+  if (disableMotion) {
+    return <div>{children}</div>;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Sparkles, Palette, Share2, Quote } from 'lucide-react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import Layout from '../components/Layout';
 import TemplateCard from '../components/TemplateCard';
 import { getShowcaseTemplateCards } from '../templates/registry';
+import useIsMobile from '../hooks/useIsMobile';
 
-const StatCounter = ({ value, label }) => {
+const StatCounter = ({ value, label, disableAnimation = false }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
@@ -17,6 +18,10 @@ const StatCounter = ({ value, label }) => {
 
   useEffect(() => {
     if (!hasDigits) return;
+    if (disableAnimation) {
+      setCount(numericValue);
+      return;
+    }
     if (isInView) {
       let start = 0;
       const end = numericValue;
@@ -35,13 +40,13 @@ const StatCounter = ({ value, label }) => {
       
       return () => clearInterval(timer);
     }
-  }, [isInView, numericValue, hasDigits]);
+  }, [isInView, numericValue, hasDigits, disableAnimation]);
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={isInView ? { opacity: 1, scale: 1 } : {}}
+      initial={disableAnimation ? false : { opacity: 0, scale: 0.9 }}
+      animate={!disableAnimation && isInView ? { opacity: 1, scale: 1 } : undefined}
       className="text-center p-8 rounded-[24px] border border-[#f1dce5] bg-white/90 shadow-sm"
     >
       <div className="text-3xl md:text-4xl font-bold text-primary-pink mb-2">
@@ -53,6 +58,13 @@ const StatCounter = ({ value, label }) => {
 };
 
 const LandingPage = () => {
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = useReducedMotion();
+  const shouldReduceMotion = isMobile || prefersReducedMotion;
+  const belowFoldPerfStyle = shouldReduceMotion
+    ? { contentVisibility: 'auto', containIntrinsicSize: '1px 900px' }
+    : undefined;
+
   const stats = [
     { value: '10+', label: 'Gift Templates' },
     { value: '100%', label: 'Customizable' },
@@ -81,7 +93,7 @@ const LandingPage = () => {
     },
   ];
 
-  const templates = getShowcaseTemplateCards();
+  const templates = getShowcaseTemplateCards().slice(0, 3);
 
   const testimonials = [
     {
@@ -103,7 +115,7 @@ const LandingPage = () => {
       initials: "KW"
     },
     {
-      text: "I created this for my girlfriend’s birthday, and she got emotional in the best way. She said it felt like our whole story in one page.",
+      text: "I made this so fast and simple for my girl, and she loved it so much. She said it felt like our whole story in one page.",
       name: "Ethan M.",
       occasion: "Valentine Confession",
       initials: "EM"
@@ -111,7 +123,7 @@ const LandingPage = () => {
     {
       text: "I made one for my girl just to say I love you, and her reaction was everything. She keeps reopening it and telling me how special it feels.",
       name: "Mia C.",
-      occasion: "Birthday Surprise",
+      occasion: "Love Surprise",
       initials: "MC"
     },
     {
@@ -140,13 +152,14 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-[-120px] top-24 h-72 w-72 rounded-full bg-[#ff6fa3]/20 blur-3xl" />
-          <div className="absolute right-[-140px] top-44 h-80 w-80 rounded-full bg-[#ffd67b]/18 blur-3xl" />
-          <div className="absolute bottom-14 left-1/2 h-52 w-[80%] -translate-x-1/2 rounded-full bg-[#f43f73]/10 blur-3xl" />
+          <div className="hidden md:block absolute left-[-120px] top-24 h-72 w-72 rounded-full bg-[#ff6fa3]/20 blur-3xl" />
+          <div className="hidden md:block absolute right-[-140px] top-44 h-80 w-80 rounded-full bg-[#ffd67b]/18 blur-3xl" />
+          <div className="hidden md:block absolute bottom-14 left-1/2 h-52 w-[80%] -translate-x-1/2 rounded-full bg-[#f43f73]/10 blur-3xl" />
+          <div className="md:hidden absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_15%_12%,rgba(255,111,163,0.22),transparent_42%),radial-gradient(circle_at_82%_18%,rgba(255,214,123,0.2),transparent_44%),radial-gradient(circle_at_50%_86%,rgba(244,63,115,0.12),transparent_52%)]" />
         </div>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
           className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f3bfd1] bg-white/70 px-4 py-1.5 text-sm font-semibold text-primary-pink shadow-sm backdrop-blur-sm"
         >
           <span className="w-2 h-2 rounded-full bg-primary-pink animate-pulse"></span>
@@ -154,9 +167,9 @@ const LandingPage = () => {
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? undefined : { delay: 0.1 }}
           className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-[0.95] text-dark font-display break-words"
         >
           Turn Your Feelings
@@ -165,9 +178,9 @@ const LandingPage = () => {
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? undefined : { delay: 0.2 }}
           className="text-secondary text-lg md:text-xl max-w-2xl mb-10"
         >
           Build a personalized reveal page with your words, memories, and vibe.
@@ -175,9 +188,9 @@ const LandingPage = () => {
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? undefined : { delay: 0.3 }}
           className="flex flex-wrap justify-center gap-4 mb-12"
         >
           {['Super easy', 'Unique URL + QR', 'Romantic templates', 'Fast setup'].map((badge) => (
@@ -189,13 +202,13 @@ const LandingPage = () => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={shouldReduceMotion ? undefined : { delay: 0.4 }}
           className="flex flex-col sm:flex-row gap-4"
         >
           <Link to="/templates" className="btn-primary btn-shimmer flex items-center gap-2 px-10 text-lg">
-            <span className="inline-block animate-spin [animation-duration:2.2s]" aria-hidden="true">✦</span> Create yours →
+            <span className={`inline-block ${shouldReduceMotion ? '' : 'animate-spin [animation-duration:2.2s]'}`} aria-hidden="true">✦</span> Create yours →
           </Link>
           <Link to="/templates" className="btn-outline bg-white/90 px-10 text-lg shadow-sm">
             See templates
@@ -204,16 +217,16 @@ const LandingPage = () => {
       </section>
 
       {/* Stats Row */}
-      <section className="max-w-7xl mx-auto px-6 mb-24">
+      <section className="max-w-7xl mx-auto px-6 mb-24" style={belowFoldPerfStyle}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <StatCounter key={stat.label} value={stat.value} label={stat.label} />
+            <StatCounter key={stat.label} value={stat.value} label={stat.label} disableAnimation={shouldReduceMotion} />
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-6 mb-32">
+      <section id="how-it-works" className="max-w-7xl mx-auto px-6 mb-32" style={belowFoldPerfStyle}>
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             How It <span className="text-transparent bg-clip-text bg-pink-gradient italic">Works</span>
@@ -242,7 +255,7 @@ const LandingPage = () => {
       </section>
 
       {/* Templates Preview */}
-      <section className="max-w-7xl mx-auto px-6 mb-32">
+      <section className="max-w-7xl mx-auto px-6 mb-32" style={belowFoldPerfStyle}>
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-transparent bg-clip-text bg-pink-gradient italic">Beautiful</span> Templates
@@ -267,7 +280,7 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-gradient-to-b from-primary-light/20 to-white py-24 mb-32 border-y border-[#f3e1e8]">
+      <section className="bg-gradient-to-b from-primary-light/20 to-white py-24 mb-32 border-y border-[#f3e1e8]" style={belowFoldPerfStyle}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -280,35 +293,55 @@ const LandingPage = () => {
             <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-primary-light/30 to-transparent"></div>
             <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-primary-light/30 to-transparent"></div>
 
-            <motion.div
-              className="flex w-max gap-6"
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
-            >
-              {slidingTestimonials.map((t, i) => (
-                <div key={`${t.initials}-${i}`} className="relative w-[300px] shrink-0 rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm md:w-[360px]">
-                  <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
-                  <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
-                      {t.initials}
-                    </div>
-                    <div>
-                      <p className="font-bold text-dark text-sm">{t.name}</p>
-                      <p className="text-secondary text-xs">{t.occasion}</p>
+            {shouldReduceMotion ? (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {testimonials.slice(0, 4).map((t, i) => (
+                  <div key={`${t.initials}-${i}`} className="relative rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm">
+                    <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
+                    <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
+                        {t.initials}
+                      </div>
+                      <div>
+                        <p className="font-bold text-dark text-sm">{t.name}</p>
+                        <p className="text-secondary text-xs">{t.occasion}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </motion.div>
+                ))}
+              </div>
+            ) : (
+              <motion.div
+                className="flex w-max gap-6"
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+              >
+                {slidingTestimonials.map((t, i) => (
+                  <div key={`${t.initials}-${i}`} className="relative w-[300px] shrink-0 rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm md:w-[360px]">
+                    <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
+                    <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
+                        {t.initials}
+                      </div>
+                      <div>
+                        <p className="font-bold text-dark text-sm">{t.name}</p>
+                        <p className="text-secondary text-xs">{t.occasion}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
           </div>
         </div>
       </section>
 
       {/* Bottom CTA Banner */}
-      <section className="max-w-7xl mx-auto px-6 mb-32">
+      <section className="max-w-7xl mx-auto px-6 mb-32" style={belowFoldPerfStyle}>
         <motion.div 
-          whileInView={{ scale: [0.95, 1], opacity: [0, 1] }}
+          whileInView={shouldReduceMotion ? undefined : { scale: [0.95, 1], opacity: [0, 1] }}
           className="rounded-[36px] border border-[#f6b7cb] bg-gradient-to-br from-[#ff5f8f] via-[#f43f73] to-[#d63366] p-12 md:p-20 text-center relative overflow-hidden shadow-[0_30px_80px_rgba(244,63,115,0.35)]"
         >
           {/* Decorative shapes */}
@@ -327,7 +360,7 @@ const LandingPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/templates" className="bg-white text-primary-pink px-10 py-4 rounded-pill font-bold text-lg shadow-xl hover:scale-105 transition-transform inline-block btn-shimmer">
-              <span className="inline-block animate-spin [animation-duration:2.2s]" aria-hidden="true">✦</span> Create yours now →
+              <span className={`inline-block ${shouldReduceMotion ? '' : 'animate-spin [animation-duration:2.2s]'}`} aria-hidden="true">✦</span> Create yours now →
             </Link>
             <Link to="/dashboard" className="border-2 border-white/70 text-white px-10 py-4 rounded-pill font-bold text-lg bg-white/10 backdrop-blur hover:bg-white/20 transition-colors inline-block">
               My Dashboard

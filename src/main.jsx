@@ -1,7 +1,7 @@
-import { Suspense, StrictMode, lazy } from 'react'
+import { Suspense, StrictMode, lazy, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, MotionConfig } from 'framer-motion'
 import './index.css'
 
 import PageWrapper from './components/PageWrapper'
@@ -27,38 +27,86 @@ const LoadingRoute = () => (
   </div>
 )
 
-const AnimatedRoutes = () => {
+const AnimatedRoutes = ({ disableMotion = false }) => {
   const location = useLocation();
+
+  const routesContent = (
+    <Suspense fallback={<LoadingRoute />}>
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
+        <Route path="/templates" element={<PageWrapper><TemplateGallery /></PageWrapper>} />
+        <Route path="/templates/:templateId" element={<PageWrapper><TemplateDetail /></PageWrapper>} />
+        <Route path="/preview-demo/:templateId" element={<TemplatePreviewDemo />} />
+        <Route path="/create/:templateId" element={<PageWrapper><Builder /></PageWrapper>} />
+        <Route path="/preview/:draftId" element={<PageWrapper><FullscreenPreview /></PageWrapper>} />
+        <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+        <Route path="/drafts" element={<PageWrapper><DashboardPage /></PageWrapper>} />
+        <Route path="/auth" element={<PageWrapper><AuthPage /></PageWrapper>} />
+        <Route path="/success" element={<PageWrapper><SuccessPage /></PageWrapper>} />
+        <Route path="/p/:id" element={<PageWrapper><RecipientPage /></PageWrapper>} />
+        <Route path="/privacy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
+        <Route path="/terms" element={<PageWrapper><TermsOfService /></PageWrapper>} />
+        <Route path="/romantic-sequence" element={<RomanticSequencePlayer />} />
+      </Routes>
+    </Suspense>
+  );
+
+  if (disableMotion) {
+    return routesContent;
+  }
+
   return (
     <AnimatePresence mode="wait">
-      <Suspense fallback={<LoadingRoute />}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
-          <Route path="/templates" element={<PageWrapper><TemplateGallery /></PageWrapper>} />
-          <Route path="/templates/:templateId" element={<PageWrapper><TemplateDetail /></PageWrapper>} />
-          <Route path="/preview-demo/:templateId" element={<TemplatePreviewDemo />} />
-          <Route path="/create/:templateId" element={<PageWrapper><Builder /></PageWrapper>} />
-          <Route path="/preview/:draftId" element={<PageWrapper><FullscreenPreview /></PageWrapper>} />
-          <Route path="/dashboard" element={<PageWrapper><DashboardPage /></PageWrapper>} />
-          <Route path="/drafts" element={<PageWrapper><DashboardPage /></PageWrapper>} />
-          <Route path="/auth" element={<PageWrapper><AuthPage /></PageWrapper>} />
-          <Route path="/success" element={<PageWrapper><SuccessPage /></PageWrapper>} />
-          <Route path="/p/:id" element={<PageWrapper><RecipientPage /></PageWrapper>} />
-          <Route path="/privacy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
-          <Route path="/terms" element={<PageWrapper><TermsOfService /></PageWrapper>} />
-          <Route path="/romantic-sequence" element={<RomanticSequencePlayer />} />
-        </Routes>
-      </Suspense>
+      {routesContent}
     </AnimatePresence>
+  );
+};
+
+const MOBILE_QUERY = '(max-width: 767px)';
+const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
+
+const AppRoot = () => {
+  const [mobileLiteMode, setMobileLiteMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mobileQuery = window.matchMedia(MOBILE_QUERY);
+    const reducedQuery = window.matchMedia(REDUCED_QUERY);
+
+    const syncMode = () => {
+      setMobileLiteMode(mobileQuery.matches || reducedQuery.matches);
+    };
+
+    syncMode();
+    mobileQuery.addEventListener('change', syncMode);
+    reducedQuery.addEventListener('change', syncMode);
+
+    return () => {
+      mobileQuery.removeEventListener('change', syncMode);
+      reducedQuery.removeEventListener('change', syncMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.classList.toggle('mobile-lite', mobileLiteMode);
+    return () => root.classList.remove('mobile-lite');
+  }, [mobileLiteMode]);
+
+  return (
+    <MotionConfig reducedMotion={mobileLiteMode ? 'always' : 'never'}>
+      <AuthProvider>
+        <Router>
+          <AnimatedRoutes disableMotion={mobileLiteMode} />
+        </Router>
+      </AuthProvider>
+    </MotionConfig>
   );
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <Router>
-        <AnimatedRoutes />
-      </Router>
-    </AuthProvider>
+    <AppRoot />
   </StrictMode>,
 )

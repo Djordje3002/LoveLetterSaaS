@@ -3,14 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Heart, Music2, Play } from 'lucide-react';
 import { extractYouTubeId } from './palettes';
 
-const FALLBACK_PHOTOS = [
-  '/templates/iva-birthday/IMG_5107.PNG',
-  '/templates/iva-birthday/IMG_5109.PNG',
-  '/templates/iva-birthday/IMG_4977.PNG',
-  '/templates/iva-birthday/IMG_5086.PNG',
-  '/templates/iva-birthday/IMG_5089.PNG',
-];
-
 const CLOUD_PUFFS = [
   { top: '8%', left: '-6%', width: 300, height: 170, rot: -7 },
   { top: '18%', right: '6%', width: 230, height: 130, rot: 6 },
@@ -197,9 +189,9 @@ const BouquetGarden = ({
     return base.map((item, index) => normalizeBouquetFlower(item, index));
   }, [bouquetFlowersRaw]);
 
-  const photos = SCRATCH_SLOTS.map((slot, index) => ({
+  const photos = SCRATCH_SLOTS.map((slot) => ({
     slot,
-    src: String(scenes[`photo${slot}Url`] || FALLBACK_PHOTOS[index] || '').trim(),
+    src: String(scenes[`photo${slot}Url`] || '').trim(),
     caption: String(scenes[`polaroidCaption${slot}`] || `Memory ${slot}`).trim(),
   }));
 

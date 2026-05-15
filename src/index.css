@@ -183,3 +183,41 @@ h1, h2, h3, h4, h5, h6 {
     rgba(244, 63, 115, 0.05) 200px
   );
 }
+
+/* Mobile performance mode: simplify visual effects for smoother scrolling/interactions */
+@media (max-width: 767px) {
+  html.mobile-lite body {
+    background: #fffafc !important;
+  }
+
+  html.mobile-lite *,
+  html.mobile-lite *::before,
+  html.mobile-lite *::after {
+    animation: none !important;
+    transition-property: none !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  html.mobile-lite .bg-blob,
+  html.mobile-lite .particle {
+    display: none !important;
+  }
+
+  html.mobile-lite .btn-shimmer::after {
+    display: none !important;
+  }
+
+  html.mobile-lite [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html.mobile-lite [class*="blur-"] {
+    filter: none !important;
+  }
+
+  html.mobile-lite .card-white {
+    box-shadow: 0 4px 12px rgba(244, 63, 115, 0.06) !important;
+  }
+}
