@@ -7,6 +7,9 @@ service cloud.firestore {
 
     function validTemplateId(id) {
       return id == 'kawaii-letter'
+        || id == 'full-house-love'
+        || id == 'bouquet-garden'
+        || id == 'our-year-book'
         || id == '100-reasons'
         || id == 'our-gallery'
         || id == 'dark-romance'

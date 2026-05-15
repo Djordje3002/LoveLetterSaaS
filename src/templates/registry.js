@@ -1,5 +1,5 @@
 export const DEFAULT_TEMPLATE_ID = 'kawaii-letter'
-export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['full-house-love', 'kawaii-letter', 'bouquet-garden', 'our-year-book', 'date-invite']
+export const TEMPLATE_PUBLIC_SHOWCASE_IDS = ['kawaii-letter', 'full-house-love', 'bouquet-garden', 'our-year-book', 'date-invite']
 export const TEMPLATE_ID_ALIASES = {
   'iva-birthday': 'full-house-love',
 }
@@ -13,7 +13,7 @@ export const TEMPLATE_REGISTRY = [
     description: 'A romantic love letter experience with an interactive envelope, heartfelt message reveal, draggable polaroid memories, a retro music player, and a flower finale. All text and photos are fully customizable.',
     emoji: '✉️',
     color: 'bg-[#FFD1DC]',
-    supportsImages: false,
+    supportsImages: true,
     hideRecipientSetting: true,
     hidePaletteSetting: true,
   },
@@ -43,8 +43,8 @@ export const TEMPLATE_REGISTRY = [
   },
   {
     id: 'our-year-book',
-    title: 'Our Year Book',
-    cardTitle: 'Our Year Book',
+    title: 'Our Love Book',
+    cardTitle: 'Our Love Book',
     tags: ['Love', 'Story'],
     description: 'A scrapbook-inspired sliding storybook with collage spreads, memory photos, a handwritten note page, and a cinematic ending cover.',
     emoji: '📔',

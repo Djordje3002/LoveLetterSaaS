@@ -73,6 +73,11 @@ const REASON_CARD_GRADIENTS = [
   ['#ffb199', '#df5b5b'],
 ];
 
+const getReasonCardRotation = (index) => {
+  const pattern = [-5, -3, -1, 1, 3, 5, -4, 2];
+  return pattern[index % pattern.length];
+};
+
 const FUNNY_NO_LINES = [
   'The NO button is temporarily out of service 😏',
   'Nice try, but this is a YES-only zone 💘',
@@ -426,9 +431,10 @@ const FullHouseLove = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {reasonCards.map((card, i) => {
                       const gradient = REASON_CARD_GRADIENTS[i % REASON_CARD_GRADIENTS.length];
+                      const baseRotation = getReasonCardRotation(i);
                       return (
                         <motion.button
                           key={card.id}
@@ -437,7 +443,7 @@ const FullHouseLove = ({
                           initial={{ opacity: 0, y: 14, scale: 0.92 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           transition={{ delay: i * 0.015, type: 'spring', stiffness: 170, damping: 18 }}
-                          whileHover={{ y: -4, scale: 1.025, rotate: i % 2 === 0 ? -0.5 : 0.5 }}
+                          whileHover={{ y: -7, scale: 1.03, rotate: baseRotation + (i % 2 === 0 ? -1 : 1) }}
                           whileTap={{ scale: 0.98 }}
                           className="aspect-square cursor-pointer appearance-none border-0 bg-transparent p-0 text-left"
                           style={{ perspective: '1000px' }}
@@ -446,41 +452,55 @@ const FullHouseLove = ({
                         >
                           <div
                             className="relative w-full h-full transition-all duration-500"
-                            style={{ transformStyle: 'preserve-3d', transform: card.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                            style={{
+                              transformStyle: 'preserve-3d',
+                              transform: card.flipped ? `rotateY(180deg) rotate(${baseRotation}deg)` : `rotate(${baseRotation}deg)`,
+                            }}
                           >
                             <div
-                              className="absolute inset-0 overflow-hidden rounded-[22px] border border-white/20 p-3 shadow-[0_16px_34px_rgba(0,0,0,0.24)]"
+                              className="absolute inset-0 overflow-hidden rounded-[24px] border border-white/25 p-3 shadow-[0_20px_36px_rgba(0,0,0,0.26)]"
                               style={{
-                                background: `radial-gradient(circle at 18% 16%, rgba(255,255,255,0.38), transparent 30%), linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
+                                background: `radial-gradient(circle at 20% 14%, rgba(255,255,255,0.42), transparent 30%), linear-gradient(145deg, ${gradient[0]}, ${gradient[1]})`,
                                 backfaceVisibility: 'hidden',
                               }}
                             >
-                              <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/14" />
-                              <div className="absolute -bottom-6 left-4 h-20 w-20 rounded-full bg-black/10" />
+                              <div className="absolute inset-[5px] rounded-[18px] border border-white/35" />
+                              <div className="absolute -right-5 -top-5 h-20 w-20 rounded-full bg-white/16" />
+                              <div className="absolute -bottom-8 left-2 h-20 w-20 rounded-full bg-black/10" />
                               <div className="relative flex h-full flex-col justify-between">
                                 <div className="flex items-center justify-between">
                                   <span className="rounded-full bg-white/18 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/85">
                                     Reason {String(i + 1).padStart(2, '0')}
                                   </span>
-                                  <span className="text-lg text-white">♥</span>
+                                  <span className="text-lg text-white">♡</span>
                                 </div>
-                                <p className="text-[0.82rem] font-black leading-snug text-white drop-shadow-sm">
-                                  {card.text}
-                                </p>
-                                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
-                                  Tap to save
+                                <div className="flex flex-1 items-center justify-center">
+                                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/50 bg-white/20 text-3xl text-white shadow-inner">
+                                    ♥
+                                  </div>
+                                </div>
+                                <span className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/82">
+                                  Tap to open
                                 </span>
                               </div>
                             </div>
                             <div
-                              className="absolute inset-0 flex flex-col items-center justify-center rounded-[22px] border p-3 text-center shadow-[0_16px_34px_rgba(0,0,0,0.20)]"
-                              style={{ backgroundColor: '#ffffff', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderColor: pal.accent }}
+                              className="absolute inset-0 flex flex-col items-start justify-between rounded-[24px] border p-4 text-left shadow-[0_20px_36px_rgba(0,0,0,0.2)]"
+                              style={{
+                                background: 'linear-gradient(160deg, #fffdf9, #fff4f8)',
+                                backfaceVisibility: 'hidden',
+                                transform: 'rotateY(180deg)',
+                                borderColor: pal.accent,
+                              }}
                             >
-                              <Sparkles size={24} style={{ color: pal.primary }} />
-                              <p className="mt-2 text-sm font-black leading-snug" style={{ color: pal.text }}>
-                                Saved forever.
+                              <div className="flex items-center justify-between w-full">
+                                <Sparkles size={18} style={{ color: pal.primary }} />
+                                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Love Note</p>
+                              </div>
+                              <p className="mt-3 text-sm font-black leading-snug" style={{ color: pal.text }}>
+                                {card.text}
                               </p>
-                              <p className="mt-1 text-[11px] font-semibold text-slate-500">Reason #{i + 1}</p>
+                              <p className="text-[11px] font-semibold text-slate-500">Reason #{i + 1}</p>
                             </div>
                           </div>
                         </motion.button>

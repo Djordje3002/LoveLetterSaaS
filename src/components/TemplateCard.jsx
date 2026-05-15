@@ -5,7 +5,6 @@ import { ArrowRight, Loader2, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createDraft } from '../utils/createDraft';
 import { useAuth } from '../context/AuthContext';
-import TemplateMiniDemo from './TemplateMiniDemo';
 import { trackEvent } from '../utils/analytics';
 import useIsMobile from '../hooks/useIsMobile';
 
@@ -17,12 +16,20 @@ const TEMPLATE_CARD_MESSAGES = {
   'date-invite': 'A playful yes/no love confession with motion and a happy finale.',
 };
 
-const TEMPLATE_CARD_ACCENTS = {
-  'full-house-love': '#58c9ff',
-  'kawaii-letter': '#ef4d83',
-  'bouquet-garden': '#8f1734',
-  'our-year-book': '#9a68c7',
-  'date-invite': '#f43f73',
+const TEMPLATE_PREVIEW_IMAGES = [
+  'https://picsum.photos/seed/love-1/900/600',
+  'https://picsum.photos/seed/love-2/900/600',
+  'https://picsum.photos/seed/love-3/900/600',
+  'https://picsum.photos/seed/love-4/900/600',
+  'https://picsum.photos/seed/love-5/900/600',
+  'https://picsum.photos/seed/love-6/900/600',
+];
+
+const getTemplatePreviewImage = (templateId, index) => {
+  const raw = `${templateId}-${index}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i += 1) hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
+  return TEMPLATE_PREVIEW_IMAGES[hash % TEMPLATE_PREVIEW_IMAGES.length];
 };
 
 const TemplateCard = ({ template, index }) => {
@@ -34,7 +41,7 @@ const TemplateCard = ({ template, index }) => {
   const prefersReducedMotion = useReducedMotion();
   const shouldSimplifyPreview = isMobile || prefersReducedMotion;
   const cardMessage = TEMPLATE_CARD_MESSAGES[template.id] || 'A personalized page made to feel thoughtful, private, and easy to share.';
-  const accent = TEMPLATE_CARD_ACCENTS[template.id] || '#ef4d83';
+  const previewImage = getTemplatePreviewImage(template.id, index);
 
   const handleUse = async (e) => {
     e.preventDefault();
@@ -68,25 +75,17 @@ const TemplateCard = ({ template, index }) => {
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#f45c8d]/70 to-transparent" />
       <Link className="block h-full" to={`/templates/${template.id}`} onClick={() => trackEvent('template_clicked', { templateId: template.id })}>
         <div className={`relative aspect-[3/2] overflow-hidden pt-3 ${shouldSimplifyPreview ? 'bg-white' : 'bg-[radial-gradient(circle_at_top_left,#fff1f7_0%,#ffffff_52%)]'}`}>
-          {!shouldSimplifyPreview && (
-            <motion.div
-              className="pointer-events-none absolute -inset-16 opacity-0 blur-2xl"
-              style={{ background: `radial-gradient(circle at 50% 50%, ${accent}42, transparent 58%)` }}
-              animate={{ x: ['-18%', '18%', '-18%'], opacity: [0.22, 0.42, 0.22] }}
-              transition={{ duration: 5.8 + index * 0.35, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          )}
-          <TemplateMiniDemo templateId={template.id} reduceMotion={shouldSimplifyPreview} />
+          <img
+            src={previewImage}
+            alt={`${template.name} preview`}
+            loading="lazy"
+            className="h-full w-full object-cover rounded-t-[22px]"
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/22 to-transparent rounded-t-[22px]" />
         </div>
         <div className="relative p-4 sm:p-5 bg-white border-t border-[#f5dce5]">
           <div className="mb-2 flex items-start justify-between gap-3">
             <h3 className="text-dark font-bold text-base sm:text-lg font-display leading-tight">{template.name}</h3>
-            <span
-              className="shrink-0 rounded-full px-2 py-1 text-[10px] font-black text-white shadow-sm"
-              style={{ backgroundColor: accent }}
-            >
-              {String(index + 1).padStart(2, '0')}
-            </span>
           </div>
           <p className="mb-4 min-h-[42px] text-xs sm:text-[13px] leading-relaxed text-secondary">
             {cardMessage}

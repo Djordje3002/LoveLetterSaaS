@@ -66,7 +66,7 @@ const LandingPage = () => {
     : undefined;
 
   const stats = [
-    { value: '10+', label: 'Gift Templates' },
+    { value: '5+', label: 'Gift Templates' },
     { value: '100%', label: 'Customizable' },
     { value: '∞', label: 'Unlimited Sharing' },
     { value: '200+', label: 'Happy Customers' },
@@ -97,12 +97,6 @@ const LandingPage = () => {
 
   const testimonials = [
     {
-      text: "I made this for my girl as a surprise, and she couldn’t stop talking about it. She even sent the link to her best friend right away.",
-      name: "Josh B.",
-      occasion: "Anniversary Gift",
-      initials: "JB"
-    },
-    {
       text: "I made it so fast and simple, and she loved it so much. She kept smiling while reading and told me it was her favorite surprise.",
       name: "Dylan S.",
       occasion: "Valentine's Gift",
@@ -115,34 +109,10 @@ const LandingPage = () => {
       initials: "KW"
     },
     {
-      text: "I made this so fast and simple for my girl, and she loved it so much. She said it felt like our whole story in one page.",
-      name: "Ethan M.",
-      occasion: "Valentine Confession",
-      initials: "EM"
-    },
-    {
-      text: "I made one for my girl just to say I love you, and her reaction was everything. She keeps reopening it and telling me how special it feels.",
-      name: "Mia C.",
-      occasion: "Love Surprise",
-      initials: "MC"
-    },
-    {
-      text: "I thought it would take hours, but I finished it quickly and it still felt super personal. She said it looked like something made just for us.",
-      name: "Noah R.",
-      occasion: "Relationship Milestone",
-      initials: "NR"
-    },
-    {
-      text: "I made this at midnight, hit publish, and sent it right away. She replied in seconds saying she loved every part of it.",
-      name: "Ava K.",
-      occasion: "Late-night Love Note",
-      initials: "AK"
-    },
-    {
-      text: "I wanted something simple but meaningful, and this nailed it. She keeps opening the page again and showing it to her friends.",
-      name: "Liam H.",
-      occasion: "Valentine's Gift",
-      initials: "LH"
+      text: "I made this for my boyfriend in one evening, and it was so simple to put together. It opened up our communication again and honestly made our relationship feel warm and close like before.",
+      name: "Emma R.",
+      occasion: "Love Reconnect",
+      initials: "ER"
     }
   ];
   const slidingTestimonials = [...testimonials, ...testimonials];
@@ -294,8 +264,8 @@ const LandingPage = () => {
             <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-primary-light/30 to-transparent"></div>
 
             {shouldReduceMotion ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {testimonials.slice(0, 4).map((t, i) => (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {testimonials.map((t, i) => (
                   <div key={`${t.initials}-${i}`} className="relative rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm">
                     <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
                     <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>

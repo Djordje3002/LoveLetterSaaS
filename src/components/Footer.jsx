@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="bg-white border-t border-primary-light pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6">
@@ -54,7 +56,7 @@ const Footer = () => {
             <div className="h-8 w-8 rounded-full bg-white border border-primary-light p-1 flex items-center justify-center">
               <img src="/logo.png" alt="LoveGifts" className="h-full w-full object-contain rounded-full" />
             </div>
-            <p>© 2025 LovePage. All rights reserved.</p>
+            <p>© {currentYear} LovePage. All rights reserved.</p>
           </div>
           <p className="flex items-center gap-1">Made with <Heart size={14} className="text-primary-pink fill-primary-pink" /> in Paris</p>
         </div>

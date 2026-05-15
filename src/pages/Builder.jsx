@@ -88,6 +88,9 @@ const ONBOARDING_MUSIC_OPTIONS = [
   },
 ];
 
+const MAX_TEMPLATE_PHOTOS = 5;
+const ONBOARDING_IMAGE_TEMPLATES = new Set(['kawaii-letter']);
+
 const ONBOARDING_BASE_STEPS = [
   { id: 'recipient', kind: 'recipient', title: 'Who is this for?', subtitle: "Your loved one's name" },
   { id: 'tone', kind: 'tone', title: 'Choose the vibe', subtitle: 'Pick the tone you want this page to feel like' },
@@ -119,9 +122,19 @@ const buildTemplateOnboardingSteps = (templateId) => {
     subtitle: getOnboardingFieldSubtitle(field),
   }));
 
+  const hasPhotoStep = ONBOARDING_IMAGE_TEMPLATES.has(templateId);
+
   return [
     ...ONBOARDING_BASE_STEPS,
     ...templateSpecificSteps,
+    ...(hasPhotoStep
+      ? [{
+        id: 'images',
+        kind: 'images',
+        title: 'Add your memories',
+        subtitle: `Upload up to ${MAX_TEMPLATE_PHOTOS} photos for your Love Letter.`,
+      }]
+      : []),
     {
       id: 'music',
       kind: 'music',
@@ -304,6 +317,12 @@ const Builder = () => {
       acc[field.key] = String(existingValue ?? generatedValue ?? '');
       return acc;
     }, {});
+    const onboardingPhotoScenes = Array.from({ length: MAX_TEMPLATE_PHOTOS }, (_, idx) => idx + 1).reduce((acc, slot) => {
+      const key = `photo${slot}Url`;
+      const existingValue = String(formData.scenes?.[key] || '').trim();
+      if (existingValue) acc[key] = existingValue;
+      return acc;
+    }, {});
 
     setOnboardingStep(0);
     setOnboardingData({
@@ -311,7 +330,10 @@ const Builder = () => {
       tone: 'sweet',
       musicEnabled: Boolean(formData.musicEnabled),
       musicUrl: String(formData.musicUrl || ''),
-      scenes: initialScenes,
+      scenes: {
+        ...initialScenes,
+        ...onboardingPhotoScenes,
+      },
     });
   }, [
     showQuickStart,
@@ -423,6 +445,7 @@ const Builder = () => {
       const value = onboardingData.scenes?.[currentOnboardingStep.field.key];
       return Boolean(String(value || '').trim());
     }
+    if (currentOnboardingStep.kind === 'images') return true;
     return true;
   })();
 
@@ -440,6 +463,12 @@ const Builder = () => {
       if (value) acc[field.key] = value;
       return acc;
     }, {});
+    const uploadedPhotoScenes = Array.from({ length: MAX_TEMPLATE_PHOTOS }, (_, idx) => idx + 1).reduce((acc, slot) => {
+      const key = `photo${slot}Url`;
+      const value = String(onboardingData.scenes?.[key] || '').trim();
+      if (value) acc[key] = value;
+      return acc;
+    }, {});
 
     setFormData((prev) => ({
       ...prev,
@@ -455,6 +484,7 @@ const Builder = () => {
           tone: onboardingData.tone,
         }),
         ...normalizedSceneValues,
+        ...uploadedPhotoScenes,
       },
     }));
     setActiveTab('Text');
@@ -464,6 +494,7 @@ const Builder = () => {
       tone: onboardingData.tone,
       hasRecipient: Boolean(onboardingData.recipientName.trim()),
       fieldsCompleted: Object.keys(normalizedSceneValues).length,
+      photosUploaded: Object.keys(uploadedPhotoScenes).length,
       musicEnabled: Boolean(onboardingData.musicEnabled),
     });
   };
@@ -584,6 +615,36 @@ const Builder = () => {
     }
   };
 
+  const handleGenerateOnboardingSuggestion = async (field) => {
+    const recipientForSuggestion = String(onboardingData.recipientName || formData.recipientName || '').trim();
+    const senderForSuggestion = String(formData.senderName || '').trim();
+
+    setAiErrorByField(prev => ({ ...prev, [field.key]: '' }));
+    setGeneratingByField(prev => ({ ...prev, [field.key]: true }));
+    try {
+      const suggestion = await requestSuggestion({
+        fieldType: field.type,
+        fieldKey: field.key,
+        fieldLabel: field.label,
+        currentValue: onboardingData.scenes?.[field.key] || '',
+        recipientName: recipientForSuggestion,
+        senderName: senderForSuggestion,
+      });
+      updateOnboardingSceneValue(field.key, suggestion);
+    } catch (err) {
+      captureAppError(err, { scope: 'builder.onboardingAiSuggestion', fieldKey: field.key, templateId: activeTemplateId });
+      const normalizedMessage = String(err?.message || '').toLowerCase();
+      const message = normalizedMessage.includes('failed to fetch') || normalizedMessage.includes('load failed')
+        ? 'AI is unavailable right now on this network/domain. Please try again in a moment.'
+        : err?.message?.includes('AI endpoint is not configured')
+        ? 'AI endpoint is not configured yet.'
+        : err?.message || 'AI suggestion failed. Please try again.';
+      setAiErrorByField(prev => ({ ...prev, [field.key]: message }));
+    } finally {
+      setGeneratingByField(prev => ({ ...prev, [field.key]: false }));
+    }
+  };
+
   const applyCreativeDirection = (directionId) => {
     const generatedScenes = buildCreativeDirectionScenes(activeTemplateId, {
       recipientName: formData.recipientName,
@@ -681,6 +742,8 @@ const Builder = () => {
     setFormData(prev => ({ ...prev, reasons: prev.reasons.filter((_, idx) => idx !== i) }));
   };
 
+  const photoSlots = Array.from({ length: MAX_TEMPLATE_PHOTOS }, (_, idx) => idx + 1);
+
   const triggerPhotoPicker = (slot) => {
     const input = fileInputRefs.current[slot];
     if (input) input.click();
@@ -691,55 +754,86 @@ const Builder = () => {
     setFormData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: url } }));
   };
 
+  const setOnboardingPhotoUrl = (slot, url) => {
+    const key = `photo${slot}Url`;
+    setOnboardingData(prev => ({ ...prev, scenes: { ...prev.scenes, [key]: url } }));
+  };
+
   const removePhoto = (slot) => {
     setUploadError('');
     setPhotoUrl(slot, '');
+  };
+
+  const removeOnboardingPhoto = (slot) => {
+    setUploadError('');
+    setOnboardingPhotoUrl(slot, '');
+  };
+
+  const uploadPhotoFile = async (slot, file) => {
+    const uploadDraftId = draftId || localDraftKeyRef.current;
+
+    if (!IMAGE_TYPES.includes(file.type)) {
+      throw new Error('Please upload a JPG, PNG, or WEBP image.');
+    }
+
+    if (file.size > IMAGE_MAX_BYTES) {
+      throw new Error('Image is too large. Max size is 5MB.');
+    }
+
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      throw new Error('Cloudinary is not configured. Add cloud name and upload preset to .env.');
+    }
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    form.append('folder', `loveletters/drafts/${uploadDraftId}`);
+    form.append('public_id', `photo${slot}-${Date.now()}`);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: form,
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload.secure_url) {
+      throw new Error(payload?.error?.message || 'Cloudinary upload failed');
+    }
+
+    return payload.secure_url;
   };
 
   const handlePhotoSelected = async (slot, event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    const uploadDraftId = draftId || localDraftKeyRef.current;
-
-    if (!IMAGE_TYPES.includes(file.type)) {
-      setUploadError('Please upload a JPG, PNG, or WEBP image.');
-      return;
-    }
-
-    if (file.size > IMAGE_MAX_BYTES) {
-      setUploadError('Image is too large. Max size is 5MB.');
-      return;
-    }
-
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-      setUploadError('Cloudinary is not configured. Add cloud name and upload preset to .env.');
-      return;
-    }
 
     setUploadError('');
     setUploadingBySlot(prev => ({ ...prev, [slot]: true }));
     try {
-      const form = new FormData();
-      form.append('file', file);
-      form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      form.append('folder', `loveletters/drafts/${uploadDraftId}`);
-      form.append('public_id', `photo${slot}-${Date.now()}`);
-
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: form,
-      });
-
-      const payload = await response.json();
-      if (!response.ok || !payload.secure_url) {
-        throw new Error(payload?.error?.message || 'Cloudinary upload failed');
-      }
-
-      setPhotoUrl(slot, payload.secure_url);
+      const photoUrl = await uploadPhotoFile(slot, file);
+      setPhotoUrl(slot, photoUrl);
     } catch (err) {
       captureAppError(err, { scope: 'builder.uploadImage', slot, templateId: activeTemplateId });
-      setUploadError('Upload failed. Check Cloudinary setup and try again.');
+      setUploadError(err?.message || 'Upload failed. Check Cloudinary setup and try again.');
+    } finally {
+      setUploadingBySlot(prev => ({ ...prev, [slot]: false }));
+    }
+  };
+
+  const handleOnboardingPhotoSelected = async (slot, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploadError('');
+    setUploadingBySlot(prev => ({ ...prev, [slot]: true }));
+    try {
+      const photoUrl = await uploadPhotoFile(slot, file);
+      setOnboardingPhotoUrl(slot, photoUrl);
+    } catch (err) {
+      captureAppError(err, { scope: 'builder.onboardingUploadImage', slot, templateId: activeTemplateId });
+      setUploadError(err?.message || 'Upload failed. Check Cloudinary setup and try again.');
     } finally {
       setUploadingBySlot(prev => ({ ...prev, [slot]: false }));
     }
@@ -932,9 +1026,24 @@ const Builder = () => {
                 )}
                 {currentOnboardingStep?.kind === 'scene' && (
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">
-                      {currentOnboardingStep.field.label} *
-                    </label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">
+                        {currentOnboardingStep.field.label} *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateOnboardingSuggestion(currentOnboardingStep.field)}
+                        disabled={Boolean(generatingByField[currentOnboardingStep.field.key])}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#f6a8c9]/50 bg-[#f6a8c9]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f8b6d2] hover:bg-[#f6a8c9]/18 disabled:opacity-60"
+                      >
+                        {generatingByField[currentOnboardingStep.field.key] ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={12} />
+                        )}
+                        AI Suggest
+                      </button>
+                    </div>
                     {currentOnboardingStep.field.type === 'textarea' ? (
                       <textarea
                         value={onboardingData.scenes?.[currentOnboardingStep.field.key] || ''}
@@ -958,6 +1067,84 @@ const Builder = () => {
                       {' / '}
                       {currentOnboardingStep.field.type === 'textarea' ? '1600' : '180'}
                     </p>
+                    {aiErrorByField[currentOnboardingStep.field.key] ? (
+                      <p className="mt-1 text-xs text-rose-300 font-medium">{aiErrorByField[currentOnboardingStep.field.key]}</p>
+                    ) : null}
+                  </div>
+                )}
+                {currentOnboardingStep?.kind === 'images' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">Photo uploads</p>
+                      <p className="text-xs text-white/60">
+                        {photoSlots.filter((slot) => String(onboardingData.scenes?.[`photo${slot}Url`] || '').trim()).length}
+                        {' / '}
+                        {MAX_TEMPLATE_PHOTOS}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {photoSlots.map((slot) => (
+                        <div
+                          key={`onboarding-photo-${slot}`}
+                          className="rounded-2xl border border-white/15 bg-white/5 p-3"
+                        >
+                          <label className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                            Photo {slot}
+                          </label>
+                          <input
+                            ref={(el) => { fileInputRefs.current[slot] = el; }}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(e) => handleOnboardingPhotoSelected(slot, e)}
+                          />
+                          <div
+                            onClick={() => !uploadingBySlot[slot] && triggerPhotoPicker(slot)}
+                            className="mt-2 aspect-video cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-white/20 bg-black/15 flex items-center justify-center"
+                          >
+                            {onboardingData.scenes?.[`photo${slot}Url`] ? (
+                              <img
+                                src={onboardingData.scenes[`photo${slot}Url`]}
+                                alt={`Onboarding upload ${slot}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : uploadingBySlot[slot] ? (
+                              <Loader2 className="animate-spin text-white" size={22} />
+                            ) : (
+                              <div className="text-center">
+                                <p className="text-xs font-bold text-white">Click to upload</p>
+                                <p className="text-[10px] text-white/65">PNG, JPG, WEBP</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => triggerPhotoPicker(slot)}
+                              disabled={Boolean(uploadingBySlot[slot])}
+                              className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#f8b6d2] disabled:opacity-50"
+                            >
+                              {onboardingData.scenes?.[`photo${slot}Url`] ? 'Replace' : 'Upload'}
+                            </button>
+                            {onboardingData.scenes?.[`photo${slot}Url`] ? (
+                              <button
+                                type="button"
+                                onClick={() => removeOnboardingPhoto(slot)}
+                                className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/70 hover:text-white"
+                              >
+                                Remove
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-white/55">
+                      Add up to {MAX_TEMPLATE_PHOTOS} memories. You can also skip and upload later.
+                    </p>
+                    {uploadError ? (
+                      <p className="text-xs text-rose-300 font-medium">{uploadError}</p>
+                    ) : null}
                   </div>
                 )}
                 {currentOnboardingStep?.kind === 'music' && (
@@ -1096,35 +1283,37 @@ const Builder = () => {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24, rotate: 1 }}
-            animate={{ opacity: 1, y: 0, rotate: 0 }}
-            transition={{ delay: 0.1 }}
-            className="hidden xl:flex rounded-[36px] border border-white/12 bg-[#0f1422]/90 p-5 shadow-[0_30px_90px_rgba(6,10,28,0.6)] flex-col"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs uppercase tracking-[0.24em] font-bold text-[#f5bad3]">Live preview</p>
-              <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white/60">Mobile</span>
-            </div>
-            <div className="relative mx-auto w-[280px] h-[590px] rounded-[40px] border border-[#5f4d78]/55 bg-[linear-gradient(180deg,#131a2d_0%,#101827_100%)] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[38%] h-1.5 rounded-full bg-white/20" />
-              <div className="h-full rounded-[30px] overflow-hidden border border-white/10 bg-[radial-gradient(circle_at_25%_20%,rgba(246,168,201,0.26),transparent_36%),#131a2c] flex flex-col">
-                <div className="px-4 py-3 border-b border-white/10">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#f8b6d2] font-bold truncate">{templateConfig.title}</p>
-                  <p className="text-[13px] text-white/90 font-semibold truncate">For {previewRecipient}</p>
-                </div>
-                <div className="flex-1 px-3 pt-3">
-                  <div className="rounded-2xl border border-white/10 overflow-hidden">
-                    <TemplateMiniDemo templateId={activeTemplateId} reduceMotion={simplifyMobileVisuals} />
+          {isLastStep ? (
+            <motion.div
+              initial={{ opacity: 0, y: 24, rotate: 1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ delay: 0.1 }}
+              className="hidden xl:flex rounded-[36px] border border-white/12 bg-[#0f1422]/90 p-5 shadow-[0_30px_90px_rgba(6,10,28,0.6)] flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs uppercase tracking-[0.24em] font-bold text-[#f5bad3]">Live preview</p>
+                <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white/60">Mobile</span>
+              </div>
+              <div className="relative mx-auto w-[280px] h-[590px] rounded-[40px] border border-[#5f4d78]/55 bg-[linear-gradient(180deg,#131a2d_0%,#101827_100%)] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[38%] h-1.5 rounded-full bg-white/20" />
+                <div className="h-full rounded-[30px] overflow-hidden border border-white/10 bg-[radial-gradient(circle_at_25%_20%,rgba(246,168,201,0.26),transparent_36%),#131a2c] flex flex-col">
+                  <div className="px-4 py-3 border-b border-white/10">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#f8b6d2] font-bold truncate">{templateConfig.title}</p>
+                    <p className="text-[13px] text-white/90 font-semibold truncate">For {previewRecipient}</p>
+                  </div>
+                  <div className="flex-1 px-3 pt-3">
+                    <div className="rounded-2xl border border-white/10 overflow-hidden">
+                      <TemplateMiniDemo templateId={activeTemplateId} reduceMotion={simplifyMobileVisuals} />
+                    </div>
+                  </div>
+                  <div className="px-4 py-4">
+                    <h3 className="text-sm font-display text-white mb-1 line-clamp-2">{previewHeadline}</h3>
+                    <p className="text-xs leading-5 text-white/70 line-clamp-4 whitespace-pre-line">{previewBody}</p>
                   </div>
                 </div>
-                <div className="px-4 py-4">
-                  <h3 className="text-sm font-display text-white mb-1 line-clamp-2">{previewHeadline}</h3>
-                  <p className="text-xs leading-5 text-white/70 line-clamp-4 whitespace-pre-line">{previewBody}</p>
-                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          ) : null}
         </div>
       </div>
     );
@@ -1339,7 +1528,15 @@ const Builder = () => {
               {currentTab === 'Images' && (
                 <motion.div key="images" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
-                  {[1, 2, 3, 4, 5].map(i => (
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wider text-secondary">Photos</p>
+                    <p className="text-[11px] text-secondary">
+                      {photoSlots.filter((slot) => String(formData.scenes?.[`photo${slot}Url`] || '').trim()).length}
+                      {' / '}
+                      {MAX_TEMPLATE_PHOTOS}
+                    </p>
+                  </div>
+                  {photoSlots.map(i => (
                     <div key={i} className="space-y-2">
                       <label className="text-xs font-bold text-secondary uppercase tracking-wider">Photo {i}</label>
                       <input

@@ -88,16 +88,20 @@ const KawaiiLetter = ({
     () => buildTypedLetter({ scenes, senderName, showSenderName }),
     [scenes, senderName, showSenderName]
   );
-  const memoryCards = useMemo(
-    () =>
-      [1, 2, 3, 4, 5].map((slot, idx) => ({
+  const memoryCards = useMemo(() => {
+    const uploadedCards = [1, 2, 3, 4, 5]
+      .map((slot) => ({
         id: slot,
-        imageUrl: scenes[`photo${slot}Url`] || '',
+        imageUrl: String(scenes[`photo${slot}Url`] || '').trim(),
         caption: normalize(scenes[`polaroidCaption${slot}`], `Memory ${slot}`),
-        ...MEMORY_CARD_POSITIONS[idx],
-      })),
-    [scenes]
-  );
+      }))
+      .filter((card) => Boolean(card.imageUrl));
+
+    return uploadedCards.map((card, idx) => ({
+      ...card,
+      ...MEMORY_CARD_POSITIONS[idx % MEMORY_CARD_POSITIONS.length],
+    }));
+  }, [scenes]);
 
   useEffect(() => {
     if (phase !== 'floral') return undefined;
@@ -344,29 +348,33 @@ const KawaiiLetter = ({
 	                <div className="absolute inset-x-0 top-0 h-16 bg-[#f9dce3]/45" />
 	                <div className="absolute left-6 top-6 h-10 w-10 rounded-full border border-[#e8c4ce] bg-[#fff8f2]" />
 	                <div className="absolute right-7 bottom-7 text-5xl text-[#e7a6bb]">♡</div>
-	                {memoryCards.map((card) => (
-	                  <motion.div
-	                    key={card.id}
-	                    drag
-	                    dragConstraints={memoryAreaRef}
-	                    dragElastic={0.18}
-	                    whileTap={{ scale: 1.03, cursor: 'grabbing' }}
-	                    className="absolute w-[43%] sm:w-[30%] max-w-[210px] bg-white rounded-2xl border border-[#f1dfd1] shadow-[0_16px_28px_rgba(146,86,64,0.16)] p-2 cursor-grab"
-	                    style={{ left: card.x, top: card.y, rotate: `${card.rotate}deg` }}
-	                  >
-	                    <div className="h-28 sm:h-32 rounded-xl overflow-hidden bg-[#f7e3cf]">
-	                      {card.imageUrl ? (
-	                        <img src={card.imageUrl} alt={card.caption} className="w-full h-full object-cover" />
-	                      ) : (
-	                        <div className="w-full h-full flex items-center justify-center text-4xl text-[#c94878]">♥</div>
-	                      )}
-	                    </div>
-	                    <p className="text-[11px] sm:text-xs text-center mt-2 font-semibold text-[#6d3e2f]">
-	                      {card.caption}
-	                    </p>
-	                  </motion.div>
-	                ))}
-	              </div>
+                {memoryCards.length > 0 ? (
+                  memoryCards.map((card) => (
+                    <motion.div
+                      key={card.id}
+                      drag
+                      dragConstraints={memoryAreaRef}
+                      dragElastic={0.18}
+                      whileTap={{ scale: 1.03, cursor: 'grabbing' }}
+                      className="absolute w-[43%] sm:w-[30%] max-w-[210px] bg-white rounded-2xl border border-[#f1dfd1] shadow-[0_16px_28px_rgba(146,86,64,0.16)] p-2 cursor-grab"
+                      style={{ left: card.x, top: card.y, rotate: `${card.rotate}deg` }}
+                    >
+                      <div className="h-28 sm:h-32 rounded-xl overflow-hidden bg-[#f7e3cf]">
+                        <img src={card.imageUrl} alt={card.caption} className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-center mt-2 font-semibold text-[#6d3e2f]">
+                        {card.caption}
+                      </p>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+                    <p className="text-sm font-semibold text-[#8f6473]">
+                      No photos uploaded yet. Add up to 5 memories in the editor.
+                    </p>
+                  </div>
+                )}
+              </div>
 
 	              <div className="text-center mt-8">
 	                <button

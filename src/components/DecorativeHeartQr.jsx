@@ -68,8 +68,8 @@ const DecorativeHeartQr = ({ size = 196, value = '', color = '#D91E5B', variant 
         <defs>
           {isDottedHeart ? (
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f8f5ef" />
-              <stop offset="100%" stopColor="#f2ede6" />
+              <stop offset="0%" stopColor="#fff4fa" />
+              <stop offset="100%" stopColor="#ffe6f1" />
             </linearGradient>
           ) : (
             <radialGradient id={gradientId} cx="32%" cy="28%" r="82%">
@@ -89,7 +89,7 @@ const DecorativeHeartQr = ({ size = 196, value = '', color = '#D91E5B', variant 
           fill={`url(#${gradientId})`}
         />
         {isDottedHeart ? (
-          <g clipPath={`url(#${gradientId}-clip)`} fill="#1b4f3b">
+          <g clipPath={`url(#${gradientId}-clip)`} fill={color}>
             {DOTTED_HEART_DOTS.map((dot) => (
               <circle key={`${dot.cx}-${dot.cy}`} cx={dot.cx} cy={dot.cy} r={dot.r} />
             ))}
@@ -106,14 +106,14 @@ const DecorativeHeartQr = ({ size = 196, value = '', color = '#D91E5B', variant 
           borderRadius: isDottedHeart ? 20 : 0,
           padding: qrCardPad,
           boxShadow: isDottedHeart
-            ? '0 18px 30px rgba(26, 61, 48, 0.16)'
+            ? '0 18px 30px rgba(217, 30, 91, 0.18)'
             : '0 10px 18px rgba(157, 18, 63, 0.16)',
         }}
       >
         <QRCodeSVG
           value={qrValue}
           size={qrSize}
-          fgColor={isDottedHeart ? '#184a36' : '#FFFFFF'}
+          fgColor={isDottedHeart ? color : '#FFFFFF'}
           bgColor={isDottedHeart ? '#FFFFFF' : color}
           level="H"
           marginSize={isDottedHeart ? 3 : 2}

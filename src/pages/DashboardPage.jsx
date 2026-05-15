@@ -161,19 +161,37 @@ const DashboardPage = () => {
       setError('')
 
       try {
-        const q = query(collection(db, 'pages'), where('ownerUid', '==', user.uid))
-        const snap = await getDocs(q)
-        const rows = snap.docs
-          .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-          .sort((a, b) => {
-            const bTime = b.createdAt?.toMillis?.() || 0
-            const aTime = a.createdAt?.toMillis?.() || 0
-            return bTime - aTime
-          })
+        // Run rule-safe queries that mirror Firestore access rules:
+        // - pending drafts: owner only
+        // - active pages: readable, but we scope to owner for dashboard
+        const pagesRef = collection(db, 'pages')
+        const [pendingSnap, activeSnap] = await Promise.all([
+          getDocs(query(pagesRef, where('ownerUid', '==', user.uid), where('status', '==', 'pending'))),
+          getDocs(query(pagesRef, where('ownerUid', '==', user.uid), where('status', '==', 'active'))),
+        ])
+
+        const byId = new Map()
+        for (const docSnap of pendingSnap.docs) {
+          byId.set(docSnap.id, { id: docSnap.id, ...docSnap.data() })
+        }
+        for (const docSnap of activeSnap.docs) {
+          byId.set(docSnap.id, { id: docSnap.id, ...docSnap.data() })
+        }
+
+        const rows = Array.from(byId.values()).sort((a, b) => {
+          const bTime = b.createdAt?.toMillis?.() || 0
+          const aTime = a.createdAt?.toMillis?.() || 0
+          return bTime - aTime
+        })
         setItems(rows)
       } catch (err) {
         console.error('Failed to load dashboard items:', err)
-        setError('Could not load your dashboard right now. Please try again.')
+        const errorCode = String(err?.code || '')
+        if (errorCode.includes('permission-denied')) {
+          setError('Dashboard access is blocked by Firestore rules right now. Please refresh in a moment.')
+        } else {
+          setError('Could not load your dashboard right now. Please try again.')
+        }
       } finally {
         setLoading(false)
       }

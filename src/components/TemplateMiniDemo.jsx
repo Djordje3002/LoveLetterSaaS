@@ -20,7 +20,7 @@ const STATIC_PREVIEW_THEME = {
   'kawaii-letter': { bg: 'from-[#ffdbe8] via-[#ffe9f1] to-[#fff4f8]', accent: '#d94178', label: 'Love Letter', note: 'Letter, photos, final note.' },
   'full-house-love': { bg: 'from-[#0b1627] via-[#13263f] to-[#27466f]', accent: '#7fd8ff', label: 'Full House of Love', note: 'Gate, gallery, reasons, letter.' },
   'bouquet-garden': { bg: 'from-[#7f0d27] via-[#a31e45] to-[#5f0b1f]', accent: '#ffd9e4', label: 'Bouquet Garden', note: 'Passcode bouquet and board.' },
-  'our-year-book': { bg: 'from-[#d9c1ea] via-[#c69fe0] to-[#ab7cc8]', accent: '#fff1fb', label: 'Our Year Book', note: 'Sliding pages and memories.' },
+  'our-year-book': { bg: 'from-[#d9c1ea] via-[#c69fe0] to-[#ab7cc8]', accent: '#fff1fb', label: 'Our Love Book', note: 'Sliding pages and memories.' },
   'date-invite': { bg: 'from-[#ffe3ee] via-[#ffd2e5] to-[#ffc3dc]', accent: '#c93f75', label: 'Will You Be My Valentine?', note: 'Playful yes/no reveal.' },
 };
 

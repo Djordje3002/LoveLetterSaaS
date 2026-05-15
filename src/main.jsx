@@ -67,6 +67,7 @@ const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 
 const AppRoot = () => {
   const [mobileLiteMode, setMobileLiteMode] = useState(false);
+  const [performanceLiteMode, setPerformanceLiteMode] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -74,7 +75,16 @@ const AppRoot = () => {
     const reducedQuery = window.matchMedia(REDUCED_QUERY);
 
     const syncMode = () => {
+      const cpuCores = typeof navigator !== 'undefined' && typeof navigator.hardwareConcurrency === 'number'
+        ? navigator.hardwareConcurrency
+        : 8;
+      const deviceMemory = typeof navigator !== 'undefined' && typeof navigator.deviceMemory === 'number'
+        ? navigator.deviceMemory
+        : 8;
+      const lowPowerDesktop = !mobileQuery.matches && (cpuCores <= 4 || deviceMemory <= 4);
+      const shouldSimplify = mobileQuery.matches || reducedQuery.matches || lowPowerDesktop;
       setMobileLiteMode(mobileQuery.matches || reducedQuery.matches);
+      setPerformanceLiteMode(shouldSimplify);
     };
 
     syncMode();
@@ -91,14 +101,18 @@ const AppRoot = () => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     root.classList.toggle('mobile-lite', mobileLiteMode);
-    return () => root.classList.remove('mobile-lite');
-  }, [mobileLiteMode]);
+    root.classList.toggle('perf-lite', performanceLiteMode);
+    return () => {
+      root.classList.remove('mobile-lite');
+      root.classList.remove('perf-lite');
+    };
+  }, [mobileLiteMode, performanceLiteMode]);
 
   return (
-    <MotionConfig reducedMotion={mobileLiteMode ? 'always' : 'never'}>
+    <MotionConfig reducedMotion={performanceLiteMode ? 'always' : 'never'}>
       <AuthProvider>
         <Router>
-          <AnimatedRoutes disableMotion={mobileLiteMode} />
+          <AnimatedRoutes disableMotion={performanceLiteMode} />
         </Router>
       </AuthProvider>
     </MotionConfig>
