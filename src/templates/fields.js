@@ -1,6 +1,6 @@
 export const templateFields = {
   'kawaii-letter': [
-    { key: 'hint', label: 'Scene 1 Hint', type: 'input', placeholder: 'Tap seal to open ♥' },
+    { key: 'hint', label: 'Envelope Hint', type: 'input', placeholder: 'Tap seal to open ♥' },
     { key: 'scene2Header', label: 'Letter Header', type: 'input', placeholder: 'My sweetest letter to you' },
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your letter here...' },
     { key: 'scene3Header', label: 'Memories Header', type: 'input', placeholder: 'Our favorite memories' },
@@ -54,8 +54,8 @@ export const templateFields = {
   ],
   'sky-love': [
     { key: 'hint', label: 'Envelope Hint', type: 'input', placeholder: 'Tap the moon seal to open ✨' },
-    { key: 'scene2Header', label: 'Scene 2 Header', type: 'input', placeholder: 'For you, beneath the stars' },
-    { key: 'scene3Header', label: 'Scene 3 Header', type: 'input', placeholder: 'Tonight the sky keeps your name' },
+    { key: 'scene2Header', label: 'Letter Header', type: 'input', placeholder: 'For you, beneath the stars' },
+    { key: 'scene3Header', label: 'Memories Header', type: 'input', placeholder: 'Tonight the sky keeps your name' },
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your sky love letter here...' },
     { key: 'closingMessage', label: 'Closing Message', type: 'input', placeholder: 'Always yours under this sky.' },
   ],
@@ -124,6 +124,18 @@ export const templateFields = {
     { key: 'questionTitle', label: 'Question Title', type: 'input', placeholder: 'Will you keep choosing me forever? 💍' },
     { key: 'homeTitle', label: 'Home Title', type: 'input', placeholder: 'My Love, this is for you 💙' },
     { key: 'homeSubtitle', label: 'Home Subtitle', type: 'input', placeholder: 'Every click is a little reminder of how much I love you.' },
+    {
+      key: 'heartColor',
+      label: 'Heart Color',
+      type: 'select',
+      options: [
+        { value: 'blue', label: 'Ocean Blue 💙' },
+        { value: 'pink', label: 'Rose Pink 💖' },
+        { value: 'red', label: 'Classic Red ❤️' },
+        { value: 'purple', label: 'Soft Purple 💜' },
+        { value: 'gold', label: 'Golden Glow 💛' },
+      ],
+    },
     { key: 'letterText', label: 'Letter Text', type: 'textarea', placeholder: 'Write your message...' },
     { key: 'galleryTitle', label: 'Gallery Title', type: 'input', placeholder: 'Our Moments 📸' },
     { key: 'gallerySubtitle', label: 'Gallery Subtitle', type: 'input', placeholder: 'A collection of our favorite memories.' },
@@ -137,7 +149,7 @@ export const templateFields = {
     { key: 'startDate', label: 'Together Since (YYYY-MM-DD)', type: 'input', placeholder: '2025-12-06' },
   ],
   'bouquet-garden': [
-    { key: 'accessPassword', label: 'Passcode', type: 'input', placeholder: '2611' },
+    { key: 'accessPassword', label: 'Passcode', type: 'input', placeholder: '1234' },
     { key: 'lockFromLabel', label: 'Lock Screen From', type: 'input', placeholder: 'From me' },
     { key: 'lockToLabel', label: 'Lock Screen To', type: 'input', placeholder: 'To you' },
     { key: 'envelopeHint', label: 'Envelope Hint', type: 'input', placeholder: 'Tap to open' },

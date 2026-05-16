@@ -115,8 +115,6 @@ const LandingPage = () => {
       initials: "ER"
     }
   ];
-  const slidingTestimonials = [...testimonials, ...testimonials];
-
   return (
     <Layout>
       {/* Hero Section */}
@@ -259,51 +257,22 @@ const LandingPage = () => {
             <p className="text-secondary text-lg">See what people are saying about their experience</p>
           </div>
 
-          <div className="relative overflow-hidden">
-            <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-primary-light/30 to-transparent"></div>
-            <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-primary-light/30 to-transparent"></div>
-
-            {shouldReduceMotion ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {testimonials.map((t, i) => (
-                  <div key={`${t.initials}-${i}`} className="relative rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm">
-                    <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
-                    <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
-                        {t.initials}
-                      </div>
-                      <div>
-                        <p className="font-bold text-dark text-sm">{t.name}</p>
-                        <p className="text-secondary text-xs">{t.occasion}</p>
-                      </div>
-                    </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <div key={`${t.initials}-${i}`} className="relative rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm">
+                <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
+                <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
+                    {t.initials}
                   </div>
-                ))}
+                  <div>
+                    <p className="font-bold text-dark text-sm">{t.name}</p>
+                    <p className="text-secondary text-xs">{t.occasion}</p>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <motion.div
-                className="flex w-max gap-6"
-                animate={{ x: ['0%', '-50%'] }}
-                transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
-              >
-                {slidingTestimonials.map((t, i) => (
-                  <div key={`${t.initials}-${i}`} className="relative w-[300px] shrink-0 rounded-[24px] border border-[#f0dbe4] bg-white p-6 shadow-sm md:w-[360px]">
-                    <Quote size={40} className="text-primary-pink opacity-10 absolute top-4 left-4" />
-                    <p className="text-dark italic mb-8 relative z-10 leading-relaxed">"{t.text}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-pink text-white flex items-center justify-center font-bold text-sm">
-                        {t.initials}
-                      </div>
-                      <div>
-                        <p className="font-bold text-dark text-sm">{t.name}</p>
-                        <p className="text-secondary text-xs">{t.occasion}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            )}
+            ))}
           </div>
         </div>
       </section>

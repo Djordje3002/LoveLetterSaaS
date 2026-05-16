@@ -1,762 +1,428 @@
-import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, Music2, Play } from 'lucide-react';
-import { extractYouTubeId } from './palettes';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const CLOUD_PUFFS = [
-  { top: '8%', left: '-6%', width: 300, height: 170, rot: -7 },
-  { top: '18%', right: '6%', width: 230, height: 130, rot: 6 },
-  { top: '52%', left: '8%', width: 280, height: 170, rot: 4 },
-  { top: '66%', right: '-4%', width: 310, height: 170, rot: -8 },
-];
+const WINE = '#7B1C2E';
+const BLUSH = '#F2D9DC';
+const IVORY = '#FAF3E8';
 
-const STAR_STICKERS = [
-  { top: '37%', left: '10%', size: 156, rotate: -10 },
-  { top: '56%', right: '8%', size: 142, rotate: 10 },
-  { bottom: '18%', right: '16%', size: 128, rotate: -14 },
-];
+const HeartLock = ({ open }) => (
+  <svg width="90" height="104" viewBox="0 0 90 104" fill="none">
+    <path d="M45 40C45 40 18 26 18 12C18 4 25 0 32 0C38 0 42 3 45 8C48 3 52 0 58 0C65 0 72 4 72 12C72 26 45 40 45 40Z" fill={WINE}/>
+    <motion.path
+      d="M30 40C30 28 38 22 45 22C52 22 60 28 60 40"
+      stroke={WINE} strokeWidth="8" fill="none" strokeLinecap="round"
+      animate={open ? { rotate: -22, y: -10, originX: '45px', originY: '40px' } : {}}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      style={{ transformOrigin: '45px 40px' }}
+    />
+    <rect x="20" y="38" width="50" height="42" rx="9" fill={WINE}/>
+    <circle cx="45" cy="57" r="6" fill={IVORY}/>
+    <rect x="43" y="57" width="4" height="10" rx="2" fill={IVORY}/>
+    <line x1="58" y1="80" x2="58" y2="98" stroke={WINE} strokeWidth="2.5"/>
+    <ellipse cx="58" cy="100" rx="5" ry="3" fill={WINE}/>
+    <path d="M55 90 L58 86 L61 90Z" fill={WINE}/>
+  </svg>
+);
 
-const SCRATCH_SLOTS = [1, 2, 3, 4, 5];
-const BOUQUET_FLOWER_FALLBACK = ['🌹', '🌷', '🌸', '🌺', '🌼', '🌻'];
-const BOUQUET_STEM_ROTATIONS = [-15, -9, -4, 0, 4, 9, 15];
-const FLOWER_KEYWORD_TO_EMOJI = {
-  rose: '🌹',
-  tulip: '🌷',
-  lily: '🌸',
-  peony: '🌺',
-  hibiscus: '🌺',
-  daisy: '🌼',
-  sunflower: '🌻',
-  blossom: '🌸',
-  orchid: '🌸',
-};
+const CloudPuff = ({ style }) => (
+  <div style={{
+    position: 'absolute', borderRadius: '50%', opacity: 0.2,
+    background: 'radial-gradient(circle, #9B2335 0%, #7B1C2E 100%)',
+    filter: 'blur(2px)', ...style
+  }}/>
+);
 
-const normalizePin = (value) => {
-  const digits = String(value || '').replace(/\D+/g, '');
-  if (!digits) return '2611';
-  return digits.slice(0, 8);
-};
+const LockBg = () => (
+  <>
+    <CloudPuff style={{ width: 260, height: 130, top: '6%', left: '-8%', transform: 'rotate(-7deg)' }}/>
+    <CloudPuff style={{ width: 200, height: 110, top: '21%', right: '4%', transform: 'rotate(6deg)' }}/>
+    <CloudPuff style={{ width: 240, height: 130, top: '55%', left: '7%', transform: 'rotate(4deg)' }}/>
+    <CloudPuff style={{ width: 280, height: 140, top: '70%', right: '-5%', transform: 'rotate(-8deg)' }}/>
+    {['7% / 6%', '9% / right 8%', '32% / 4%', 'bottom 28% / right 6%', 'bottom 12% / 8%'].map((pos, i) => {
+      const [top, left] = pos.split(' / ');
+      const isRight = left && left.startsWith('right');
+      const style = { position: 'absolute', color: WINE, fontSize: [36, 30, 22, 28, 18][i], opacity: [0.5, 0.45, 0.35, 0.4, 0.3][i] };
+      if (isRight) { style.top = top; style.right = left.replace('right ', ''); }
+      else { style.top = top; style.left = left; }
+      return <div key={i} style={style}>{['☾', '♥', '✿', '✿', '❤'][i]}</div>;
+    })}
+    <div style={{ position: 'absolute', top: '44%', right: '5%', color: WINE, fontSize: 14, opacity: 0.28 }}>•</div>
+    <div style={{ position: 'absolute', top: '62%', left: '12%', color: WINE, fontSize: 12, opacity: 0.24 }}>•</div>
+    <div style={{ position: 'absolute', bottom: '20%', right: '14%', color: WINE, fontSize: 20, opacity: 0.3 }}>✦</div>
+  </>
+);
 
-const ScratchPolaroid = ({
-  imageUrl,
-  revealed,
-  onReveal,
-  caption,
-  scratchLabel,
-  absolute = true,
-  className = '',
-  style,
-}) => {
+const FlowerWall = () => {
+  const flowers = [
+    ['#A01830', '#C03050'], ['#E8A0A8', '#F0C0C8'], ['#FFF5F5', '#FFEEF0'],
+    ['#C84060', '#E06080'], ['#F0C0C8', '#F8D8DC'],
+  ];
+  const grid = Array.from({ length: 35 }, (_, i) => ({
+    x: (i % 7) * 56 + 20 + Math.sin(i * 1.9) * 10,
+    y: Math.floor(i / 7) * 90 + 60,
+    colors: flowers[i % 5],
+    rot: (i * 37) % 60,
+    size: 12 + (i % 4) * 2,
+  }));
   return (
-    <motion.button
-      type="button"
-      onClick={onReveal}
-      className={`${absolute ? 'absolute w-[156px] max-w-[39vw]' : 'w-full'} rounded-[8px] bg-[#f6efe3] p-2 text-left shadow-[0_14px_26px_rgba(0,0,0,0.33)] ${className}`}
-      whileTap={{ scale: 0.985 }}
-      style={style}
-    >
-      <div className="relative overflow-hidden rounded-[6px] aspect-[4/5] bg-[#c5bcc0]">
-        {imageUrl ? (
-          <img src={imageUrl} alt={caption || 'memory photo'} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-[#d8cfd4] via-[#c3bac0] to-[#ac9fa7]" />
-        )}
-
-        <motion.div
-          initial={false}
-          animate={revealed
-            ? { opacity: 0, clipPath: 'polygon(0 0, 0 0, 0 100%, 0 100%)' }
-            : { opacity: 1, clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}
-          transition={{ duration: 0.55, ease: 'easeInOut' }}
-          className="absolute inset-0 bg-gradient-to-br from-[#d7d0d6] via-[#bdb2bb] to-[#e4dfe4]"
-        >
-          <div className="absolute inset-0 flex items-center justify-center px-2 text-center">
-            <span className="text-white/92 italic text-[30px] leading-none" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              {scratchLabel}
-            </span>
-          </div>
-        </motion.div>
-      </div>
-
-      <p className="mt-2 text-[13px] text-[#3c2a31] italic leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-        {caption}
-      </p>
-    </motion.button>
+    <svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" style={{ position: 'absolute', inset: 0 }}>
+      {grid.map((f, i) => (
+        <g key={i} transform={`translate(${f.x},${f.y})`}>
+          {[0, 60, 120, 180, 240, 300].map(a => {
+            const rad = (a + f.rot) * Math.PI / 180;
+            return (
+              <ellipse key={a}
+                cx={Math.cos(rad) * (f.size + 4)} cy={Math.sin(rad) * (f.size + 4)}
+                rx={f.size} ry={f.size / 2.2}
+                fill={f.colors[0]} opacity="0.88"
+                transform={`rotate(${a + f.rot} ${Math.cos(rad) * (f.size + 4)} ${Math.sin(rad) * (f.size + 4)})`}
+              />
+            );
+          })}
+          <circle cx="0" cy="0" r={f.size / 2.5} fill={f.colors[1]}/>
+        </g>
+      ))}
+    </svg>
   );
 };
 
 const LeopardStar = ({ style }) => (
-  <div
-    className="absolute border-4 border-[#fff6eb] shadow-[0_10px_22px_rgba(0,0,0,0.28)]"
-    style={{
-      clipPath: 'polygon(50% 0, 62% 36%, 100% 38%, 71% 60%, 81% 100%, 50% 76%, 19% 100%, 29% 60%, 0 38%, 38% 36%)',
-      background:
-        'radial-gradient(circle at 24% 20%, rgba(0,0,0,0.92) 0 8%, transparent 9%), radial-gradient(circle at 72% 36%, rgba(0,0,0,0.86) 0 7%, transparent 8%), radial-gradient(circle at 38% 68%, rgba(0,0,0,0.88) 0 9%, transparent 10%), radial-gradient(circle at 84% 74%, rgba(0,0,0,0.8) 0 7%, transparent 8%), linear-gradient(135deg, #f2d7a8 0%, #cfab78 52%, #f2d7a8 100%)',
-      ...style,
-    }}
-  />
+  <div style={{
+    position: 'absolute',
+    clipPath: 'polygon(50% 0,62% 36%,100% 38%,71% 60%,81% 100%,50% 76%,19% 100%,29% 60%,0 38%,38% 36%)',
+    background: [
+      'radial-gradient(circle at 22% 18%, rgba(0,0,0,0.9) 0 8%, transparent 9%)',
+      'radial-gradient(circle at 70% 34%, rgba(0,0,0,0.85) 0 7%, transparent 8%)',
+      'radial-gradient(circle at 36% 66%, rgba(0,0,0,0.88) 0 9%, transparent 10%)',
+      'radial-gradient(circle at 82% 72%, rgba(0,0,0,0.8) 0 7%, transparent 8%)',
+      'linear-gradient(135deg, #f2d7a8 0%, #cfab78 52%, #f2d7a8 100%)',
+    ].join(','),
+    outline: '3px solid white',
+    ...style
+  }}/>
 );
 
-const normalizeBouquetFlower = (rawValue, index) => {
-  const clean = String(rawValue || '').trim();
-  if (!clean) return BOUQUET_FLOWER_FALLBACK[index % BOUQUET_FLOWER_FALLBACK.length];
-  if (/[\u{1F300}-\u{1FAFF}]/u.test(clean)) return clean;
+const BouquetIllustration = ({ size = 150 }) => (
+  <svg width={size} height={size * 1.25} viewBox="0 0 150 188" fill="none">
+    <path d="M52 138 Q75 98 98 138" stroke="#D4A96A" strokeWidth="30" strokeLinecap="round" fill="none"/>
+    <line x1="75" y1="138" x2="75" y2="188" stroke="#A87040" strokeWidth="3"/>
+    <line x1="55" y1="152" x2="95" y2="152" stroke="#5BA8A0" strokeWidth="3.5" strokeLinecap="round"/>
+    {[
+      { cx: 54, cy: 84, col: '#C84820', center: '#8B1A30' },
+      { cx: 76, cy: 56, col: '#F8F8F4', center: '#E8E0D0' },
+      { cx: 100, cy: 78, col: '#E07038', center: '#983810' },
+      { cx: 64, cy: 52, col: '#C84820', center: '#8B1A30' },
+      { cx: 90, cy: 100, col: '#F8F8F4', center: '#E0D8C8' },
+    ].map(({ cx, cy, col, center }, fi) =>
+      [0, 72, 144, 216, 288].map(a => {
+        const rad = a * Math.PI / 180;
+        return (
+          <ellipse key={`${fi}-${a}`}
+            cx={cx + Math.cos(rad) * 13} cy={cy + Math.sin(rad) * 13}
+            rx="11" ry="6" fill={col} opacity="0.9"
+            transform={`rotate(${a} ${cx + Math.cos(rad) * 13} ${cy + Math.sin(rad) * 13})`}
+          />
+        );
+      }).concat(<circle key={`c${fi}`} cx={cx} cy={cy} r="7" fill={center}/>)
+    )}
+  </svg>
+);
 
-  const normalized = clean.toLowerCase();
-  const emojiFromKeyword = Object.entries(FLOWER_KEYWORD_TO_EMOJI).find(([keyword]) => normalized.includes(keyword))?.[1];
-  if (emojiFromKeyword) return emojiFromKeyword;
-  return BOUQUET_FLOWER_FALLBACK[index % BOUQUET_FLOWER_FALLBACK.length];
+const Polaroid = ({ src, caption, scratchLabel, revealed, onReveal, style }) => (
+  <button type="button" onClick={onReveal} style={{
+    position: 'absolute', background: '#F5ECD7',
+    padding: '8px 8px 30px', borderRadius: 4,
+    boxShadow: '0 4px 18px rgba(0,0,0,0.4)', border: 'none',
+    cursor: 'pointer', textAlign: 'center', ...style
+  }}>
+    <div style={{ width: 112, height: 134, position: 'relative', overflow: 'hidden', background: '#5A2030' }}>
+      {src
+        ? <img src={src} alt={caption} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+        : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#6B3040,#3D0A14)' }}/>
+      }
+      {!revealed && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(135deg,#4a2535,#201018)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.82)', fontStyle: 'italic', fontSize: 16, fontFamily: "'Cormorant Garamond',serif" }}>
+            {scratchLabel || 'Scratch me'}
+          </span>
+        </div>
+      )}
+    </div>
+    <p style={{ margin: '5px 0 0', fontSize: 11, color: '#3c2a31', fontStyle: 'italic', fontFamily: "'Cormorant Garamond',serif", maxWidth: 112, lineHeight: 1.35 }}>
+      {caption}
+    </p>
+  </button>
+);
+
+const NavArrow = ({ dir, onClick }) => (
+  <button type="button" onClick={onClick} style={{
+    position: 'fixed', right: 14,
+    top: dir === 'up' ? 'calc(50% - 56px)' : 'calc(50% + 12px)',
+    width: 44, height: 44, borderRadius: '50%',
+    background: 'rgba(255,255,255,0.76)', backdropFilter: 'blur(4px)',
+    border: '1.5px solid rgba(123,28,46,0.22)', color: WINE,
+    fontSize: 18, cursor: 'pointer', zIndex: 50,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.13)'
+  }}>
+    {dir === 'up' ? '∧' : '∨'}
+  </button>
+);
+
+const pageV = {
+  enter: { opacity: 0, y: 44 },
+  center: { opacity: 1, y: 0, transition: { duration: 0.58, ease: [0.77, 0, 0.175, 1] } },
+  exit: { opacity: 0, y: -36, transition: { duration: 0.38 } },
 };
 
-const BouquetCard = ({ title, note, flowers, className = '' }) => (
-  <div className={`rounded-[18px] border border-[#f6d8e4] bg-[#f7efe3] p-3 shadow-[0_14px_30px_rgba(0,0,0,0.28)] ${className}`}>
-    <p className="text-[11px] uppercase tracking-[0.18em] text-[#6e4e5c] font-bold">Personalized bouquet</p>
-    <p className="mt-1 text-[34px] leading-[0.88] text-[#872343] italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-      {title}
-    </p>
-    <div className="mt-2 rounded-[12px] border border-[#e8d8cc] bg-[#fffaf2] px-2.5 py-2.5">
-      <div className="flex items-end justify-center gap-1.5 min-h-[86px]">
-        {flowers.map((flower, index) => (
-          <div key={`${flower}-${index}`} className="flex flex-col items-center" style={{ transform: `rotate(${BOUQUET_STEM_ROTATIONS[index % BOUQUET_STEM_ROTATIONS.length]}deg)` }}>
-            <span className="text-[29px] leading-none">{flower}</span>
-            <span className="mt-0.5 h-[36px] w-[2px] rounded-full bg-[#63906a]/75" />
-          </div>
-        ))}
-      </div>
-    </div>
-    <p className="mt-2 text-[14px] italic text-[#4a3843] leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-      {note}
-    </p>
-  </div>
-);
-
 const BouquetGarden = ({
-  recipientName,
-  senderName,
+  recipientName = 'You',
+  senderName = 'Me',
   scenes = {},
   showSenderName = true,
-  showFooter = true,
   musicEnabled = false,
   musicUrl = '',
 }) => {
-  const [phase, setPhase] = useState('gate'); // gate | envelope | board
-  const [typedPin, setTypedPin] = useState('');
-  const [gateError, setGateError] = useState('');
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const [envelopeOpen, setEnvelopeOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   const [scratchRevealed, setScratchRevealed] = useState({});
-  const [showMemoryCard, setShowMemoryCard] = useState(false);
+  const [typedLetter, setTypedLetter] = useState('');
 
-  const lockPin = normalizePin(scenes.accessPassword || scenes.lockCode || '2611');
-  const hiddenMusicId = extractYouTubeId(musicUrl);
-  const clipVideoId = useMemo(() => {
-    const raw = String(scenes.youtubeUrl || '').trim();
-    if (!raw) return '';
-    return extractYouTubeId(raw);
-  }, [scenes.youtubeUrl]);
+  const correctPin = String(scenes.accessPassword || '1234').replace(/\D/g, '').slice(0, 4) || '1234';
+  const fromLabel = (scenes.lockFromLabel || (showSenderName && senderName) || 'From me').trim();
+  const toLabel = (scenes.lockToLabel || recipientName || 'To you').trim();
+  const letterText = (scenes.letterText || 'Sometimes I catch myself smiling at my phone just because of you. You make ordinary days feel softer and happier, and having you in my life is one of my favorite things.').trim();
+  const scratchLabel = scenes.scratchLabel || 'Scratch me';
 
-  const displayFrom = String(
-    scenes.lockFromLabel
-    || (showSenderName && senderName ? senderName : '')
-    || 'From me'
-  ).trim();
-
-  const displayTo = String(
-    scenes.lockToLabel
-    || recipientName
-    || 'To you'
-  ).trim();
-
-  const favoriteLabel = String(scenes.favoriteLabel || 'Favorite person').trim();
-  const bouquetTitle = String(scenes.bouquetTitle || 'For you, in bloom').trim();
-  const bouquetNote = String(scenes.bouquetNote || 'Picked one by one, just for you.').trim();
-  const bouquetFlowersRaw = String(scenes.bouquetFlowers || 'rose, tulip, peony, daisy, sunflower').trim();
-  const scratchLabel = String(scenes.scratchLabel || 'Scratch me').trim();
-  const boardTitle = String(scenes.scene2Header || 'Our secret garden').trim();
-  const boardNote = String(
-    scenes.letterText
-    || 'Sometimes I catch myself smiling at my phone just because of you. You make ordinary days feel softer and brighter, and having you in my life is one of my favorite things.'
-  ).trim();
-
-  const boardNoteLines = boardNote.split('\n').filter(Boolean);
-  const bouquetFlowers = useMemo(() => {
-    const items = bouquetFlowersRaw
-      .split(/[,\n|]+/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .slice(0, 7);
-    const base = items.length > 0 ? items : ['rose', 'tulip', 'peony', 'daisy', 'sunflower'];
-    return base.map((item, index) => normalizeBouquetFlower(item, index));
-  }, [bouquetFlowersRaw]);
-
-  const photos = SCRATCH_SLOTS.map((slot) => ({
-    slot,
-    src: String(scenes[`photo${slot}Url`] || '').trim(),
-    caption: String(scenes[`polaroidCaption${slot}`] || `Memory ${slot}`).trim(),
+  const photos = [1, 2, 3, 4, 5].map(i => ({
+    src: String(scenes[`photo${i}Url`] || '').trim(),
+    caption: String(scenes[`polaroidCaption${i}`] || `Memory ${i}`).trim(),
   }));
 
-  const songTitle = String(scenes.spotifyTrackTitle || 'Just the Two of Us').trim();
-  const songArtist = String(scenes.spotifyArtist || 'Grover Washington Jr., Bill Withers').trim();
+  const goto = useCallback((p) => {
+    const next = ((p % 5) + 5) % 5;
+    setPage(next);
+  }, []);
 
-  const mapTitle = String(scenes.mapTitle || 'Memory map').trim();
-  const mapPlace = String(scenes.mapPlace || 'Saigon 26').trim();
-  const postcardSubtitle = String(scenes.memorySubtitle || 'Somewhere special').trim();
-  const voiceLabel = String(scenes.voiceLabel || 'Voice note').trim();
+  // Page 1 (flower wall) auto-advances
+  useEffect(() => {
+    if (page === 1) {
+      const t = setTimeout(() => goto(2), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [page, goto]);
 
-  const footerTitle = String(scenes.closingMessage || 'Grow your own garden').trim();
-  const footerSubtitle = String(scenes.closingSubmessage || 'Made with flowers').trim();
+  // Typewriter for love letter
+  useEffect(() => {
+    if (page === 3) {
+      setTypedLetter('');
+      let i = 0;
+      const iv = setInterval(() => {
+        i++;
+        setTypedLetter(letterText.slice(0, i));
+        if (i >= letterText.length) clearInterval(iv);
+      }, 38);
+      return () => clearInterval(iv);
+    }
+  }, [page, letterText]);
 
-  const pushPinDigit = (digit) => {
-    if (phase !== 'gate' || isUnlocking) return;
-    if (typedPin.length >= lockPin.length) return;
+  // Page 4 loops back to 0
+  useEffect(() => {
+    if (page === 4) {
+      const t = setTimeout(() => goto(0), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [page, goto]);
 
-    const next = `${typedPin}${digit}`;
-    setTypedPin(next);
-    setGateError('');
-
-    if (next.length === lockPin.length) {
-      if (next === lockPin) {
-        setIsUnlocking(true);
-        window.setTimeout(() => {
-          setPhase('envelope');
-          setTypedPin('');
-          setIsUnlocking(false);
-        }, 1200);
+  const pushDigit = (d) => {
+    if (unlocking) return;
+    const next = pin + d;
+    if (next.length > correctPin.length) return;
+    setPin(next);
+    setPinError(false);
+    if (next.length === correctPin.length) {
+      if (next === correctPin) {
+        setUnlocking(true);
+        setTimeout(() => { setPage(1); setPin(''); setUnlocking(false); }, 900);
       } else {
-        setGateError('Wrong code. Try again.');
-        window.setTimeout(() => {
-          setTypedPin('');
-        }, 520);
+        setPinError(true);
+        setTimeout(() => { setPin(''); setPinError(false); }, 600);
       }
     }
   };
 
-  const removePinDigit = () => {
-    if (isUnlocking) return;
-    setTypedPin((prev) => prev.slice(0, -1));
-  };
-
-  const openEnvelope = () => {
-    if (envelopeOpen) return;
-    setEnvelopeOpen(true);
-    window.setTimeout(() => setPhase('board'), 900);
-  };
-
-  const onRevealScratch = (slot) => {
-    setScratchRevealed((prev) => ({ ...prev, [slot]: true }));
-  };
+  const polaroidPositions = [
+    { top: '7%', left: '8%', transform: 'rotate(-13deg)' },
+    { top: '5%', right: '10%', transform: 'rotate(9deg)' },
+    { top: '38%', left: '4%', transform: 'rotate(-7deg)' },
+    { top: '36%', right: '7%', transform: 'rotate(14deg)' },
+    { top: '64%', left: '28%', transform: 'rotate(-4deg)' },
+  ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#f6f0e2] text-[#2e2426]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {musicEnabled && hiddenMusicId ? (
-        <iframe
-          src={`https://www.youtube.com/embed/${hiddenMusicId}?autoplay=1&loop=1&playlist=${hiddenMusicId}&controls=0`}
-          allow="autoplay"
-          className="absolute h-0 w-0 opacity-0 pointer-events-none"
-          title="bouquet-garden-music"
-        />
-      ) : null}
-
+    <div style={{ position: 'relative', width: '100%', minHeight: '100dvh', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+      {musicEnabled && musicUrl && (
+        <iframe src={`https://www.youtube.com/embed/${musicUrl}?autoplay=1&loop=1&controls=0`}
+          allow="autoplay" style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }} title="music"/>
+      )}
       <AnimatePresence mode="wait">
-        {phase === 'gate' && (
-          <motion.section
-            key="gate"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            className="min-h-screen relative flex items-center justify-center px-5"
-            style={{
-              background: 'radial-gradient(circle at 16% 24%, rgba(198,45,88,0.2), transparent 34%), radial-gradient(circle at 84% 16%, rgba(155,24,62,0.22), transparent 30%), linear-gradient(180deg, #f9f3e8 0%, #f8efe2 100%)',
-            }}
-          >
-            {CLOUD_PUFFS.map((cloud, i) => (
-              <div
-                key={`cloud-${i}`}
-                className="absolute rounded-[48%] opacity-[0.78]"
-                style={{
-                  width: cloud.width,
-                  height: cloud.height,
-                  transform: `rotate(${cloud.rot}deg)`,
-                  background: 'radial-gradient(circle at 40% 45%, rgba(199,46,86,0.56), rgba(149,25,61,0.7))',
-                  filter: 'blur(0.2px)',
-                  ...cloud,
-                }}
+
+        {/* ===== PAGE 0: PIN LOCK ===== */}
+        {page === 0 && (
+          <motion.div key="lock" variants={pageV} initial="enter" animate="center" exit="exit"
+            style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: IVORY, position: 'relative', padding: '0 20px' }}>
+            <LockBg/>
+            <motion.div
+              animate={pinError ? { x: [0, -12, 12, -10, 10, -6, 6, 0] } : {}}
+              transition={{ duration: 0.46 }}
+              style={{ position: 'relative', zIndex: 10, textAlign: 'center', width: '100%', maxWidth: 360 }}>
+              <motion.div
+                animate={unlocking ? { scale: [1, 1.1, 0.95, 1.05, 1], rotate: [0, 4, -4, 2, 0] } : {}}
+                transition={{ duration: 0.7 }}
+                style={{ marginBottom: 20 }}>
+                <HeartLock open={unlocking}/>
+              </motion.div>
+              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: 30, color: WINE, lineHeight: 1.3, margin: 0 }}>From : {fromLabel}</p>
+              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: 30, color: WINE, lineHeight: 1.3, margin: '3px 0 0' }}>For : {toLabel}</p>
+              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: 18, color: WINE, opacity: 0.72, margin: '8px 0 0' }}>a little secret...</p>
+              {/* PIN dots */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 14, margin: '26px 0 22px' }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} style={{
+                    width: 13, height: 13, borderRadius: '50%',
+                    border: `2.5px solid ${WINE}`,
+                    background: pin.length > i ? WINE : 'transparent',
+                    transition: 'background 0.15s'
+                  }}/>
+                ))}
+              </div>
+              {/* Keypad */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, maxWidth: 248, margin: '0 auto' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => (
+                  <motion.button key={d} type="button" onClick={() => pushDigit(String(d))}
+                    whileTap={{ scale: 0.93 }}
+                    style={{ height: 52, borderRadius: 12, background: BLUSH, border: 'none', fontSize: 20, color: WINE, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(123,28,46,0.15)' }}>
+                    {d}
+                  </motion.button>
+                ))}
+                <div/>
+                <motion.button type="button" onClick={() => pushDigit('0')} whileTap={{ scale: 0.93 }}
+                  style={{ height: 52, borderRadius: 12, background: BLUSH, border: 'none', fontSize: 20, color: WINE, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(123,28,46,0.15)' }}>
+                  0
+                </motion.button>
+                <motion.button type="button" onClick={() => setPin(p => p.slice(0, -1))} whileTap={{ scale: 0.93 }}
+                  style={{ height: 52, borderRadius: 12, background: BLUSH, border: 'none', fontSize: 20, color: WINE, cursor: 'pointer', boxShadow: '0 2px 6px rgba(123,28,46,0.15)' }}>
+                  ⌫
+                </motion.button>
+              </div>
+              <div style={{ minHeight: 24, marginTop: 14 }}>
+                {pinError && <p style={{ color: '#9c2f59', fontSize: 13, fontWeight: 600, margin: 0 }}>Wrong code. Try again.</p>}
+              </div>
+              {/* Pagination dots */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${WINE}`, background: i === 0 ? WINE : 'transparent' }}/>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ===== PAGE 1: FLOWER WALL ===== */}
+        {page === 1 && (
+          <motion.div key="flowers" variants={pageV} initial="enter" animate="center" exit="exit"
+            style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden', background: '#2A0810' }}>
+            <FlowerWall/>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(80, 10, 20, 0.18)' }}/>
+          </motion.div>
+        )}
+
+        {/* ===== PAGE 2: SCRAPBOOK ===== */}
+        {page === 2 && (
+          <motion.div key="scrapbook" variants={pageV} initial="enter" animate="center" exit="exit"
+            style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden', background: '#3D0A14', backgroundImage: 'radial-gradient(circle at 50% 38%, #5A1020 0%, #3D0A14 68%)' }}>
+            <NavArrow dir="up" onClick={() => goto(page - 1)}/>
+            <NavArrow dir="down" onClick={() => goto(page + 1)}/>
+            {photos.slice(0, 5).map((p, i) => (
+              <Polaroid key={i} src={p.src} caption={p.caption}
+                scratchLabel={scratchLabel}
+                revealed={!!scratchRevealed[i]}
+                onReveal={() => setScratchRevealed(s => ({ ...s, [i]: true }))}
+                style={polaroidPositions[i]}
               />
             ))}
-
-            <div className="absolute top-7 left-7 text-[42px] text-[#8a1a42]">☾</div>
-            <div className="absolute top-8 right-9 text-[40px] text-[#8a1a42]">♥</div>
-
-            <motion.div
-              animate={gateError ? { x: [0, -10, 10, -8, 8, 0] } : { x: 0 }}
-              transition={{ duration: 0.42 }}
-              className="relative z-10 w-full max-w-[370px] text-center"
-            >
-              <div className="mx-auto mb-6 h-[88px] w-[88px] rounded-full bg-[#9c1f4d] text-[#fdece5] shadow-[0_18px_36px_rgba(112,10,45,0.35)] flex items-center justify-center">
-                <Heart size={36} className="fill-current" />
+            <LeopardStar style={{ width: 115, height: 115, top: '51%', left: '12%', transform: 'rotate(-13deg)' }}/>
+            <LeopardStar style={{ width: 88, height: 88, top: '20%', right: '40%', transform: 'rotate(9deg)' }}/>
+            <div style={{ position: 'absolute', bottom: 18, right: 18 }}>
+              <BouquetIllustration size={128}/>
+            </div>
+            {/* Torn paper + wax seal */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0,
+              width: 196, height: 178, background: '#1A0A0E',
+              clipPath: 'polygon(0 22%,8% 12%,15% 24%,22% 10%,30% 22%,100% 22%,100% 100%,0 100%)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 16
+            }}>
+              <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #9B2335, #5A0D18)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: "'Great Vibes', cursive", color: '#FAF3E8', fontSize: 28 }}>L</span>
               </div>
-
-              <p className="text-[28px] italic leading-none text-[#522631]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                From: {displayFrom}
-              </p>
-              <p className="mt-1 text-[28px] italic leading-none text-[#522631]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                To: {displayTo}
-              </p>
-
-              <div className="mt-6 flex items-center justify-center gap-2.5">
-                {Array.from({ length: lockPin.length }).map((_, index) => (
-                  <span
-                    key={`pin-dot-${index}`}
-                    className={`h-3.5 w-3.5 rounded-full border ${typedPin.length > index ? 'bg-[#9e1e4f] border-[#9e1e4f]' : 'border-[#ad9a92] bg-transparent'}`}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-2.5">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                  <button
-                    key={`digit-${digit}`}
-                    type="button"
-                    onClick={() => pushPinDigit(digit)}
-                    className="h-12 rounded-xl border border-[#d5c6bb] bg-[#f7ede3] text-[#5f3b46] text-lg font-semibold shadow-sm hover:bg-[#f4e3d8]"
-                  >
-                    {digit}
-                  </button>
-                ))}
-                <div />
-                <button
-                  type="button"
-                  onClick={() => pushPinDigit(0)}
-                  className="h-12 rounded-xl border border-[#d5c6bb] bg-[#f7ede3] text-[#5f3b46] text-lg font-semibold shadow-sm hover:bg-[#f4e3d8]"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={removePinDigit}
-                  className="h-12 rounded-xl border border-[#d5c6bb] bg-[#f7ede3] text-[#5f3b46] text-lg font-semibold shadow-sm hover:bg-[#f4e3d8]"
-                >
-                  ←
-                </button>
-              </div>
-
-              <p className="min-h-[22px] mt-3 text-sm text-[#9c2f59] font-medium">{gateError}</p>
-            </motion.div>
-
-            {isUnlocking && (
-              <div className="absolute inset-0 pointer-events-none z-20">
-                {Array.from({ length: 36 }).map((_, i) => (
-                  <motion.span
-                    key={`bloom-${i}`}
-                    className="absolute text-[24px]"
-                    initial={{
-                      opacity: 1,
-                      x: '50vw',
-                      y: '50vh',
-                      scale: 0.4,
-                    }}
-                    animate={{
-                      opacity: 0,
-                      x: `${50 + Math.cos((i / 36) * Math.PI * 2) * (14 + (i % 4) * 7)}vw`,
-                      y: `${50 + Math.sin((i / 36) * Math.PI * 2) * (17 + (i % 3) * 8)}vh`,
-                      scale: 1.26,
-                    }}
-                    transition={{ duration: 0.95, ease: 'easeOut', delay: (i % 6) * 0.02 }}
-                  >
-                    {i % 4 === 0 ? '🌸' : i % 3 === 0 ? '🌺' : '🌹'}
-                  </motion.span>
-                ))}
-              </div>
-            )}
-          </motion.section>
+              <p style={{ fontFamily: "'Great Vibes', cursive", color: '#fff', fontSize: 15, margin: 0, lineHeight: 1.5 }}>From : {fromLabel}</p>
+              <p style={{ fontFamily: "'Great Vibes', cursive", color: '#fff', fontSize: 15, margin: 0 }}>For : {toLabel}</p>
+            </div>
+          </motion.div>
         )}
 
-        {phase === 'envelope' && (
-          <motion.section
-            key="envelope"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="min-h-screen flex items-center justify-center px-5"
-            style={{ background: '#f3ecd9' }}
-          >
-            <motion.button
-              type="button"
-              onClick={openEnvelope}
-              whileTap={{ scale: 0.98 }}
-              className="relative h-[220px] w-[280px]"
-            >
-              <div className="absolute inset-0 rounded-[12px] bg-gradient-to-b from-[#c54665] via-[#af2f52] to-[#8f1f43] shadow-[0_24px_44px_rgba(94,12,39,0.36)]" />
-              <div className="absolute inset-y-0 left-0 w-1/2 bg-[#952647] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
-              <div className="absolute inset-y-0 right-0 w-1/2 bg-[#952647] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
-              <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#cb4f6f] [clip-path:polygon(0_100%,50%_30%,100%_100%)] rounded-b-[12px]" />
-              <motion.div
-                className="absolute inset-x-0 top-0 h-[56%] origin-top [transform-style:preserve-3d]"
-                animate={envelopeOpen ? { rotateX: -170, y: -4 } : { rotateX: 0, y: 0 }}
-                transition={{ duration: 0.68, ease: [0.22, 0.82, 0.24, 1] }}
-              >
-                <div className="h-full w-full rounded-t-[12px] bg-gradient-to-b from-[#ef8ca4] via-[#f4b8c8] to-[#e76f8c] [clip-path:polygon(0_0,100%_0,50%_100%)] border-t border-white/50" />
-              </motion.div>
-
-              <motion.div
-                className="absolute left-1/2 top-[56%] z-10 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f7d8d4] bg-gradient-to-br from-[#d24b78] to-[#931f4c] text-[#ffe9e3] flex items-center justify-center"
-                animate={envelopeOpen ? { scale: 0.2, opacity: 0, y: -8 } : { scale: [1, 1.08, 1], opacity: 1 }}
-                transition={envelopeOpen ? { duration: 0.16 } : { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                ♥
-              </motion.div>
-
-              <p className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-[32px] italic text-[#8f2c4a]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                {scenes.envelopeHint || 'Tap to open'}
+        {/* ===== PAGE 3: LOVE LETTER ===== */}
+        {page === 3 && (
+          <motion.div key="letter" variants={pageV} initial="enter" animate="center" exit="exit"
+            style={{ minHeight: '100dvh', display: 'flex', position: 'relative', overflow: 'hidden' }}>
+            <NavArrow dir="up" onClick={() => goto(page - 1)}/>
+            <NavArrow dir="down" onClick={() => goto(page + 1)}/>
+            {/* Left panel */}
+            <div style={{
+              flex: '0 0 56%', background: '#1A0A0E',
+              padding: '44px 28px 44px 24px',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              clipPath: 'polygon(0 0,100% 0,100% 90%,85% 97%,70% 91%,55% 97%,40% 90%,25% 97%,10% 91%,0 96%)'
+            }}>
+              <p style={{ fontFamily: "'Great Vibes', cursive", color: 'rgba(255,255,255,0.88)', fontSize: 22, lineHeight: 2, margin: 0 }}>
+                {typedLetter}
+                <span style={{ display: 'inline-block', width: 2, height: '1.1em', background: 'rgba(255,255,255,0.7)', marginLeft: 2, verticalAlign: 'middle', animation: 'blink 1s step-end infinite' }}/>
               </p>
-            </motion.button>
-          </motion.section>
+              <style>{`@keyframes blink { 50% { opacity: 0 } }`}</style>
+            </div>
+            {/* Right panel */}
+            <div style={{ flex: '0 0 44%', background: '#2A0A18', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <LeopardStar style={{ width: 118, height: 118, top: '28%', left: '8%', transform: 'rotate(8deg)' }}/>
+              <BouquetIllustration size={168}/>
+            </div>
+          </motion.div>
         )}
 
-        {phase === 'board' && (
-          <motion.section
-            key="board"
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="min-h-screen relative overflow-y-auto"
-            style={{
-              backgroundColor: '#7f0d27',
-              backgroundImage:
-                'radial-gradient(circle at 12% 18%, rgba(165,27,61,0.6), transparent 35%), radial-gradient(circle at 75% 22%, rgba(196,61,89,0.45), transparent 42%), radial-gradient(circle at 52% 72%, rgba(120,14,40,0.66), transparent 40%), linear-gradient(145deg, rgba(255,255,255,0.06), transparent 36%), linear-gradient(35deg, rgba(0,0,0,0.16), transparent 42%)',
-            }}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,0.22)_100%)]" />
-
-            <div className="relative mx-auto w-full max-w-[1080px] min-h-screen px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-              <div className="relative z-10 space-y-4 pb-16 lg:hidden">
-                <div className="rounded-full border border-[#f6dce4] bg-black/28 px-4 py-2 shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#ffdbe7] font-bold">{boardTitle}</p>
-                </div>
-
-                <div className="rounded-[16px] bg-[#f4e6d5] px-4 py-3 shadow-[0_10px_20px_rgba(0,0,0,0.3)]">
-                  <p
-                    className="text-[36px] leading-[0.82] text-[#8b1f43] italic"
-                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                  >
-                    {favoriteLabel}
-                  </p>
-                </div>
-
-                <BouquetCard
-                  title={bouquetTitle}
-                  note={bouquetNote}
-                  flowers={bouquetFlowers}
-                />
-
-                {clipVideoId ? (
-                  <div className="rounded-[18px] border border-white/40 bg-black/70 p-1 shadow-[0_18px_34px_rgba(0,0,0,0.38)]">
-                    <div className="overflow-hidden rounded-[14px]">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${clipVideoId}?autoplay=0&controls=1`}
-                        title="favorite clip"
-                        className="aspect-video w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-[16px] border border-white/35 bg-[#22151a]/82 p-4 text-white shadow-[0_14px_28px_rgba(0,0,0,0.36)]">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/70 font-bold">Favorite clip</p>
-                    <p className="mt-2 text-sm text-white/90">Add a YouTube link in editor to show your special video here.</p>
-                  </div>
-                )}
-
-                <div className="rounded-[18px] border border-[#f2b7c6] bg-[#1f1f24]/88 p-3 shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-md bg-[#3f2a36]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-white">{songTitle}</p>
-                      <p className="truncate text-xs text-white/66">{songArtist}</p>
-                    </div>
-                    <button type="button" className="h-9 w-9 rounded-full border border-white/45 text-white flex items-center justify-center">
-                      <Play size={16} className="translate-x-[1px]" />
-                    </button>
-                  </div>
-                  <div className="mt-3 h-1 rounded-full bg-white/16">
-                    <div className="h-full w-[37%] rounded-full bg-white/70" />
-                  </div>
-                </div>
-
-                <div className="rounded-[14px] border border-[#f6e1de] bg-[#1f1b23]/92 px-4 py-4 shadow-[0_18px_35px_rgba(0,0,0,0.35)]">
-                  <div className="mb-3 flex items-center gap-2 text-[#f8dde5]">
-                    <div className="h-7 w-7 rounded-full bg-[#8e1f46] flex items-center justify-center text-sm">♥</div>
-                    <p className="text-[11px] uppercase tracking-[0.17em] font-bold">From: {displayFrom} · For: {displayTo}</p>
-                  </div>
-                  <div className="space-y-2">
-                    {boardNoteLines.map((line, idx) => (
-                      <p key={`mobile-note-line-${idx}`} className="text-[#fff5f6] text-[25px] leading-[0.98] italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {photos.map((photo, index) => (
-                    <ScratchPolaroid
-                      key={`mobile-photo-${photo.slot}`}
-                      imageUrl={photo.src}
-                      revealed={Boolean(scratchRevealed[photo.slot])}
-                      onReveal={() => onRevealScratch(photo.slot)}
-                      caption={photo.caption}
-                      scratchLabel={scratchLabel}
-                      absolute={false}
-                      className={index === photos.length - 1 ? 'col-span-2 mx-auto max-w-[220px]' : ''}
-                    />
-                  ))}
-                </div>
-
-                <div className="rounded-[18px] border border-white/45 bg-[#f3efe4] p-3 shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-[#5f6c61] font-bold">Map pin</p>
-                  <p className="text-[34px] leading-[0.9] mt-1 text-[#1f2c1d]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{mapTitle}</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowMemoryCard(true)}
-                    className="mt-2 block w-full overflow-hidden rounded-xl border border-[#b9c4b4]"
-                  >
-                    <div
-                      className="h-[130px] w-full"
-                      style={{
-                        backgroundImage:
-                          'radial-gradient(circle at 30% 26%, rgba(130,154,122,0.45), transparent 28%), linear-gradient(115deg, #70856f 0%, #95a48e 48%, #7a8f77 100%), repeating-linear-gradient(15deg, rgba(255,255,255,0.32), rgba(255,255,255,0.32) 2px, transparent 2px, transparent 26px), repeating-linear-gradient(110deg, rgba(255,255,255,0.14), rgba(255,255,255,0.14) 1px, transparent 1px, transparent 19px)',
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-[#f4d8c5] px-1">
-                  <p className="text-[46px] leading-none -rotate-6 italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>i/o</p>
-                  <div className="flex items-center gap-2 text-[38px]">
-                    <span>😺</span>
-                    <span>🐈</span>
-                    <span>💐</span>
-                  </div>
-                </div>
-
-                {showFooter ? (
-                  <div className="pt-2 text-center">
-                    <p className="inline-block rounded-full bg-black/28 px-4 py-1.5 text-[#f7ede2] text-[30px] leading-none" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                      {footerTitle}
-                    </p>
-                    <p className="mt-1 text-[#f7ede2] text-sm font-medium">{footerSubtitle}</p>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="relative hidden lg:block min-h-[1450px]">
-                {clipVideoId ? (
-                  <div className="absolute left-[6%] top-[9%] w-[320px] max-w-[64vw] rounded-[18px] border border-white/40 bg-black/70 p-1 shadow-[0_18px_34px_rgba(0,0,0,0.38)]">
-                    <div className="overflow-hidden rounded-[14px]">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${clipVideoId}?autoplay=0&controls=1`}
-                        title="favorite clip"
-                        className="aspect-video w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute left-[6%] top-[10%] w-[290px] max-w-[62vw] rounded-[16px] border border-white/35 bg-[#22151a]/82 p-4 text-white shadow-[0_14px_28px_rgba(0,0,0,0.36)]">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/70 font-bold">Favorite clip</p>
-                    <p className="mt-2 text-sm text-white/90">Add a YouTube link in editor to show your special video here.</p>
-                  </div>
-                )}
-
-                <div className="absolute left-[5%] top-[3.8%] rounded-full border border-[#f6dce4] bg-black/28 px-4 py-2 shadow-[0_10px_20px_rgba(0,0,0,0.32)] max-w-[72vw]">
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#ffdbe7] font-bold">{boardTitle}</p>
-                </div>
-
-                <div className="absolute right-[8%] top-[9%] rounded-[18px] bg-[#f4e6d5] px-4 py-3 shadow-[0_10px_20px_rgba(0,0,0,0.3)] max-w-[240px]">
-                  <p
-                    className="text-[46px] leading-[0.78] text-[#8b1f43] italic"
-                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                  >
-                    {favoriteLabel}
-                  </p>
-                </div>
-
-                <BouquetCard
-                  title={bouquetTitle}
-                  note={bouquetNote}
-                  flowers={bouquetFlowers}
-                  className="absolute left-[36%] top-[24%] w-[280px] max-w-[30vw]"
-                />
-
-                <div className="absolute right-[6%] top-[28%] w-[350px] max-w-[72vw] rounded-[20px] border border-[#f2b7c6] bg-[#1f1f24]/88 p-3 shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-md bg-[#3f2a36]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-semibold text-white">{songTitle}</p>
-                      <p className="truncate text-[13px] text-white/66">{songArtist}</p>
-                    </div>
-                    <button type="button" className="h-10 w-10 rounded-full border border-white/45 text-white flex items-center justify-center">
-                      <Play size={17} className="translate-x-[1px]" />
-                    </button>
-                  </div>
-                  <div className="mt-3 h-1 rounded-full bg-white/16">
-                    <div className="h-full w-[37%] rounded-full bg-white/70" />
-                  </div>
-                </div>
-
-                {STAR_STICKERS.map((star, index) => (
-                  <LeopardStar key={`leopard-star-${index}`} style={{
-                    width: star.size,
-                    height: star.size,
-                    transform: `rotate(${star.rotate}deg)`,
-                    ...star,
-                  }} />
+        {/* ===== PAGE 4: LOOP / OUTRO ===== */}
+        {page === 4 && (
+          <motion.div key="outro" variants={pageV} initial="enter" animate="center" exit="exit"
+            style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: IVORY, position: 'relative' }}>
+            <NavArrow dir="up" onClick={() => goto(0)}/>
+            <LockBg/>
+            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+              <HeartLock open={false}/>
+              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: 28, color: WINE, marginTop: 18 }}>Until next time...</p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${WINE}`, background: WINE }}/>
                 ))}
-
-                <div className="absolute left-[7%] top-[42%] rounded-[14px] border border-[#f6e1de] bg-[#1f1b23]/92 px-6 py-5 max-w-[430px] shadow-[0_18px_35px_rgba(0,0,0,0.35)]">
-                  <div className="mb-3 flex items-center gap-3 text-[#f8dde5]">
-                    <div className="h-8 w-8 rounded-full bg-[#8e1f46] flex items-center justify-center">♥</div>
-                    <p className="text-[13px] uppercase tracking-[0.2em] font-bold">From: {displayFrom} · For: {displayTo}</p>
-                  </div>
-                  <div className="space-y-2">
-                    {boardNoteLines.map((line, idx) => (
-                      <p key={`note-line-${idx}`} className="text-[#fff5f6] text-[31px] leading-[1.02] italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="absolute right-[6%] bottom-[19%] rounded-[18px] border border-white/45 bg-[#f3efe4] p-3 w-[262px] max-w-[70vw] shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-[#5f6c61] font-bold">Map pin</p>
-                  <p className="text-[36px] leading-[0.9] mt-1 text-[#1f2c1d]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{mapTitle}</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowMemoryCard(true)}
-                    className="mt-2 block w-full overflow-hidden rounded-xl border border-[#b9c4b4]"
-                  >
-                    <div
-                      className="h-[130px] w-full"
-                      style={{
-                        backgroundImage:
-                          'radial-gradient(circle at 30% 26%, rgba(130,154,122,0.45), transparent 28%), linear-gradient(115deg, #70856f 0%, #95a48e 48%, #7a8f77 100%), repeating-linear-gradient(15deg, rgba(255,255,255,0.32), rgba(255,255,255,0.32) 2px, transparent 2px, transparent 26px), repeating-linear-gradient(110deg, rgba(255,255,255,0.14), rgba(255,255,255,0.14) 1px, transparent 1px, transparent 19px)',
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <div className="absolute left-[9%] bottom-[16%] text-[90px] leading-none text-[#f4d8c5] opacity-95 rotate-[-8deg]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                  i/o
-                </div>
-
-                <div className="absolute left-[10%] bottom-[7%] text-[70px]">😺</div>
-                <div className="absolute left-[18%] bottom-[6.2%] text-[66px]">🐈</div>
-
-                <div className="absolute right-[17%] bottom-[8%] text-[90px]">💐</div>
-
-                <ScratchPolaroid
-                  imageUrl={photos[0].src}
-                  revealed={Boolean(scratchRevealed[1])}
-                  onReveal={() => onRevealScratch(1)}
-                  caption={photos[0].caption}
-                  scratchLabel={scratchLabel}
-                  style={{ top: '42%', right: '33%', transform: 'rotate(-6deg)' }}
-                />
-                <ScratchPolaroid
-                  imageUrl={photos[1].src}
-                  revealed={Boolean(scratchRevealed[2])}
-                  onReveal={() => onRevealScratch(2)}
-                  caption={photos[1].caption}
-                  scratchLabel={scratchLabel}
-                  style={{ top: '58%', right: '8%', transform: 'rotate(8deg)' }}
-                />
-                <ScratchPolaroid
-                  imageUrl={photos[2].src}
-                  revealed={Boolean(scratchRevealed[3])}
-                  onReveal={() => onRevealScratch(3)}
-                  caption={photos[2].caption}
-                  scratchLabel={scratchLabel}
-                  style={{ top: '63%', left: '8%', transform: 'rotate(-8deg)' }}
-                />
-                <ScratchPolaroid
-                  imageUrl={photos[3].src}
-                  revealed={Boolean(scratchRevealed[4])}
-                  onReveal={() => onRevealScratch(4)}
-                  caption={photos[3].caption}
-                  scratchLabel={scratchLabel}
-                  style={{ top: '73%', left: '38%', transform: 'rotate(6deg)' }}
-                />
-                <ScratchPolaroid
-                  imageUrl={photos[4].src}
-                  revealed={Boolean(scratchRevealed[5])}
-                  onReveal={() => onRevealScratch(5)}
-                  caption={photos[4].caption}
-                  scratchLabel={scratchLabel}
-                  style={{ top: '80%', right: '32%', transform: 'rotate(-4deg)' }}
-                />
-
-                {showFooter ? (
-                  <div className="absolute right-[4%] bottom-[2.4%] text-right">
-                    <p className="inline-block rounded-full bg-black/28 px-4 py-1.5 text-[#f7ede2] text-[36px] leading-none" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                      {footerTitle}
-                    </p>
-                    <p className="mt-1 text-[#f7ede2] text-base font-medium">{footerSubtitle}</p>
-                  </div>
-                ) : null}
               </div>
             </div>
-
-            <AnimatePresence>
-              {showMemoryCard && (
-                <motion.button
-                  type="button"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[2px] flex items-center justify-center px-4"
-                  onClick={() => setShowMemoryCard(false)}
-                >
-                  <motion.div
-                    initial={{ y: 20, scale: 0.96, opacity: 0 }}
-                    animate={{ y: 0, scale: 1, opacity: 1 }}
-                    exit={{ y: 12, scale: 0.98, opacity: 0 }}
-                    className="w-full max-w-[360px] rounded-[24px] bg-[#f5efe2] border border-[#f7dfce] p-4 text-left shadow-[0_30px_60px_rgba(0,0,0,0.38)]"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <div className="overflow-hidden rounded-[14px] border border-[#dac9b8] bg-[#d9d0c4] aspect-[4/3]">
-                      {photos[4]?.src ? (
-                        <img src={photos[4].src} alt={mapPlace} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-[#b8afa3] via-[#cabfb1] to-[#a9a091]" />
-                      )}
-                    </div>
-                    <p className="mt-3 text-[11px] tracking-[0.2em] uppercase text-[#705c52]">Memory pin</p>
-                    <p className="text-[44px] leading-none text-[#1f1713]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{mapPlace}</p>
-                    <p className="mt-1 text-[#6b5b53] italic text-lg" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{postcardSubtitle}</p>
-                    <div className="mt-4 rounded-full border border-[#dfd3c8] bg-white px-3 py-2 flex items-center gap-3">
-                      <button type="button" className="h-8 w-8 rounded-full bg-[#2f6f47] text-white flex items-center justify-center">
-                        <Play size={14} className="translate-x-[1px]" />
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[#222]">{voiceLabel}</p>
-                        <p className="text-xs text-[#7a746e]">tap to listen</p>
-                      </div>
-                      <Music2 size={16} className="text-[#4f4a45]" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowMemoryCard(false)}
-                      className="mt-4 w-full rounded-full border border-[#c9b8a8] bg-[#f8f2ea] py-2.5 text-sm font-semibold text-[#4a3530]"
-                    >
-                      Close
-                    </button>
-                  </motion.div>
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </motion.section>
+          </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );

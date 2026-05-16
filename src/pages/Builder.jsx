@@ -9,7 +9,7 @@ import AuthModal from '../components/AuthModal';
 import TemplateMiniDemo from '../components/TemplateMiniDemo';
 import TemplateRenderer from '../components/TemplateRenderer';
 import { useAuth } from '../context/AuthContext';
-import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, buildCreativeDirectionScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
+import { TEMPLATE_STYLE_DEFAULTS, buildQuickPersonalizedScenes, createDraft, getInitialDraftFormData } from '../utils/createDraft';
 import { trackEvent } from '../utils/analytics';
 import { DEFAULT_LOVE_MUSIC_URL } from '../config/music';
 import { DEFAULT_TEMPLATE_ID, getTemplateConfig, normalizeTemplateId } from '../templates/registry';
@@ -86,10 +86,42 @@ const ONBOARDING_MUSIC_OPTIONS = [
     note: 'Modern piano-pop',
     url: 'https://www.youtube.com/watch?v=450p7goxZqg',
   },
+  {
+    id: 'die-with-a-smile',
+    title: 'Die With A Smile',
+    note: 'Current hit love ballad',
+    url: 'https://www.youtube.com/watch?v=kPa7bsKwL-c',
+  },
+  {
+    id: 'birds-of-a-feather',
+    title: 'BIRDS OF A FEATHER',
+    note: 'Current viral love song',
+    url: 'https://www.youtube.com/watch?v=1bkjEO_Zj2g',
+  },
+  {
+    id: 'until-i-found-you',
+    title: 'Until I Found You',
+    note: 'TikTok favorite love song',
+    url: 'https://www.youtube.com/watch?v=GxldQ9eX2wo',
+  },
+  {
+    id: 'perfect',
+    title: 'Perfect',
+    note: 'TikTok classic love song',
+    url: 'https://www.youtube.com/watch?v=2Vv-BfVoq4g',
+  },
 ];
 
 const MAX_TEMPLATE_PHOTOS = 5;
 const ONBOARDING_IMAGE_TEMPLATES = new Set(['kawaii-letter']);
+const LOVE_LETTER_MEMORY_CAPTION_KEYS = [
+  'polaroidCaption1',
+  'polaroidCaption2',
+  'polaroidCaption3',
+  'polaroidCaption4',
+  'polaroidCaption5',
+];
+const LOVE_LETTER_MEMORY_CAPTION_KEY_SET = new Set(LOVE_LETTER_MEMORY_CAPTION_KEYS);
 
 const ONBOARDING_BASE_STEPS = [
   { id: 'recipient', kind: 'recipient', title: 'Who is this for?', subtitle: "Your loved one's name" },
@@ -114,13 +146,38 @@ const getOnboardingFieldSubtitle = (field) => {
 };
 
 const buildTemplateOnboardingSteps = (templateId) => {
-  const templateSpecificSteps = (templateFields[templateId] || []).map((field) => ({
-    id: `scene:${field.key}`,
-    kind: 'scene',
-    field,
-    title: field.label,
-    subtitle: getOnboardingFieldSubtitle(field),
-  }));
+  const fields = templateFields[templateId] || [];
+  const isLoveLetter = templateId === 'kawaii-letter';
+  const loveLetterCaptionFields = isLoveLetter
+    ? fields.filter((field) => LOVE_LETTER_MEMORY_CAPTION_KEY_SET.has(field.key))
+    : [];
+
+  const templateSpecificSteps = [];
+  let insertedLoveLetterCaptionStep = false;
+
+  for (const field of fields) {
+    if (isLoveLetter && LOVE_LETTER_MEMORY_CAPTION_KEY_SET.has(field.key)) {
+      if (!insertedLoveLetterCaptionStep && loveLetterCaptionFields.length) {
+        templateSpecificSteps.push({
+          id: 'love-letter-memory-captions',
+          kind: 'memory-captions',
+          title: 'Memory captions',
+          subtitle: 'Add all 5 memory captions in one place.',
+          fields: loveLetterCaptionFields,
+        });
+        insertedLoveLetterCaptionStep = true;
+      }
+      continue;
+    }
+
+    templateSpecificSteps.push({
+      id: `scene:${field.key}`,
+      kind: 'scene',
+      field,
+      title: field.label,
+      subtitle: getOnboardingFieldSubtitle(field),
+    });
+  }
 
   const hasPhotoStep = ONBOARDING_IMAGE_TEMPLATES.has(templateId);
 
@@ -144,13 +201,6 @@ const buildTemplateOnboardingSteps = (templateId) => {
   ];
 };
 
-const CREATIVE_DIRECTIONS = [
-  { id: 'cinematic', label: 'Cinematic', note: 'Big visual moments and dramatic lines' },
-  { id: 'cozy', label: 'Cozy', note: 'Warm, intimate, everyday-love energy' },
-  { id: 'poetic', label: 'Poetic', note: 'Dreamy language and lyrical rhythm' },
-  { id: 'playful', label: 'Playful', note: 'Flirty, fun, and smile-first vibes' },
-];
-
 const resolveTemplateId = (id) => {
   const normalizedId = normalizeTemplateId(id);
   return TEMPLATE_STYLE_DEFAULTS[normalizedId] ? normalizedId : DEFAULT_TEMPLATE_ID;
@@ -169,6 +219,7 @@ const getFieldSectionLabel = (templateId, key) => {
   if (/^scratchLabel|^photo\d+Url/i.test(key)) return 'Scratch Memories';
   if (/^mapTitle|^mapPlace|^memorySubtitle|^voiceLabel/i.test(key)) return 'Memory Map';
   if (/^access/i.test(key) || /^welcome/i.test(key)) return 'Private Gate';
+  if (/^heartColor/i.test(key)) return 'Home Style';
   if (/^question|^yesLabel|^noLabel|^noTaunt|^celebration/i.test(key)) return 'Question Flow';
   if (/^confession|^introLine|^continueLabel|^questionCta/i.test(key)) return 'Confession Flow';
   if (/^story|^chapter|^startDate/i.test(key)) return 'Story Timeline';
@@ -443,7 +494,14 @@ const Builder = () => {
     if (currentOnboardingStep.kind === 'recipient') return Boolean(onboardingData.recipientName.trim());
     if (currentOnboardingStep.kind === 'scene') {
       const value = onboardingData.scenes?.[currentOnboardingStep.field.key];
+      if (currentOnboardingStep.field.type === 'select') {
+        return Boolean(String(value || currentOnboardingStep.field.options?.[0]?.value || '').trim());
+      }
       return Boolean(String(value || '').trim());
+    }
+    if (currentOnboardingStep.kind === 'memory-captions') {
+      const fields = currentOnboardingStep.fields || [];
+      return fields.every((field) => Boolean(String(onboardingData.scenes?.[field.key] || '').trim()));
     }
     if (currentOnboardingStep.kind === 'images') return true;
     return true;
@@ -645,24 +703,6 @@ const Builder = () => {
     }
   };
 
-  const applyCreativeDirection = (directionId) => {
-    const generatedScenes = buildCreativeDirectionScenes(activeTemplateId, {
-      recipientName: formData.recipientName,
-      direction: directionId,
-    });
-
-    setFormData((prev) => {
-      const mergedScenes = { ...prev.scenes };
-      Object.entries(generatedScenes).forEach(([key, value]) => {
-        if (!String(mergedScenes[key] || '').trim()) {
-          mergedScenes[key] = value;
-        }
-      });
-      return { ...prev, scenes: mergedScenes };
-    });
-    trackEvent('creative_direction_applied', { templateId: activeTemplateId, direction: directionId });
-  };
-
   const ensureRemoteDraft = useCallback(async ({ syncRoute = true } = {}) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (draftId) {
@@ -861,7 +901,7 @@ const Builder = () => {
     sections[section].push(field);
     return sections;
   }, {});
-  const sectionOrder = ['Birthday Setup', 'Private Gate', 'Chat Setup', 'Confession Flow', 'Question Flow', 'Story Timeline', 'Gallery', 'Memories', 'Reasons', 'Letter', 'Content'];
+  const sectionOrder = ['Birthday Setup', 'Private Gate', 'Home Style', 'Chat Setup', 'Confession Flow', 'Question Flow', 'Story Timeline', 'Gallery', 'Memories', 'Reasons', 'Letter', 'Content'];
   const orderedSections = sectionOrder.filter((name) => groupedFields[name]?.length > 0);
   const isReasons = activeTemplateId === '100-reasons';
 
@@ -938,7 +978,7 @@ const Builder = () => {
     const currentStepId = currentOnboardingStep?.id;
 
     return (
-      <div className={`min-h-screen text-white px-4 md:px-8 py-5 md:py-8 ${simplifyMobileVisuals ? 'bg-[#111629]' : 'bg-[radial-gradient(circle_at_15%_15%,#2b2144_0%,#171b2a_45%,#0f1320_100%)]'}`}>
+      <div className={`min-h-screen text-white px-3 sm:px-4 md:px-8 py-5 md:py-8 ${simplifyMobileVisuals ? 'bg-[#111629]' : 'bg-[radial-gradient(circle_at_15%_15%,#2b2144_0%,#171b2a_45%,#0f1320_100%)]'}`}>
         <div className="mx-auto max-w-[1440px] mb-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <Link to={`/templates/${activeTemplateId}`} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/80 hover:bg-white/10 transition-colors">
@@ -971,12 +1011,12 @@ const Builder = () => {
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[#f6a8c9] mb-3">Quick personalize</p>
             {isFirstOnboardingScreen ? (
               <>
-                <h1 className="text-5xl md:text-6xl font-bold mb-3 font-display">{currentOnboardingStep.title}</h1>
-                <p className="text-white/75 text-xl md:text-2xl mb-8 max-w-3xl">{currentOnboardingStep.subtitle}</p>
+                <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-3 font-display leading-tight">{currentOnboardingStep.title}</h1>
+                <p className="text-white/75 text-base sm:text-xl md:text-2xl leading-relaxed mb-8 max-w-3xl">{currentOnboardingStep.subtitle}</p>
               </>
             ) : (
               <>
-                <h2 className="text-4xl md:text-5xl font-bold mb-3 font-display">{currentOnboardingStep.title}</h2>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 font-display leading-tight">{currentOnboardingStep.title}</h2>
                 <p className="text-white/55 text-sm md:text-base mb-8 max-w-2xl">{currentOnboardingStep.subtitle}</p>
               </>
             )}
@@ -1026,23 +1066,25 @@ const Builder = () => {
                 )}
                 {currentOnboardingStep?.kind === 'scene' && (
                   <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">
+                    <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <label className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2] leading-tight">
                         {currentOnboardingStep.field.label} *
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => handleGenerateOnboardingSuggestion(currentOnboardingStep.field)}
-                        disabled={Boolean(generatingByField[currentOnboardingStep.field.key])}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#f6a8c9]/50 bg-[#f6a8c9]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f8b6d2] hover:bg-[#f6a8c9]/18 disabled:opacity-60"
-                      >
-                        {generatingByField[currentOnboardingStep.field.key] ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Sparkles size={12} />
-                        )}
-                        AI Suggest
-                      </button>
+                      {currentOnboardingStep.field.type !== 'select' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateOnboardingSuggestion(currentOnboardingStep.field)}
+                          disabled={Boolean(generatingByField[currentOnboardingStep.field.key])}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[#f6a8c9]/50 bg-[#f6a8c9]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f8b6d2] hover:bg-[#f6a8c9]/18 disabled:opacity-60"
+                        >
+                          {generatingByField[currentOnboardingStep.field.key] ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles size={12} />
+                          )}
+                          AI Suggest
+                        </button>
+                      ) : null}
                     </div>
                     {currentOnboardingStep.field.type === 'textarea' ? (
                       <textarea
@@ -1053,6 +1095,19 @@ const Builder = () => {
                         className="mt-2 w-full max-w-3xl px-4 py-4 rounded-2xl border border-white/15 bg-white/5 text-white text-lg placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9] resize-none"
                         autoFocus
                       />
+                    ) : currentOnboardingStep.field.type === 'select' ? (
+                      <select
+                        value={onboardingData.scenes?.[currentOnboardingStep.field.key] || currentOnboardingStep.field.options?.[0]?.value || ''}
+                        onChange={(e) => updateOnboardingSceneValue(currentOnboardingStep.field.key, e.target.value)}
+                        className="mt-2 w-full max-w-2xl px-4 py-4 rounded-2xl border border-white/15 bg-[#1d2437] text-white text-base focus:outline-none focus:border-[#f6a8c9]"
+                        autoFocus
+                      >
+                        {(currentOnboardingStep.field.options || []).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         value={onboardingData.scenes?.[currentOnboardingStep.field.key] || ''}
@@ -1062,14 +1117,64 @@ const Builder = () => {
                         autoFocus
                       />
                     )}
-                    <p className="mt-2 text-xs text-white/45">
-                      {String(onboardingData.scenes?.[currentOnboardingStep.field.key] || '').length}
-                      {' / '}
-                      {currentOnboardingStep.field.type === 'textarea' ? '1600' : '180'}
-                    </p>
+                    {currentOnboardingStep.field.type !== 'select' ? (
+                      <p className="mt-2 text-xs text-white/45">
+                        {String(onboardingData.scenes?.[currentOnboardingStep.field.key] || '').length}
+                        {' / '}
+                        {currentOnboardingStep.field.type === 'textarea' ? '1600' : '180'}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs text-white/55">Pick the heart color you want to use across this template.</p>
+                    )}
                     {aiErrorByField[currentOnboardingStep.field.key] ? (
                       <p className="mt-1 text-xs text-rose-300 font-medium">{aiErrorByField[currentOnboardingStep.field.key]}</p>
                     ) : null}
+                  </div>
+                )}
+                {currentOnboardingStep?.kind === 'memory-captions' && (
+                  <div className="space-y-4 max-w-3xl">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f8b6d2]">
+                      Memory captions 1-5 *
+                    </p>
+                    <div className="space-y-3">
+                      {(currentOnboardingStep.fields || []).map((field, index) => (
+                        <div key={field.key} className="space-y-1.5">
+                          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <label className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/70">
+                              {field.label}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateOnboardingSuggestion(field)}
+                              disabled={Boolean(generatingByField[field.key])}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-[#f6a8c9]/50 bg-[#f6a8c9]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#f8b6d2] hover:bg-[#f6a8c9]/18 disabled:opacity-60"
+                            >
+                              {generatingByField[field.key] ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              AI Suggest
+                            </button>
+                          </div>
+                          <input
+                            value={onboardingData.scenes?.[field.key] || ''}
+                            onChange={(e) => updateOnboardingSceneValue(field.key, e.target.value)}
+                            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                            className="w-full px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-white text-base placeholder:text-white/45 focus:outline-none focus:border-[#f6a8c9]"
+                            autoFocus={index === 0}
+                          />
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-white/45">
+                              {String(onboardingData.scenes?.[field.key] || '').length} / 180
+                            </span>
+                            {aiErrorByField[field.key] ? (
+                              <span className="text-[11px] text-rose-300 font-medium">{aiErrorByField[field.key]}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {currentOnboardingStep?.kind === 'images' && (
@@ -1320,10 +1425,10 @@ const Builder = () => {
   }
 
   return (
-    <div className="h-screen md:h-auto min-h-screen flex flex-col bg-white overflow-hidden md:overflow-visible">
+    <div className="h-screen md:h-auto min-h-screen flex flex-col bg-white overflow-hidden overflow-x-hidden md:overflow-visible">
       {/* Top Bar */}
-      <div className="h-16 flex items-center justify-between px-2.5 sm:px-3 md:px-6 border-b border-card shrink-0 bg-white sticky top-0 z-30 gap-2">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="min-h-16 md:h-16 flex flex-wrap md:flex-nowrap items-start sm:items-center justify-between px-2.5 sm:px-3 md:px-6 py-2 md:py-0 border-b border-card shrink-0 bg-white sticky top-0 z-30 gap-2">
+        <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
           <Link to={`/templates/${activeTemplateId}`} className="text-secondary hover:text-primary-pink transition-colors">
             <ArrowLeft size={20} />
           </Link>
@@ -1339,7 +1444,7 @@ const Builder = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+        <div className="flex items-center w-full sm:w-auto flex-wrap justify-end gap-1.5 md:gap-2 shrink-0">
           {/* Save indicator */}
           <AnimatePresence mode="wait">
             {saveStatus === 'saving' && (
@@ -1362,11 +1467,11 @@ const Builder = () => {
             )}
           </AnimatePresence>
 
-          <button onClick={handleSaveNow} className="flex items-center gap-1 md:gap-2 btn-outline py-2 px-2 sm:px-2.5 md:px-4 text-xs md:text-sm border">
+          <button onClick={handleSaveNow} className="flex items-center gap-1 md:gap-2 btn-outline py-2 px-2 sm:px-2.5 md:px-4 text-xs md:text-sm border shrink-0">
             <Save size={15} /> <span className="hidden sm:inline">Save</span>
           </button>
           <button onClick={handlePreviewPublish}
-            className="flex items-center gap-1 md:gap-2 bg-amber-500 text-white px-2.5 sm:px-3 md:px-5 py-2 rounded-pill font-bold text-xs md:text-sm hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 btn-shimmer whitespace-nowrap">
+            className="flex items-center gap-1 md:gap-2 bg-amber-500 text-white px-2.5 sm:px-3 md:px-5 py-2 rounded-pill font-bold text-xs md:text-sm hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 btn-shimmer shrink-0">
             <span className="sm:hidden">Publish</span>
             <span className="hidden sm:inline">Preview & Publish</span> →
           </button>
@@ -1410,7 +1515,7 @@ const Builder = () => {
             ))}
           </div>
 
-          <div className="flex-grow overflow-y-auto md:overflow-visible p-6 space-y-5">
+          <div className="flex-grow overflow-y-auto md:overflow-visible p-4 sm:p-6 space-y-5">
             <AnimatePresence mode="wait">
 
               {/* TEXT TAB */}
@@ -1418,46 +1523,28 @@ const Builder = () => {
                 <motion.div key="text" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-4">
 
-                  <div className="rounded-2xl border border-card bg-slate-50/80 p-4 space-y-3">
-                    <div>
-                      <p className="text-xs font-black text-dark uppercase tracking-wider">Creative Direction</p>
-                      <p className="text-[11px] text-secondary">Auto-fill empty fields with a stronger creative voice.</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {CREATIVE_DIRECTIONS.map((direction) => (
-                        <button
-                          key={direction.id}
-                          type="button"
-                          onClick={() => applyCreativeDirection(direction.id)}
-                          className="rounded-xl border border-card bg-white px-3 py-2 text-left hover:border-primary-pink/60 hover:bg-primary-light/35 transition-all"
-                        >
-                          <span className="block text-xs font-bold text-dark">{direction.label}</span>
-                          <span className="block text-[10px] text-secondary mt-0.5">{direction.note}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {orderedSections.map((sectionName) => (
                     <div key={sectionName} className="space-y-3 rounded-2xl border border-card bg-white p-4">
                       <p className="text-[10px] font-black text-secondary uppercase tracking-[0.18em]">{sectionName}</p>
                       {groupedFields[sectionName].map((field) => (
                         <div key={field.key} className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <label className="text-xs font-bold text-secondary uppercase tracking-wider">{field.label}</label>
-                            <button
-                              type="button"
-                              onClick={() => handleGenerateSuggestion(field)}
-                              disabled={Boolean(generatingByField[field.key])}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-primary-pink/35 bg-primary-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-pink hover:bg-primary-pink/15 disabled:opacity-60"
-                            >
-                              {generatingByField[field.key] ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : (
-                                <Sparkles size={12} />
-                              )}
-                              AI Suggest
-                            </button>
+                          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <label className="text-xs font-bold text-secondary uppercase tracking-wider leading-tight">{field.label}</label>
+                            {field.type !== 'select' ? (
+                              <button
+                                type="button"
+                                onClick={() => handleGenerateSuggestion(field)}
+                                disabled={Boolean(generatingByField[field.key])}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-primary-pink/35 bg-primary-pink/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-pink hover:bg-primary-pink/15 disabled:opacity-60"
+                              >
+                                {generatingByField[field.key] ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <Sparkles size={12} />
+                                )}
+                                AI Suggest
+                              </button>
+                            ) : null}
                           </div>
                           {field.type === 'textarea' ? (
                             <textarea
@@ -1467,6 +1554,18 @@ const Builder = () => {
                               rows={/letter|final|script/i.test(field.key) ? 10 : 6}
                               className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all resize-y overflow-y-auto text-sm min-h-[120px] max-h-[420px]"
                             />
+                          ) : field.type === 'select' ? (
+                            <select
+                              value={formData.scenes[field.key] || field.options?.[0]?.value || ''}
+                              onChange={(e) => handleSceneInput(field.key, e.target.value)}
+                              className="w-full px-4 py-2 border border-card rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-pink/20 focus:border-primary-pink transition-all text-sm bg-white"
+                            >
+                              {(field.options || []).map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <input
                               value={formData.scenes[field.key] || ''}
@@ -1479,7 +1578,11 @@ const Builder = () => {
                             {aiErrorByField[field.key] ? (
                               <p className="text-[11px] text-red-500 font-medium">{aiErrorByField[field.key]}</p>
                             ) : <span />}
-                            <span className="text-[10px] text-secondary">{String(formData.scenes[field.key] || '').length} chars</span>
+                            {field.type !== 'select' ? (
+                              <span className="text-[10px] text-secondary">{String(formData.scenes[field.key] || '').length} chars</span>
+                            ) : (
+                              <span className="text-[10px] text-secondary">Selection saved</span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1639,9 +1742,9 @@ const Builder = () => {
                 <motion.div key="settings" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }} className="space-y-6">
                   <div className="space-y-4 rounded-2xl border border-card p-4 bg-white">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs font-bold text-secondary uppercase tracking-wider">Names & Signature</p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {user && (
                           <button
                             type="button"

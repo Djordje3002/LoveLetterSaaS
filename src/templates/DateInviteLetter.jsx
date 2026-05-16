@@ -38,6 +38,9 @@ const MEMORY_CARD_POSITIONS = [
   { x: '33%', y: '60%', rotate: -6 },
 ];
 
+const ROMANTIC_HEADING_FONT = "'Cormorant Garamond', 'Fraunces', serif";
+const CONFESSION_CARD_ROTATION = -2;
+
 const STICKERS = [
   { id: 'star', char: '⭐', className: 'top-[9%] right-[9%]' },
   { id: 'flower', char: '🌼', className: 'top-[10%] left-[9%]' },
@@ -126,6 +129,10 @@ const DateInviteLetter = ({
     if (phase !== 'intro') return undefined;
     const timer = window.setTimeout(() => setPhase('envelope'), 1500);
     return () => window.clearTimeout(timer);
+  }, [phase]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [phase]);
 
   const triggerFloralTransition = useCallback(() => {
@@ -226,7 +233,10 @@ const DateInviteLetter = ({
               <p className="text-xs uppercase tracking-[0.35em] font-black mb-5" style={{ color: '#bb3b67' }}>
                 Valentine Reveal
               </p>
-              <h1 className="text-4xl md:text-6xl leading-tight font-black" style={{ color: '#2e1c22', fontFamily: fnt.heading }}>
+              <h1
+                className="text-3xl sm:text-5xl md:text-6xl leading-tight font-bold italic"
+                style={{ color: '#2e1c22', fontFamily: ROMANTIC_HEADING_FONT }}
+              >
                 {introLine}
               </h1>
             </div>
@@ -353,11 +363,13 @@ const DateInviteLetter = ({
             }}
           >
             <div className="max-w-4xl mx-auto">
-              <p className="text-center text-xs uppercase tracking-[0.3em] font-black mb-3 text-[#b22d5e]">Scene 1</p>
-              <h2 className="text-center text-3xl md:text-5xl font-black mb-8 text-[#34161f]" style={{ fontFamily: fnt.heading }}>
+              <h2
+                className="text-center text-3xl sm:text-5xl md:text-6xl leading-tight font-bold italic mb-9 text-[#34161f]"
+                style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+              >
                 {confessionTitle}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {confessions.map((confession, index) => {
                   const isRevealed = Boolean(revealedMap[index]);
                   return (
@@ -365,19 +377,78 @@ const DateInviteLetter = ({
                       key={`${confession.title}-${index}`}
                       type="button"
                       onClick={() => revealConfession(index)}
-                      whileTap={{ scale: 0.98 }}
-                      className={`rounded-2xl p-5 text-left shadow-md border transition-all ${
+                      initial={{ opacity: 0, y: 18, rotate: CONFESSION_CARD_ROTATION }}
+                      animate={{ opacity: 1, y: 0, rotate: CONFESSION_CARD_ROTATION }}
+                      transition={{ delay: index * 0.06, duration: 0.5, ease: [0.2, 0.75, 0.24, 1] }}
+                      whileHover={{ y: -6, scale: 1.015 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="group relative min-h-[176px] rounded-[28px] text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f59ab8]/40"
+                      style={{ perspective: 1100 }}
+                      aria-label={
                         isRevealed
-                          ? 'bg-white border-[#efbfd0]'
-                          : 'bg-[#ffd9e6] border-[#f4adc7] hover:-translate-y-0.5'
-                      }`}
+                          ? `${confession.title}: ${confession.text}`
+                          : `Tap card ${index + 1} to reveal a confession`
+                      }
                     >
-                      <p className="text-xs uppercase tracking-[0.2em] font-black mb-2 text-[#ac2758]">
-                        {isRevealed ? confession.title : `Tap ${index + 1}`}
-                      </p>
-                      <p className={`text-sm leading-6 ${isRevealed ? 'text-[#43222e]' : 'text-[#912756]'}`}>
-                        {isRevealed ? confession.text : 'Tap this card to reveal a confession.'}
-                      </p>
+                      <motion.div
+                        className="relative h-full min-h-[176px]"
+                        animate={isRevealed ? { rotateY: 180 } : { rotateY: 0 }}
+                        transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
+                        style={{ transformStyle: 'preserve-3d' }}
+                      >
+                        <div
+                          className="absolute inset-0 overflow-hidden rounded-[28px] border border-[#f6b6cb] bg-[#fff0f6] p-5 shadow-[0_18px_36px_rgba(196,45,96,0.16)]"
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            backgroundImage:
+                              'linear-gradient(145deg, rgba(255,255,255,0.82), rgba(255,209,225,0.88)), radial-gradient(circle at 14% 16%, rgba(255,255,255,0.95), transparent 24%)',
+                          }}
+                        >
+                          <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#ff8eb4]/28 blur-sm" />
+                          <div className="absolute -bottom-9 -left-9 h-28 w-28 rounded-full bg-white/65 blur-sm" />
+                          <div className="relative flex h-full min-h-[136px] flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="rounded-full border border-[#f5aac3] bg-white/70 px-3 py-1 text-[11px] font-black uppercase tracking-[0.22em] text-[#b72a5d]">
+                                Tap {index + 1}
+                              </span>
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f54580] text-white shadow-[0_10px_18px_rgba(226,53,111,0.25)]">
+                                ♥
+                              </span>
+                            </div>
+                            <p
+                              className="text-2xl font-bold italic leading-tight text-[#3a1825]"
+                              style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+                            >
+                              A little confession
+                            </p>
+                            <p className="text-sm font-semibold leading-6 text-[#9a315b]">
+                              Tap this card to reveal what my heart has been saving.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className="absolute inset-0 overflow-hidden rounded-[28px] border border-[#f0bfd0] bg-white p-5 shadow-[0_20px_42px_rgba(105,35,60,0.14)]"
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)',
+                            backgroundImage:
+                              'linear-gradient(160deg, rgba(255,255,255,0.96), rgba(255,244,248,0.94)), radial-gradient(circle at 84% 14%, rgba(245,69,128,0.12), transparent 30%)',
+                          }}
+                        >
+                          <div className="flex h-full min-h-[136px] flex-col justify-center">
+                            <p className="mb-3 text-[11px] font-black uppercase tracking-[0.24em] text-[#c53668]">
+                              {confession.title}
+                            </p>
+                            <p
+                              className="break-words text-[1.08rem] font-semibold italic leading-7 text-[#3d202b]"
+                              style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+                            >
+                              {confession.text}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
                     </motion.button>
                   );
                 })}
@@ -410,13 +481,15 @@ const DateInviteLetter = ({
             }}
           >
             <div className="max-w-5xl mx-auto">
-              <p className="text-center text-xs uppercase tracking-[0.3em] font-black mb-3 text-[#b6663a]">Scene 2</p>
-              <h2 className="text-center text-3xl md:text-5xl font-black mb-8 text-[#3a241c]" style={{ fontFamily: fnt.heading }}>
+              <h2
+                className="text-center text-3xl sm:text-5xl md:text-6xl leading-tight font-bold italic mb-8 text-[#3a241c]"
+                style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+              >
                 {memoriesTitle}
               </h2>
               <div
                 ref={memoryAreaRef}
-                className="relative w-full min-h-[64vh] rounded-[28px] border border-[#f2d6c3] bg-white/75 backdrop-blur-sm overflow-hidden"
+                className="relative w-full min-h-[72vh] rounded-[28px] border border-[#f2d6c3] bg-white/75 backdrop-blur-sm overflow-hidden"
               >
                 {memoryCards.map((card) => (
                   <motion.div
@@ -425,10 +498,10 @@ const DateInviteLetter = ({
                     dragConstraints={memoryAreaRef}
                     dragElastic={0.18}
                     whileTap={{ scale: 1.03, cursor: 'grabbing' }}
-                    className="absolute w-[42%] sm:w-[30%] max-w-[210px] bg-white rounded-2xl border border-[#f1dfd1] shadow-[0_16px_28px_rgba(146,86,64,0.16)] p-2 cursor-grab"
+                    className="absolute w-[58%] sm:w-[36%] md:w-[30%] max-w-[260px] bg-white rounded-2xl border border-[#f1dfd1] shadow-[0_18px_34px_rgba(146,86,64,0.18)] p-2.5 cursor-grab"
                     style={{ left: card.x, top: card.y, rotate: `${card.rotate}deg` }}
                   >
-                    <div className="h-28 sm:h-32 rounded-xl overflow-hidden bg-[#f7e3cf]">
+                    <div className="h-36 sm:h-44 md:h-48 rounded-xl overflow-hidden bg-[#f7e3cf]">
                       {card.imageUrl ? (
                         <img src={card.imageUrl} alt={card.caption} className="w-full h-full object-cover" />
                       ) : (
@@ -477,8 +550,10 @@ const DateInviteLetter = ({
             </motion.div>
 
             <div className="max-w-3xl mx-auto text-center mt-16">
-              <p className="text-xs uppercase tracking-[0.3em] font-black mb-3 text-[#b22d5e]">Final Scene</p>
-              <h2 className="text-4xl md:text-6xl font-black mb-4 text-[#2f1821]" style={{ fontFamily: fnt.heading }}>
+              <h2
+                className="text-3xl sm:text-5xl md:text-6xl leading-tight font-bold italic mb-4 text-[#2f1821]"
+                style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+              >
                 {questionTitle}
               </h2>
               <p className="text-[#7d4a5b] text-lg mb-10">{questionSubtitle}</p>
@@ -544,7 +619,10 @@ const DateInviteLetter = ({
               <p className="text-xs uppercase tracking-[0.32em] font-black mb-4 text-[#b02e60]">
                 You said yes
               </p>
-              <h3 className="text-4xl md:text-5xl font-black mb-4 text-[#371923]" style={{ fontFamily: fnt.heading }}>
+              <h3
+                className="text-3xl sm:text-4xl md:text-5xl leading-tight font-bold italic mb-4 text-[#371923]"
+                style={{ fontFamily: ROMANTIC_HEADING_FONT }}
+              >
                 {celebrationTitle}
               </h3>
               <p className="text-[#734155] text-lg leading-8 mb-6">{celebrationText}</p>

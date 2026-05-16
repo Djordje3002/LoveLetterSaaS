@@ -128,6 +128,7 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     questionTitle: 'Will you keep choosing me forever? 💍',
     homeTitle: 'Full House of Love 💙',
     homeSubtitle: 'Every click is a little reminder of how much I love you.',
+    heartColor: 'blue',
     galleryTitle: 'Our Moments 📸',
     gallerySubtitle: 'A collection of our favorite memories.',
     reasonsTitle: 'Reasons I Love You 💙',
@@ -142,7 +143,7 @@ export const TEMPLATE_SCENE_DEFAULTS = {
     startDate: '2025-12-06',
   },
   'bouquet-garden': {
-    accessPassword: '2611',
+    accessPassword: '1234',
     lockFromLabel: 'From me',
     lockToLabel: 'To you',
     envelopeHint: 'Tap to open',

@@ -214,7 +214,7 @@ const SuccessPage = () => {
 
         {/* QR Code */}
         <div ref={qrRef} className="flex justify-center mb-8">
-          <DecorativeHeartQr size={196} value={pageUrl} variant="dotted-heart" />
+          <DecorativeHeartQr size={392} qrRatio={0.495} qrOffsetRatio={0.055} value={pageUrl} />
         </div>
 
         <div className="w-full h-px bg-card mb-8" />

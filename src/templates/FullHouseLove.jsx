@@ -73,6 +73,26 @@ const REASON_CARD_GRADIENTS = [
   ['#ffb199', '#df5b5b'],
 ];
 
+const HEART_COLOR_MAP = {
+  blue: '#77d7ff',
+  pink: '#ff6fa8',
+  red: '#ff5f7d',
+  purple: '#b79cff',
+  gold: '#ffd166',
+};
+
+const hexToRgba = (hex, alpha) => {
+  const normalized = String(hex || '').trim().replace('#', '');
+  if (!/^[0-9a-fA-F]{3,6}$/.test(normalized)) return `rgba(255, 111, 168, ${alpha})`;
+  const fullHex = normalized.length === 3
+    ? normalized.split('').map((char) => `${char}${char}`).join('')
+    : normalized.padEnd(6, normalized[normalized.length - 1]).slice(0, 6);
+  const r = Number.parseInt(fullHex.slice(0, 2), 16);
+  const g = Number.parseInt(fullHex.slice(2, 4), 16);
+  const b = Number.parseInt(fullHex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const getReasonCardRotation = (index) => {
   const pattern = [-5, -3, -1, 1, 3, 5, -4, 2];
   return pattern[index % pattern.length];
@@ -110,6 +130,10 @@ const FullHouseLove = ({
   const pal = palettes[palette] || palettes.navy;
   const fnt = fonts[font] || fonts.playful;
   const videoId = extractYouTubeId(musicUrl);
+  const heartColorToken = String(scenes.heartColor || 'blue').trim().toLowerCase();
+  const heartColor = HEART_COLOR_MAP[heartColorToken] || '#77d7ff';
+  const heartGlow = hexToRgba(heartColor, 0.36);
+  const heartSoft = hexToRgba(heartColor, 0.18);
 
   const expectedName = (scenes.accessName || recipientName || 'love').trim().toLowerCase();
   const expectedPassword = (scenes.accessPassword || 'love').trim().toLowerCase();
@@ -196,13 +220,13 @@ const FullHouseLove = ({
   };
 
   return (
-    <div className="min-h-screen text-white relative overflow-x-hidden" style={{ fontFamily: fnt.body, background: 'radial-gradient(circle at top, rgba(119,215,255,0.20), transparent 46%), #07070b' }}>
+    <div className="min-h-screen text-white relative overflow-x-hidden" style={{ fontFamily: fnt.body, background: `radial-gradient(circle at top, ${heartSoft}, transparent 46%), #07070b` }}>
       <motion.div
         className="pointer-events-none absolute inset-0 opacity-55"
         animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
         transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
         style={{
-          backgroundImage: `radial-gradient(circle at 18% 18%, ${pal.accent}22, transparent 36%), radial-gradient(circle at 80% 70%, ${pal.primary}1f, transparent 38%)`,
+          backgroundImage: `radial-gradient(circle at 18% 18%, ${hexToRgba(heartColor, 0.2)}, transparent 36%), radial-gradient(circle at 80% 70%, ${pal.primary}1f, transparent 38%)`,
           backgroundSize: '170% 170%',
         }}
       />
@@ -215,7 +239,7 @@ const FullHouseLove = ({
             left: `${6 + (i * 10) % 88}%`,
             top: `${12 + (i * 9) % 80}%`,
             opacity: 0.2,
-            color: '#77d7ff',
+            color: heartColor,
             transform: `scale(${0.7 + (i % 3) * 0.15})`,
           }}
         >
@@ -307,11 +331,12 @@ const FullHouseLove = ({
             key="main"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative z-10 min-h-screen px-5 py-6 md:px-10"
+            className="relative z-10 min-h-screen px-5 pb-8 pt-10 md:px-10 md:pt-12"
           >
             <div className={tab === 'home' ? 'max-w-none mx-auto' : 'max-w-6xl mx-auto'}>
-              <header className="relative z-20 mb-4 flex justify-center px-1">
-                <div className="flex flex-wrap justify-center gap-2 rounded-full border border-white/15 bg-[#07111f]/72 p-1.5 shadow-[0_14px_32px_rgba(0,0,0,0.24)] backdrop-blur-md">
+              <header className="relative z-20 mb-7 flex justify-center px-1 pt-1 md:pt-2">
+                <div className="w-full max-w-[620px] rounded-[22px] border border-white/20 bg-[linear-gradient(120deg,rgba(7,17,31,0.92),rgba(9,23,40,0.78))] p-2 shadow-[0_18px_38px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+                  <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'home', label: 'Home', icon: Home },
                     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
@@ -319,20 +344,24 @@ const FullHouseLove = ({
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
-	                      <button
-	                        key={item.id}
-	                        onClick={() => setTab(item.id)}
-	                        className={`rounded-full px-4 py-2 text-sm font-bold inline-flex items-center gap-2 transition-all ${
-	                          tab === item.id ? 'bg-[#77d7ff] text-[#08101a] shadow-sm' : 'text-white/78 hover:bg-white/10'
-	                        }`}
-	                      >
-	                        <Icon size={14} />
+                      <motion.button
+                        key={item.id}
+                        onClick={() => setTab(item.id)}
+                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ y: -1 }}
+                        className={`rounded-2xl px-4 py-2.5 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all ${
+                          tab === item.id ? 'text-[#08101a] shadow-[0_8px_20px_rgba(0,0,0,0.24)]' : 'text-white/80 hover:bg-white/10'
+                        }`}
+                        style={tab === item.id ? { background: `linear-gradient(135deg, ${heartColor}, ${pal.accent})` } : undefined}
+                      >
+                        <Icon size={15} />
                         {item.label}
-                      </button>
-	                    );
-	                  })}
-	                </div>
-	              </header>
+                      </motion.button>
+                    );
+                  })}
+                  </div>
+                </div>
+              </header>
 
 	              {tab === 'home' && (
 	                <div
@@ -346,10 +375,10 @@ const FullHouseLove = ({
 	                  >
 	                    {scenes.homeTitle || 'Full House of Love 💙'}
 	                  </motion.h2>
-	                  <span className="pointer-events-none absolute left-[9%] top-[20%] text-5xl text-[#dc8eb3]/70 rotate-[-9deg]">♥</span>
-	                  <span className="pointer-events-none absolute right-[11%] top-[18%] text-4xl text-[#77d7ff]/55 rotate-[8deg]">✦</span>
-	                  <span className="pointer-events-none absolute bottom-[12%] left-[8%] text-4xl text-[#dc8eb3]/55">♡</span>
-	                  <span className="pointer-events-none absolute bottom-[9%] right-[10%] text-5xl text-[#77d7ff]/45 rotate-[10deg]">✿</span>
+                  <span className="pointer-events-none absolute left-[9%] top-[20%] text-5xl rotate-[-9deg]" style={{ color: hexToRgba(heartColor, 0.62) }}>♥</span>
+                  <span className="pointer-events-none absolute right-[11%] top-[18%] text-4xl rotate-[8deg]" style={{ color: hexToRgba(heartColor, 0.46) }}>✦</span>
+                  <span className="pointer-events-none absolute bottom-[12%] left-[8%] text-4xl" style={{ color: hexToRgba(heartColor, 0.5) }}>♡</span>
+                  <span className="pointer-events-none absolute bottom-[9%] right-[10%] text-5xl rotate-[10deg]" style={{ color: hexToRgba(heartColor, 0.42) }}>✿</span>
 
 	                  <motion.div
 	                    initial={{ y: 120, opacity: 0 }}
@@ -423,7 +452,7 @@ const FullHouseLove = ({
                       <button
                         onClick={shuffleReasons}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white transition-all hover:scale-105"
-                        style={{ backgroundColor: pal.primary }}
+                        style={{ background: `linear-gradient(135deg, ${pal.primary}, ${heartColor})` }}
                       >
                         <Shuffle size={14} />
                         Shuffle
@@ -450,12 +479,20 @@ const FullHouseLove = ({
                           onClick={() => flipReasonCard(card.id)}
                           aria-label={`Reveal reason ${i + 1}`}
                         >
-                          <div
+                          <motion.div
                             className="relative w-full h-full transition-all duration-500"
-                            style={{
-                              transformStyle: 'preserve-3d',
-                              transform: card.flipped ? `rotateY(180deg) rotate(${baseRotation}deg)` : `rotate(${baseRotation}deg)`,
+                            animate={
+                              card.flipped
+                                ? { rotateY: 180, rotateZ: baseRotation, scale: [1, 1.08, 1], y: [0, -7, 0] }
+                                : { rotateY: 0, rotateZ: baseRotation, scale: 1, y: 0 }
+                            }
+                            transition={{
+                              rotateY: { duration: 0.7, ease: [0.2, 0.75, 0.24, 1] },
+                              rotateZ: { duration: 0.6, ease: 'easeOut' },
+                              scale: { duration: 0.46, times: [0, 0.58, 1] },
+                              y: { duration: 0.46, times: [0, 0.5, 1] },
                             }}
+                            style={{ transformStyle: 'preserve-3d' }}
                           >
                             <div
                               className="absolute inset-0 overflow-hidden rounded-[24px] border border-white/25 p-3 shadow-[0_20px_36px_rgba(0,0,0,0.26)]"
@@ -465,6 +502,10 @@ const FullHouseLove = ({
                               }}
                             >
                               <div className="absolute inset-[5px] rounded-[18px] border border-white/35" />
+                              <div
+                                className="absolute inset-0 rounded-[24px] opacity-0 transition-opacity duration-400"
+                                style={{ background: `radial-gradient(circle at 50% 28%, ${heartGlow}, transparent 64%)`, opacity: card.flipped ? 0.85 : 0 }}
+                              />
                               <div className="absolute -right-5 -top-5 h-20 w-20 rounded-full bg-white/16" />
                               <div className="absolute -bottom-8 left-2 h-20 w-20 rounded-full bg-black/10" />
                               <div className="relative flex h-full flex-col justify-between">
@@ -472,7 +513,7 @@ const FullHouseLove = ({
                                   <span className="rounded-full bg-white/18 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/85">
                                     Reason {String(i + 1).padStart(2, '0')}
                                   </span>
-                                  <span className="text-lg text-white">♡</span>
+                                  <span className="text-lg" style={{ color: hexToRgba(heartColor, 0.95) }}>♡</span>
                                 </div>
                                 <div className="flex flex-1 items-center justify-center">
                                   <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/50 bg-white/20 text-3xl text-white shadow-inner">
@@ -502,7 +543,7 @@ const FullHouseLove = ({
                               </p>
                               <p className="text-[11px] font-semibold text-slate-500">Reason #{i + 1}</p>
                             </div>
-                          </div>
+                          </motion.div>
                         </motion.button>
                       );
                     })}

@@ -167,61 +167,63 @@ const KawaiiLetter = ({
               </motion.span>
             ))}
 
-            <div className="relative w-[min(86vw,520px)] max-w-[88%] h-[min(55vw,320px)]">
-              <motion.div
-                initial={{ y: -200, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
-                className="relative w-full h-full"
-              >
-                <div className="absolute inset-0 rounded-[8px] bg-[#f3a8bd] border border-[#ec9bb2] shadow-[0_22px_38px_rgba(190,92,126,0.32)]" />
+            <div className="w-[min(94vw,620px)] max-w-full flex flex-col items-center gap-4">
+              <div className="relative w-[min(86vw,520px)] max-w-[92%] h-[min(55vw,320px)]">
                 <motion.div
-                  animate={flapOpen ? { rotateX: -180 } : { rotateX: 0 }}
-                  transition={{ duration: 0.6, ease: 'easeInOut' }}
-                  className="absolute left-0 right-0 top-0 h-[58%] origin-top [transform-style:preserve-3d]"
+                  initial={{ y: -200, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+                  className="relative w-full h-full"
                 >
-                  <div className="w-full h-full bg-[#ffd3df] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[8px]" />
-                </motion.div>
-                <div className="absolute inset-y-0 left-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
-                <div className="absolute inset-y-0 right-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
-                <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#eba9bf] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
-
-                {sealVisible ? (
-                  <motion.button
-                    type="button"
-                    onClick={handleOpen}
-                    whileTap={{ scale: 0.95 }}
-                    animate={{ scale: [1, 1.06, 1] }}
-                    transition={{ duration: 1.25, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#cf226a] to-[#a61150] text-[#ffe0eb] text-3xl shadow-[0_12px_20px_rgba(97,18,52,0.42)]"
+                  <div className="absolute inset-0 rounded-[8px] bg-[#f3a8bd] border border-[#ec9bb2] shadow-[0_22px_38px_rgba(190,92,126,0.32)]" />
+                  <motion.div
+                    animate={flapOpen ? { rotateX: -180 } : { rotateX: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeInOut' }}
+                    className="absolute left-0 right-0 top-0 h-[58%] origin-top [transform-style:preserve-3d]"
                   >
-                    ♥
-                  </motion.button>
-                ) : null}
-              </motion.div>
+                    <div className="w-full h-full bg-[#ffd3df] [clip-path:polygon(0_0,100%_0,50%_100%)] rounded-t-[8px]" />
+                  </motion.div>
+                  <div className="absolute inset-y-0 left-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+                  <div className="absolute inset-y-0 right-0 w-1/2 bg-[#dc91aa] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+                  <div className="absolute left-0 right-0 bottom-0 h-[58%] bg-[#eba9bf] [clip-path:polygon(0_100%,50%_30%,100%_100%)]" />
 
-              {[...Array(12)].map((_, i) => (
-                <motion.span
-                  key={`${burstKey}-${i}`}
-                  className="absolute left-1/2 top-1/2 text-[#ff4f8f] text-lg"
-                  initial={{ opacity: 0, scale: 0.2, x: 0, y: 0 }}
-                  animate={
-                    flapOpen
-                      ? {
-                          opacity: [0, 1, 0],
-                          scale: [0.2, 1, 0.6],
-                          x: Math.cos((i / 12) * Math.PI * 2) * (68 + (i % 3) * 16),
-                          y: Math.sin((i / 12) * Math.PI * 2) * (54 + (i % 4) * 12),
-                        }
-                      : { opacity: 0 }
-                  }
-                  transition={{ duration: 0.72, ease: 'easeOut' }}
-                >
-                  ✦
-                </motion.span>
-              ))}
+                  {sealVisible ? (
+                    <motion.button
+                      type="button"
+                      onClick={handleOpen}
+                      whileTap={{ scale: 0.95 }}
+                      animate={{ scale: [1, 1.06, 1] }}
+                      transition={{ duration: 1.25, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 z-20 w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#cf226a] to-[#a61150] text-[#ffe0eb] text-3xl shadow-[0_12px_20px_rgba(97,18,52,0.42)]"
+                    >
+                      ♥
+                    </motion.button>
+                  ) : null}
+                </motion.div>
 
-              <p className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-[2rem] text-[#b00d5f] font-semibold font-dancing">
+                {[...Array(12)].map((_, i) => (
+                  <motion.span
+                    key={`${burstKey}-${i}`}
+                    className="absolute left-1/2 top-1/2 text-[#ff4f8f] text-lg"
+                    initial={{ opacity: 0, scale: 0.2, x: 0, y: 0 }}
+                    animate={
+                      flapOpen
+                        ? {
+                            opacity: [0, 1, 0],
+                            scale: [0.2, 1, 0.6],
+                            x: Math.cos((i / 12) * Math.PI * 2) * (68 + (i % 3) * 16),
+                            y: Math.sin((i / 12) * Math.PI * 2) * (54 + (i % 4) * 12),
+                          }
+                        : { opacity: 0 }
+                    }
+                    transition={{ duration: 0.72, ease: 'easeOut' }}
+                  >
+                    ✦
+                  </motion.span>
+                ))}
+              </div>
+
+              <p className="w-full px-4 text-center text-[clamp(1.05rem,4.8vw,1.9rem)] leading-tight text-[#b00d5f] font-semibold font-dancing break-words">
                 {scenes.hint || 'Tap seal to open ♥'}
               </p>
             </div>
@@ -271,7 +273,7 @@ const KawaiiLetter = ({
 	            <motion.h1
 	              initial={{ opacity: 0, y: 16 }}
 	              animate={{ opacity: 1, y: 0 }}
-	              className="pt-8 md:pt-12 text-center text-[2.25rem] sm:text-[2.7rem] md:text-[4rem] leading-none text-[#9f164d] font-dancing font-bold relative z-10"
+	              className="pt-8 md:pt-12 px-2 text-center text-[2.1rem] sm:text-[2.7rem] md:text-[4rem] leading-[0.95] text-[#9f164d] font-dancing font-bold relative z-10 break-words"
 	            >
 	              {heading}
 	            </motion.h1>
@@ -337,7 +339,7 @@ const KawaiiLetter = ({
 	          >
 	            <div className="max-w-5xl mx-auto">
 	              <p className="text-center text-xs uppercase tracking-[0.3em] font-black mb-3 text-[#a14a62]">memory notes</p>
-	              <h2 className="text-center text-3xl md:text-5xl font-black mb-8 text-[#2b1a20]" style={{ fontFamily: fnt.heading }}>
+	              <h2 className="text-center text-3xl md:text-5xl font-black mb-8 text-[#2b1a20] break-words px-2" style={{ fontFamily: fnt.heading }}>
 	                {memoriesTitle}
 	              </h2>
 
@@ -401,7 +403,7 @@ const KawaiiLetter = ({
 	            <div className="absolute bottom-[12%] right-[12%] text-6xl text-[#e2a0b4] rotate-[8deg]">♥</div>
 	            <div className="relative z-10 max-w-2xl rounded-[28px] border border-[#efbfd0] bg-white/95 px-8 py-12 shadow-[0_24px_48px_rgba(148,55,88,0.18)]">
 	              <p className="text-xs uppercase tracking-[0.32em] font-black mb-4 text-[#a73a62]">last note</p>
-	              <h3 className="text-4xl md:text-5xl leading-tight font-black mb-5 text-[#2b1a20]" style={{ fontFamily: fnt.heading }}>
+	              <h3 className="text-3xl sm:text-4xl md:text-5xl leading-tight font-black mb-5 text-[#2b1a20] break-words" style={{ fontFamily: fnt.heading }}>
 	                {finalTitle}
 	              </h3>
 	              <p className="text-[#6c4050] text-lg leading-8 whitespace-pre-line">{finalMessage}</p>
