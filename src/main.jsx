@@ -16,6 +16,7 @@ const SuccessPage = lazy(() => import('./pages/SuccessPage'))
 const RecipientPage = lazy(() => import('./pages/RecipientPage'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AuthPage = lazy(() => import('./pages/AuthPage'))
 const RomanticSequencePlayer = lazy(() => import('./components/RomanticSequencePlayer'))
@@ -46,6 +47,7 @@ const AnimatedRoutes = ({ disableMotion = false }) => {
         <Route path="/p/:id" element={<PageWrapper><RecipientPage /></PageWrapper>} />
         <Route path="/privacy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
         <Route path="/terms" element={<PageWrapper><TermsOfService /></PageWrapper>} />
+        <Route path="/contact" element={<PageWrapper><ContactPage /></PageWrapper>} />
         <Route path="/romantic-sequence" element={<RomanticSequencePlayer />} />
       </Routes>
     </Suspense>

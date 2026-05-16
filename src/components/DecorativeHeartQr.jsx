@@ -6,21 +6,25 @@ const DecorativeHeartQr = ({
   color = '#B11478',
   qrRatio = 0.62,
   qrOffsetRatio = 0.008,
+  qrImageSrc = '',
 }) => {
+  const maxSize = Number.isFinite(size) ? Math.max(1, Math.round(size)) : 196;
+
   const qrValue = typeof value === 'string' && value.trim()
     ? value.trim()
     : 'https://lovelettersaas.vercel.app';
-
-  const qrSize = Math.round(size * qrRatio);
-  const qrOffsetY = Math.round(size * qrOffsetRatio);
+  const qrPercent = `${(Math.max(0.05, qrRatio) * 100).toFixed(3)}%`;
+  const qrTop = `calc(50% + ${(qrOffsetRatio * 100).toFixed(3)}%)`;
+  const qrSvgSize = Math.max(256, Math.round(maxSize * Math.max(0.2, qrRatio)));
 
   return (
     <div
       id="qr-code"
-      className="relative inline-flex items-center justify-center"
+      className="relative mx-auto"
       style={{
-        width: size,
-        height: size,
+        width: '100%',
+        maxWidth: maxSize,
+        aspectRatio: '1 / 1',
       }}
     >
       <img
@@ -34,26 +38,36 @@ const DecorativeHeartQr = ({
       />
 
       <div
-        className="relative z-10 flex items-center justify-center"
+        className="absolute left-1/2 z-10"
         style={{
-          width: qrSize,
-          height: qrSize,
-          transform: `translateY(${qrOffsetY}px) rotate(45deg)`,
+          top: qrTop,
+          width: qrPercent,
+          height: qrPercent,
+          transform: 'translate(-50%, -50%) rotate(45deg)',
         }}
       >
-        <QRCodeSVG
-          value={qrValue}
-          size={qrSize}
-          fgColor={color}
-          bgColor="transparent"
-          level="H"
-          marginSize={0}
-          style={{
-            display: 'block',
-            transform: 'scale(0.98)',
-            transformOrigin: 'center',
-          }}
-        />
+        {qrImageSrc ? (
+          <img
+            src={qrImageSrc}
+            alt="QR code"
+            className="h-full w-full object-contain"
+            style={{ display: 'block' }}
+          />
+        ) : (
+          <QRCodeSVG
+            value={qrValue}
+            size={qrSvgSize}
+            fgColor={color}
+            bgColor="transparent"
+            level="H"
+            marginSize={0}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        )}
       </div>
     </div>
   );

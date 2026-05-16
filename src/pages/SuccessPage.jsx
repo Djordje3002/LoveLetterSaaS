@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Copy, Check, MessageCircle, Send, Plus, Loader2, AlertCircle } from 'lucide-react';
+import { Copy, Check, Plus, Loader2, AlertCircle, Download, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db, functions } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -9,6 +9,40 @@ import DecorativeHeartQr from '../components/DecorativeHeartQr';
 import { trackEvent } from '../utils/analytics';
 import { getAppUrl } from '../utils/appUrl';
 import { captureAppError } from '../utils/monitoring';
+
+const loadImage = (src) => new Promise((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = reject;
+  image.src = src;
+});
+
+const downloadBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
+
+const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
+  canvas.toBlob((blob) => {
+    if (blob) resolve(blob);
+    else reject(new Error('Could not create image file.'));
+  }, 'image/png');
+});
+
+const getQrSvgSource = (root) => {
+  const svg = root?.querySelector('#qr-code svg');
+  if (!svg) return '';
+
+  const clone = svg.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  return new XMLSerializer().serializeToString(clone);
+};
 
 const SuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -20,7 +54,6 @@ const SuccessPage = () => {
 
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [copied, setCopied] = useState(false);
-  const [captionCopied, setCaptionCopied] = useState(false);
   const qrRef = useRef(null);
 
   const appUrl = getAppUrl();
@@ -129,22 +162,89 @@ const SuccessPage = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const copyCaption = async () => {
+  const copyShareCaption = async () => {
     const copiedOk = await copyWithFallback(shareCaption);
     if (!copiedOk) return;
     trackEvent('share_caption_copied', { draftId });
-    setCaptionCopied(true);
-    setTimeout(() => setCaptionCopied(false), 2000);
   };
 
-  const shareWhatsApp = () => {
-    trackEvent('share_whatsapp_clicked', { draftId });
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareCaption)}`, '_blank');
+  const downloadQrCode = async () => {
+    try {
+      const blob = await createFullQrImageBlob();
+      if (!blob) return;
+      downloadBlob(blob, `lovepage-heart-qr-${draftId || 'gift'}.png`);
+      trackEvent('qr_downloaded', { draftId, type: 'heart_image' });
+    } catch (err) {
+      captureAppError(err, { scope: 'success.downloadQrCode', draftId });
+    }
   };
 
-  const shareTelegram = () => {
-    trackEvent('share_telegram_clicked', { draftId });
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent('Something special for you')}`, '_blank');
+  const createFullQrImageBlob = async () => {
+    const qrRoot = qrRef.current?.querySelector('#qr-code');
+    const qrLayer = qrRef.current?.querySelector('#qr-code > div');
+    const svgSource = getQrSvgSource(qrRef.current);
+    if (!qrRoot || !qrLayer || !svgSource) return null;
+
+    const rootRect = qrRoot.getBoundingClientRect();
+    const styles = window.getComputedStyle(qrLayer);
+    const qrSize = parseFloat(styles.width);
+    const qrLeft = parseFloat(styles.left);
+    const qrTop = parseFloat(styles.top);
+    const scale = 1600 / rootRect.width;
+
+    const [heartImage, qrImage] = await Promise.all([
+      loadImage('/custom-heart-qr.png'),
+      loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgSource)}`),
+    ]);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1600;
+    canvas.height = 1600;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(heartImage, 0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(qrLeft * scale, qrTop * scale);
+    ctx.rotate(Math.PI / 4);
+    const outputQrSize = qrSize * scale;
+    ctx.drawImage(qrImage, -outputQrSize / 2, -outputQrSize / 2, outputQrSize, outputQrSize);
+    ctx.restore();
+
+    return canvasToBlob(canvas);
+  };
+
+  const sharePage = async () => {
+    try {
+      const shareData = {
+        title: shareCaption,
+        text: shareCaption,
+        url: pageUrl,
+      };
+
+      if (navigator.share) {
+        const blob = await createFullQrImageBlob();
+        if (blob) {
+          const file = new File([blob], `lovepage-heart-qr-${draftId || 'gift'}.png`, { type: 'image/png' });
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ ...shareData, files: [file] });
+            trackEvent('native_share_clicked', { draftId, withImage: true });
+            return;
+          }
+        }
+
+        await navigator.share(shareData);
+        trackEvent('native_share_clicked', { draftId, withImage: false });
+        return;
+      }
+
+      await copyShareCaption();
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        captureAppError(err, { scope: 'success.sharePage', draftId });
+      }
+    }
   };
 
   if (status === 'verifying') {
@@ -214,38 +314,40 @@ const SuccessPage = () => {
 
         {/* QR Code */}
         <div ref={qrRef} className="flex justify-center mb-8">
-          <DecorativeHeartQr size={392} qrRatio={0.495} qrOffsetRatio={0.055} value={pageUrl} />
+          <DecorativeHeartQr
+            size={392}
+            qrRatio={0.495}
+            qrOffsetRatio={0.065}
+            value={pageUrl}
+          />
         </div>
 
         <div className="w-full h-px bg-card mb-8" />
 
         {/* Share buttons */}
         <div className="flex justify-center gap-4 mb-5">
-          <button onClick={shareWhatsApp}
-            className="w-12 h-12 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-            <MessageCircle size={24} />
+          <button onClick={downloadQrCode}
+            aria-label="Download QR code"
+            className="w-12 h-12 bg-primary-pink text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+            <Download size={24} />
           </button>
-          <button onClick={shareTelegram}
-            className="w-12 h-12 bg-[#0088cc] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-            <Send size={24} />
+          <button onClick={sharePage}
+            aria-label="Share page"
+            className="w-12 h-12 bg-primary-pink text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+            <Share2 size={24} />
           </button>
           <button onClick={handleCopy}
+            aria-label="Copy page link"
             className="w-12 h-12 bg-primary-pink text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
             <Copy size={24} />
           </button>
         </div>
 
-        <button onClick={copyCaption}
-          className="w-full bg-slate-50 border border-card rounded-xl px-4 py-3 text-sm font-bold text-dark hover:border-primary-pink transition-colors mb-8">
-          {captionCopied ? 'Caption copied!' : 'Copy share caption for Instagram'}
-        </button>
-
-        <p className="text-xs text-secondary mb-6 italic">Your page is live forever at the link above. Bookmark it!</p>
         <Link to="/templates" className="flex items-center justify-center gap-2 text-primary-pink font-bold hover:gap-3 transition-all">
           <Plus size={20} /> Create another page
         </Link>
         <p className="text-xs text-secondary mt-5">
-          Want a fully custom page or website? <span className="text-primary-pink font-bold">Contact me.</span>
+          Want a fully custom page or website? <Link to="/contact" className="text-primary-pink font-bold hover:underline">Contact me.</Link>
         </p>
       </motion.div>
     </div>
