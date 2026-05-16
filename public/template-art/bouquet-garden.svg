@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" role="img" aria-labelledby="title desc">
+  <title id="title">Bouquet Garden art</title>
+  <desc id="desc">A romantic bouquet garden with roses, ribbon, cards, and soft crimson lighting.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1e8"/>
+      <stop offset="0.48" stop-color="#ffd8df"/>
+      <stop offset="1" stop-color="#7f0d27"/>
+    </linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9ab6"/>
+      <stop offset="1" stop-color="#9e1237"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8bd7b0"/>
+      <stop offset="1" stop-color="#1d6b4a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="26" stdDeviation="22" flood-color="#5c061d" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="900" height="700" fill="url(#bg)"/>
+  <circle cx="744" cy="126" r="150" fill="#fff" opacity="0.22"/>
+  <circle cx="176" cy="560" r="170" fill="#ffd66b" opacity="0.15"/>
+  <g filter="url(#shadow)">
+    <path d="M450 536c-96-86-167-164-128-265 34-88 134-118 202-41 61-82 167-59 205 24 51 112-58 212-279 282z" fill="#fff8ef"/>
+    <path d="M450 536c-96-86-167-164-128-265 34-88 134-118 202-41 61-82 167-59 205 24 51 112-58 212-279 282z" fill="#fff" opacity="0.24"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M416 558c-14-112-8-226 26-340" stroke="#216b4a" stroke-width="12" stroke-linecap="round"/>
+    <path d="M478 560c12-112-1-220-44-328" stroke="#267954" stroke-width="12" stroke-linecap="round"/>
+    <path d="M368 546c-50-96-82-195-58-292" stroke="#2b815b" stroke-width="12" stroke-linecap="round"/>
+    <path d="M526 548c55-93 86-189 64-288" stroke="#2b815b" stroke-width="12" stroke-linecap="round"/>
+    <ellipse cx="356" cy="340" rx="54" ry="24" fill="url(#leaf)" transform="rotate(-24 356 340)"/>
+    <ellipse cx="522" cy="316" rx="56" ry="24" fill="url(#leaf)" transform="rotate(28 522 316)"/>
+    <ellipse cx="316" cy="438" rx="48" ry="21" fill="url(#leaf)" transform="rotate(-28 316 438)"/>
+    <ellipse cx="586" cy="436" rx="48" ry="21" fill="url(#leaf)" transform="rotate(26 586 436)"/>
+  </g>
+  <g filter="url(#shadow)">
+    <g transform="translate(285 170)">
+      <circle cx="70" cy="70" r="64" fill="url(#rose)"/>
+      <path d="M31 70c20-42 78-48 94-6-20-18-62-8-94 6z" fill="#ffb4c8" opacity="0.8"/>
+      <path d="M42 88c18-28 58-32 80-2-27-10-54-5-80 2z" fill="#bd1743"/>
+    </g>
+    <g transform="translate(452 146)">
+      <circle cx="72" cy="72" r="68" fill="url(#rose)"/>
+      <path d="M30 72c22-44 84-51 100-7-22-18-67-9-100 7z" fill="#ffb4c8" opacity="0.78"/>
+      <path d="M42 92c19-30 62-34 85-2-28-11-58-5-85 2z" fill="#bd1743"/>
+    </g>
+    <g transform="translate(360 254)">
+      <circle cx="72" cy="72" r="66" fill="url(#rose)"/>
+      <path d="M32 72c21-43 81-49 97-6-21-18-65-8-97 6z" fill="#ffb4c8" opacity="0.78"/>
+      <path d="M44 91c18-29 60-33 83-2-28-10-56-5-83 2z" fill="#bd1743"/>
+    </g>
+  </g>
+  <path d="M286 568c84-48 246-48 328 0" fill="none" stroke="#ffecf2" stroke-width="34" stroke-linecap="round" filter="url(#shadow)"/>
+  <path d="M390 552l60 72 62-72" fill="#f43f73" filter="url(#shadow)"/>
+  <g fill="#fff7ef" opacity="0.75">
+    <circle cx="154" cy="152" r="8"/>
+    <circle cx="760" cy="330" r="7"/>
+    <circle cx="120" cy="474" r="5"/>
+    <circle cx="814" cy="548" r="6"/>
+  </g>
+</svg>

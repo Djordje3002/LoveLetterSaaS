@@ -332,23 +332,39 @@ const TemplateMiniDemo = ({ templateId, interactive = false, onRevealChange, red
   }
   if (templateId === 'our-year-book') {
     return (
-      <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-[#f4eedf]">
-        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-r from-[#f2a7be] via-[#e38eb0] to-[#efc7d7]" />
-        <div className="relative h-[80%] w-[62%] rounded-[10px] border border-[#cdb8da] bg-gradient-to-br from-[#c8a8dd] via-[#b893d2] to-[#d9bee9] p-2 shadow-[10px_12px_26px_rgba(64,40,88,0.25)]">
-          <div className="h-full rounded-[7px] border border-white/35 bg-[#f8f1e7] p-2">
-            <div className="text-[7px] uppercase tracking-[0.16em] text-[#7c5d8f]">a love letter</div>
-            <div className="mt-1 text-[15px] leading-[0.82] italic text-[#4f2f67]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              our year.
+      <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-[radial-gradient(circle_at_16%_16%,rgba(245,168,187,0.36),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(202,171,226,0.44),transparent_34%),linear-gradient(135deg,#fff7ee,#f2e5d6)]">
+        <span className="absolute left-5 top-6 text-2xl text-[#f09cb3]/55">✦</span>
+        <span className="absolute right-6 bottom-7 rotate-[-10deg] text-2xl text-[#c7a6df]/55">♡</span>
+        <div className="absolute bottom-5 h-8 w-[72%] rounded-full bg-[#80655f]/18 blur-xl" />
+        <div className="relative h-[62%] w-[82%] rounded-[16px] bg-gradient-to-br from-[#8e6aa0] to-[#4f385b] p-1.5 shadow-[10px_15px_28px_rgba(64,40,88,0.28)] [transform:rotateX(5deg)]">
+          <div className="absolute inset-y-3 left-1/2 z-10 w-2 -translate-x-1/2 rounded-full bg-white/35 shadow-[0_0_12px_rgba(70,42,78,0.3)]" />
+          <div className="grid h-full grid-cols-2 overflow-hidden rounded-[13px] bg-[#fff3e6]">
+            <div className="relative p-2 shadow-[inset_-10px_0_16px_rgba(100,62,37,0.1)]">
+              <div className="text-[7px] uppercase tracking-[0.16em] text-[#7c5d8f]">our love</div>
+              <div className="mt-1 text-[16px] leading-[0.82] italic text-[#4f2f67]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                book.
+              </div>
+              <div className="absolute bottom-3 left-2 right-3 grid grid-cols-2 gap-1">
+                {[0, 1].map((i) => (
+                  <motion.div
+                    key={`year-mini-left-${i}`}
+                    className="aspect-square rounded-[3px] bg-gradient-to-br from-[#e2d8ea] via-[#d2c4df] to-[#c8b4d4] shadow-sm"
+                    animate={{ y: [0, -1.5, 0] }}
+                    transition={{ duration: 2 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-1">
-              {[0, 1, 2, 3].map((i) => (
-                <motion.div
-                  key={`year-mini-${i}`}
-                  className="aspect-square rounded-[3px] border border-[#dccde8] bg-gradient-to-br from-[#e2d8ea] via-[#d2c4df] to-[#c8b4d4]"
-                  animate={{ y: [0, -1.5, 0] }}
-                  transition={{ duration: 2 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              ))}
+            <div className="relative p-2 shadow-[inset_10px_0_16px_rgba(100,62,37,0.1)]">
+              <div className="absolute left-3 top-4 h-12 w-10 rotate-[7deg] rounded-sm bg-white p-1 shadow-md">
+                <div className="h-8 rounded-[2px] bg-gradient-to-br from-[#e5d6ea] to-[#bf9bd2]" />
+              </div>
+              <div className="absolute bottom-4 right-3 h-14 w-11 rotate-[-8deg] rounded-sm bg-white p-1 shadow-md">
+                <div className="h-9 rounded-[2px] bg-gradient-to-br from-[#f3ced7] to-[#d698b6]" />
+              </div>
+              <div className="absolute bottom-3 left-3 text-[7px] italic text-[#6b4b7a]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                little moments.
+              </div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import HeartParticles from './HeartParticles';
 import { motion, useReducedMotion } from 'framer-motion';
 import useIsMobile from '../hooks/useIsMobile';
 
-const Layout = ({ children, showFooter = true, showParticles = true }) => {
+const Layout = ({ children, showFooter = true, showParticles = true, showDecorations = true }) => {
   const isMobile = useIsMobile();
   const prefersReducedMotion = useReducedMotion();
   const simplifyMobileVisuals = isMobile || prefersReducedMotion;
@@ -23,10 +23,10 @@ const Layout = ({ children, showFooter = true, showParticles = true }) => {
       <Navbar />
       
       {/* Background Blobs */}
-      {!simplifyMobileVisuals && <div className="bg-blob blob-1"></div>}
-      {!simplifyMobileVisuals && <div className="bg-blob blob-2"></div>}
+      {showDecorations && !simplifyMobileVisuals && <div className="bg-blob blob-1"></div>}
+      {showDecorations && !simplifyMobileVisuals && <div className="bg-blob blob-2"></div>}
       
-      {showParticles && !simplifyMobileVisuals && <HeartParticles />}
+      {showDecorations && showParticles && !simplifyMobileVisuals && <HeartParticles />}
       
       <MainElement {...mainProps} className="flex-grow pt-24">
         {children}

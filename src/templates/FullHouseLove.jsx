@@ -13,10 +13,10 @@ const MEMORY_PLACEHOLDERS = [
 ];
 
 const LETTER_BACKGROUND_STYLE = {
-  backgroundColor: '#fff9ef',
+  backgroundColor: '#fff8ef',
   backgroundImage:
-    'radial-gradient(circle at 12px 12px, rgba(245, 169, 192, 0.28) 3px, transparent 3px), radial-gradient(circle at 20% 18%, rgba(119,215,255,0.16), transparent 34%), radial-gradient(circle at 82% 78%, rgba(255,154,176,0.18), transparent 36%)',
-  backgroundSize: '42px 42px, 100% 100%, 100% 100%',
+    'radial-gradient(circle at 14px 14px, rgba(245, 169, 192, 0.34) 5px, transparent 5px), radial-gradient(circle at 82% 84%, rgba(255,154,176,0.14), transparent 38%)',
+  backgroundSize: '84px 84px, 100% 100%',
 };
 
 const LINED_PAPER_STYLE = {
@@ -221,17 +221,19 @@ const FullHouseLove = ({
 
   return (
     <div className="min-h-screen text-white relative overflow-x-hidden" style={{ fontFamily: fnt.body, background: `radial-gradient(circle at top, ${heartSoft}, transparent 46%), #07070b` }}>
-      <motion.div
-        className="pointer-events-none absolute inset-0 opacity-55"
-        animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-        style={{
-          backgroundImage: `radial-gradient(circle at 18% 18%, ${hexToRgba(heartColor, 0.2)}, transparent 36%), radial-gradient(circle at 80% 70%, ${pal.primary}1f, transparent 38%)`,
-          backgroundSize: '170% 170%',
-        }}
-      />
+      {screen !== 'main' && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 opacity-55"
+          animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          style={{
+            backgroundImage: `radial-gradient(circle at 18% 18%, ${hexToRgba(heartColor, 0.2)}, transparent 36%), radial-gradient(circle at 80% 70%, ${pal.primary}1f, transparent 38%)`,
+            backgroundSize: '170% 170%',
+          }}
+        />
+      )}
 
-      {[...Array(10)].map((_, i) => (
+      {screen !== 'main' && [...Array(10)].map((_, i) => (
         <span
           key={`heart-${i}`}
           className="absolute pointer-events-none"
@@ -331,11 +333,13 @@ const FullHouseLove = ({
             key="main"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative z-10 min-h-screen px-5 pb-8 pt-10 md:px-10 md:pt-12"
+            className="relative z-10 min-h-screen overflow-x-hidden px-5 pb-8 pt-10 text-[#2b1a20] md:px-10 md:pt-12"
+            style={LETTER_BACKGROUND_STYLE}
           >
-            <div className={tab === 'home' ? 'max-w-none mx-auto' : 'max-w-6xl mx-auto'}>
+            <span className="pointer-events-none absolute left-[28%] top-[21%] z-0 text-5xl text-[#bfe9fb] opacity-85 md:left-[22%] md:top-[24%] md:text-6xl">✦</span>
+            <div className={`${tab === 'home' ? 'max-w-none mx-auto' : 'max-w-6xl mx-auto'} relative z-10`}>
               <header className="relative z-20 mb-7 flex justify-center px-1 pt-1 md:pt-2">
-                <div className="w-full max-w-[620px] rounded-[22px] border border-white/20 bg-[linear-gradient(120deg,rgba(7,17,31,0.92),rgba(9,23,40,0.78))] p-2 shadow-[0_18px_38px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+                <div className="w-full max-w-[620px] rounded-[22px] border border-[#f2d7df] bg-white/75 p-2 shadow-[0_18px_38px_rgba(150,93,112,0.16)] backdrop-blur-xl">
                   <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'home', label: 'Home', icon: Home },
@@ -350,9 +354,9 @@ const FullHouseLove = ({
                         whileTap={{ scale: 0.98 }}
                         whileHover={{ y: -1 }}
                         className={`rounded-2xl px-4 py-2.5 text-sm font-bold inline-flex items-center justify-center gap-2 transition-all ${
-                          tab === item.id ? 'text-[#08101a] shadow-[0_8px_20px_rgba(0,0,0,0.24)]' : 'text-white/80 hover:bg-white/10'
+                          tab === item.id ? 'text-[#2b1a20] shadow-[0_8px_20px_rgba(158,96,112,0.16)]' : 'text-[#74555e] hover:bg-white/65'
                         }`}
-                        style={tab === item.id ? { background: `linear-gradient(135deg, ${heartColor}, ${pal.accent})` } : undefined}
+                        style={tab === item.id ? { background: `linear-gradient(135deg, ${hexToRgba(heartColor, 0.72)}, #ffe1ea)` } : undefined}
                       >
                         <Icon size={15} />
                         {item.label}
@@ -366,7 +370,6 @@ const FullHouseLove = ({
 	              {tab === 'home' && (
 	                <div
 	                  className="relative -mx-5 -mt-16 min-h-screen overflow-x-hidden px-3 pb-10 pt-24 text-[#2b1a20] md:-mx-10"
-	                  style={LETTER_BACKGROUND_STYLE}
 	                >
 	                  <motion.h2
 	                    initial={{ opacity: 0, y: 16 }}
@@ -404,9 +407,9 @@ const FullHouseLove = ({
 	              )}
 
               {tab === 'gallery' && (
-                <div className="rounded-[28px] border border-[#28445f] bg-[#0f1827]/94 p-6">
-                  <h3 className="text-3xl font-bold mb-2" style={{ fontFamily: fnt.heading }}>{scenes.galleryTitle || 'Our Moments 📸'}</h3>
-                  <p className="text-white/70 mb-5">{scenes.gallerySubtitle || 'A collection of our favorite memories.'}</p>
+                <div className="rounded-[28px] border border-[#eed8de] bg-white/58 p-6 shadow-[0_20px_54px_rgba(158,96,112,0.13)] backdrop-blur-sm">
+                  <h3 className="mb-2 text-3xl font-bold text-[#9f164d]" style={{ fontFamily: fnt.heading }}>{scenes.galleryTitle || 'Our Moments 📸'}</h3>
+                  <p className="mb-5 text-[#755b62]">{scenes.gallerySubtitle || 'A collection of our favorite memories.'}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {galleryItems.map((photo, i) => (
                       <motion.figure
@@ -415,7 +418,7 @@ const FullHouseLove = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ delay: i * 0.05, type: 'spring', stiffness: 150, damping: 18 }}
                         whileHover={{ y: -4, rotate: i % 2 === 0 ? -0.5 : 0.5 }}
-                        className="rounded-2xl overflow-hidden border border-[#3a5169] bg-black/25 shadow-[0_18px_36px_rgba(0,0,0,0.22)]"
+                        className="overflow-hidden rounded-2xl border border-[#ead8d0] bg-white/76 shadow-[0_18px_36px_rgba(142,93,76,0.14)]"
                       >
                         {photo.src ? (
                           <img src={photo.src} alt={photo.caption} className="w-full h-52 object-cover" />
@@ -434,7 +437,7 @@ const FullHouseLove = ({
                             <p className="relative mt-1 text-xs font-medium text-white/58">{photo.placeholder.hint}</p>
                           </div>
                         )}
-                        <figcaption className="px-3 py-2 text-sm text-white/85">{photo.caption}</figcaption>
+                        <figcaption className="px-3 py-2 text-sm font-semibold text-[#5a3b47]">{photo.caption}</figcaption>
                       </motion.figure>
                     ))}
                   </div>
@@ -442,13 +445,13 @@ const FullHouseLove = ({
               )}
 
               {tab === 'reasons' && (
-                <div className="rounded-[28px] border border-[#28445f] bg-[#0f1827]/94 p-6">
+                <div className="rounded-[28px] border border-[#eed8de] bg-white/58 p-6 shadow-[0_20px_54px_rgba(158,96,112,0.13)] backdrop-blur-sm">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-                    <h3 className="text-3xl font-bold" style={{ fontFamily: fnt.heading }}>
+                    <h3 className="text-3xl font-bold text-[#9f164d]" style={{ fontFamily: fnt.heading }}>
                       {scenes.reasonsTitle || 'Reasons I Love You 💙'}
                     </h3>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/70 font-medium">{revealedReasons} / {reasonCards.length} revealed</span>
+                      <span className="text-sm font-semibold text-[#755b62]">{revealedReasons} / {reasonCards.length} revealed</span>
                       <button
                         onClick={shuffleReasons}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white transition-all hover:scale-105"
@@ -557,7 +560,7 @@ const FullHouseLove = ({
                         </p>
                       )}
                       {showSenderName && senderName && (
-                        <p className="font-dancing text-2xl text-white/85">— {senderName}</p>
+                        <p className="font-dancing text-2xl text-[#5a3b47]">— {senderName}</p>
                       )}
                     </motion.div>
                   )}
@@ -567,7 +570,7 @@ const FullHouseLove = ({
 
             {showFooter && (
               <div className="text-center mt-10 pb-4">
-                <p className="text-white/45 text-sm">made with LovePage ♥</p>
+                <p className="text-sm text-[#9f164d]/55">made with LovePage ♥</p>
               </div>
             )}
           </motion.section>

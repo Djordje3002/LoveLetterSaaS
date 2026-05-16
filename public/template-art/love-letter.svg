@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" role="img" aria-labelledby="title desc">
+  <title id="title">Romantic love letter art</title>
+  <desc id="desc">A soft pink envelope, flowers, hearts, and paper details for the Love Letter template.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7f2"/>
+      <stop offset="0.48" stop-color="#ffe6ee"/>
+      <stop offset="1" stop-color="#ffd2df"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef9"/>
+      <stop offset="1" stop-color="#fff1e4"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7ea7"/>
+      <stop offset="1" stop-color="#e52f6d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#8d3354" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="900" height="700" fill="url(#bg)"/>
+  <circle cx="130" cy="120" r="76" fill="#fff" opacity="0.45"/>
+  <circle cx="780" cy="120" r="120" fill="#ff8db3" opacity="0.14"/>
+  <circle cx="130" cy="595" r="150" fill="#ffd167" opacity="0.13"/>
+  <g opacity="0.5">
+    <path d="M118 280c23-31 70-22 82 14 16-34 64-38 84-5 27 45-51 88-84 130-38-38-116-86-82-139z" fill="#ff709d"/>
+    <path d="M704 432c17-23 52-16 60 10 12-25 47-27 62-4 20 33-38 65-62 96-28-28-86-64-60-102z" fill="#f43f73"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="272" y="108" width="356" height="420" rx="22" fill="url(#letter)" transform="rotate(-5 450 318)"/>
+    <path d="M320 190h260" stroke="#f1c9d3" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
+    <path d="M318 248h238" stroke="#f1c9d3" stroke-width="8" stroke-linecap="round" opacity="0.65"/>
+    <path d="M322 306h190" stroke="#f1c9d3" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+    <path d="M316 388c44-40 112-31 138 13 31-48 105-43 136 2 45 66-66 123-136 191-72-65-183-126-138-206z" fill="url(#pink)" opacity="0.9"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M218 346h464c25 0 45 20 45 45v182c0 25-20 45-45 45H218c-25 0-45-20-45-45V391c0-25 20-45 45-45z" fill="#fff8f8"/>
+    <path d="M178 384l272 178 272-178" fill="none" stroke="#f4b7c8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M184 596l198-152c39-30 97-30 136 0l198 152" fill="none" stroke="#f8cfda" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g fill="#f43f73">
+    <circle cx="736" cy="250" r="9"/>
+    <circle cx="184" cy="206" r="7"/>
+    <circle cx="804" cy="558" r="6"/>
+    <circle cx="92" cy="466" r="5"/>
+  </g>
+  <g fill="none" stroke="#e84d7f" stroke-width="7" stroke-linecap="round">
+    <path d="M100 162c15-30 42-32 58-9"/>
+    <path d="M786 292c26 4 42 19 48 46"/>
+    <path d="M658 88c30 6 49 24 56 55"/>
+  </g>
+</svg>

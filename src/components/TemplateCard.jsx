@@ -16,20 +16,42 @@ const TEMPLATE_CARD_MESSAGES = {
   'date-invite': 'A playful yes/no love confession with motion and a happy finale.',
 };
 
-const TEMPLATE_PREVIEW_IMAGES = [
-  'https://picsum.photos/seed/love-1/900/600',
-  'https://picsum.photos/seed/love-2/900/600',
-  'https://picsum.photos/seed/love-3/900/600',
-  'https://picsum.photos/seed/love-4/900/600',
-  'https://picsum.photos/seed/love-5/900/600',
-  'https://picsum.photos/seed/love-6/900/600',
-];
+const TEMPLATE_PREVIEW_IMAGES = {
+  'kawaii-letter': '/template-art/love-letter.svg',
+  'full-house-love': '/template-art/full-house-love.svg',
+  'bouquet-garden': '/template-art/bouquet-garden.svg',
+  'our-year-book': '/template-art/our-love-book.svg',
+  'date-invite': '/template-art/valentine.svg',
+};
 
-const getTemplatePreviewImage = (templateId, index) => {
-  const raw = `${templateId}-${index}`;
-  let hash = 0;
-  for (let i = 0; i < raw.length; i += 1) hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
-  return TEMPLATE_PREVIEW_IMAGES[hash % TEMPLATE_PREVIEW_IMAGES.length];
+const getTemplatePreviewImage = (templateId) => TEMPLATE_PREVIEW_IMAGES[templateId] || TEMPLATE_PREVIEW_IMAGES['kawaii-letter'];
+
+const TEMPLATE_CARD_SCENES = {
+  'kawaii-letter': {
+    overlay: 'linear-gradient(180deg, rgba(255,246,249,0.12) 0%, rgba(246,56,113,0.9) 100%)',
+    glow: '#ff78a5',
+    ink: '#fff6fa',
+  },
+  'full-house-love': {
+    overlay: 'linear-gradient(180deg, rgba(10,24,44,0.1) 0%, rgba(13,39,70,0.92) 100%)',
+    glow: '#77d7ff',
+    ink: '#f3fbff',
+  },
+  'bouquet-garden': {
+    overlay: 'linear-gradient(180deg, rgba(121,13,40,0.08) 0%, rgba(96,9,31,0.9) 100%)',
+    glow: '#ff9bb7',
+    ink: '#fff7ef',
+  },
+  'our-year-book': {
+    overlay: 'linear-gradient(180deg, rgba(117,77,139,0.08) 0%, rgba(79,47,103,0.88) 100%)',
+    glow: '#d8b7ef',
+    ink: '#fff7ed',
+  },
+  'date-invite': {
+    overlay: 'linear-gradient(180deg, rgba(255,87,129,0.08) 0%, rgba(211,28,82,0.9) 100%)',
+    glow: '#ff6f9d',
+    ink: '#fff7fb',
+  },
 };
 
 const TemplateCard = ({ template, index }) => {
@@ -41,7 +63,8 @@ const TemplateCard = ({ template, index }) => {
   const prefersReducedMotion = useReducedMotion();
   const shouldSimplifyPreview = isMobile || prefersReducedMotion;
   const cardMessage = TEMPLATE_CARD_MESSAGES[template.id] || 'A personalized page made to feel thoughtful, private, and easy to share.';
-  const previewImage = getTemplatePreviewImage(template.id, index);
+  const previewImage = getTemplatePreviewImage(template.id);
+  const scene = TEMPLATE_CARD_SCENES[template.id] || TEMPLATE_CARD_SCENES['kawaii-letter'];
 
   const handleUse = async (e) => {
     e.preventDefault();
@@ -70,52 +93,70 @@ const TemplateCard = ({ template, index }) => {
       exit={{ opacity: 0, scale: 0.94 }}
       transition={shouldSimplifyPreview ? { duration: 0.16 } : { delay: index * 0.06, type: 'spring', stiffness: 130, damping: 18 }}
       whileHover={shouldSimplifyPreview ? undefined : { y: -10, rotate: index % 2 === 0 ? -0.35 : 0.35, scale: 1.012 }}
-      className="group relative overflow-hidden rounded-[30px] border border-[#f3d3df] bg-white shadow-[0_12px_34px_rgba(44,31,42,0.08)] transition-shadow duration-300 hover:shadow-[0_24px_60px_rgba(44,31,42,0.14)]"
+      className="group relative"
     >
-      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#f45c8d]/70 to-transparent" />
       <Link className="block h-full" to={`/templates/${template.id}`} onClick={() => trackEvent('template_clicked', { templateId: template.id })}>
-        <div className={`relative aspect-[3/2] overflow-hidden pt-3 ${shouldSimplifyPreview ? 'bg-white' : 'bg-[radial-gradient(circle_at_top_left,#fff1f7_0%,#ffffff_52%)]'}`}>
+        <div className="relative min-h-[410px] overflow-hidden rounded-[34px] border border-white/70 bg-[#fff7fb] shadow-[0_22px_58px_rgba(44,31,42,0.12)] transition-shadow duration-300 group-hover:shadow-[0_34px_74px_rgba(44,31,42,0.18)]">
           <img
             src={previewImage}
             alt={`${template.name} preview`}
             loading="lazy"
-            className="h-full w-full object-cover rounded-t-[22px]"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/22 to-transparent rounded-t-[22px]" />
-        </div>
-        <div className="relative p-4 sm:p-5 bg-white border-t border-[#f5dce5]">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <h3 className="text-dark font-bold text-base sm:text-lg font-display leading-tight">{template.name}</h3>
-          </div>
-          <p className="mb-4 min-h-[42px] text-xs sm:text-[13px] leading-relaxed text-secondary">
-            {cardMessage}
-          </p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {template.tags.slice(0, 2).map(tag => (
-              <span key={tag} className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-primary-pink bg-primary-light px-2 py-0.5 rounded-full">
-                {tag}
+          <div className="absolute inset-0" style={{ background: scene.overlay }} />
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-2xl"
+            style={{ background: scene.glow, opacity: shouldSimplifyPreview ? 0.18 : 0.32 }}
+          />
+          <div
+            className="pointer-events-none absolute -bottom-16 -left-8 h-48 w-48 rounded-full blur-3xl"
+            style={{ background: scene.glow, opacity: shouldSimplifyPreview ? 0.18 : 0.28 }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.28),transparent_18%),radial-gradient(circle_at_80%_36%,rgba(255,255,255,0.18),transparent_18%)]" />
+
+          <div className="relative flex min-h-[410px] flex-col justify-between p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <span className="rounded-full border border-white/45 bg-white/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-sm backdrop-blur">
+                {template.tags[0] || 'Love'}
               </span>
-            ))}
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
-              </div>
-              <span className="text-[11px] sm:text-xs text-secondary font-medium">5.0</span>
+              <span className="rounded-full border border-white/45 bg-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-sm backdrop-blur">
+                Digital Gift
+              </span>
             </div>
-            <button
-              onClick={handleUse}
-              disabled={creating}
-              className="text-primary-pink text-xs sm:text-sm font-bold flex items-center gap-1.5 rounded-full px-1 py-1 transition-all group-hover:gap-2 disabled:opacity-60"
-            >
-              {creating ? <Loader2 size={14} className="animate-spin" /> : null}
-              {creating ? 'Creating...' : <><span>Use template</span> <ArrowRight size={14} /></>}
-            </button>
+
+            <div className="pointer-events-none my-8 min-h-[128px]" />
+
+            <div>
+              <div className="mb-3 flex items-center gap-1 text-amber-300 drop-shadow-sm">
+                {[...Array(5)].map((_, i) => <Star key={i} size={13} fill="currentColor" />)}
+                <span className="ml-1 text-[11px] font-bold text-white/85">5.0</span>
+              </div>
+              <h3 className="font-display text-2xl font-bold leading-none text-white sm:text-3xl">{template.name}</h3>
+              <p className="mt-3 text-sm font-medium leading-relaxed text-white/82">
+                {cardMessage}
+              </p>
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  {template.tags.slice(1, 3).map(tag => (
+                    <span key={tag} className="rounded-full border border-white/35 bg-white/18 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-white/88 backdrop-blur">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={handleUse}
+                  disabled={creating}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-black text-[#241729] shadow-lg transition-all group-hover:gap-2 disabled:opacity-60 sm:text-sm"
+                >
+                  {creating ? <Loader2 size={14} className="animate-spin" /> : null}
+                  {creating ? 'Creating...' : <><span>Use template</span> <ArrowRight size={14} /></>}
+                </button>
+              </div>
+              {createError && (
+                <p className="mt-3 text-[11px] font-bold text-white">{createError}</p>
+              )}
+            </div>
           </div>
-          {createError && (
-            <p className="mt-3 text-[11px] text-red-500 font-medium">{createError}</p>
-          )}
         </div>
       </Link>
     </motion.div>

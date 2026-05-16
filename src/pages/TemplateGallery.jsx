@@ -48,7 +48,7 @@ const TemplateGallery = () => {
         </div>
 
         {/* Grid */}
-        <div className={`rounded-[32px] border border-[#f1dce5] p-4 md:p-6 ${simplifyMobileVisuals ? 'bg-white' : 'bg-[linear-gradient(180deg,#ffffff_0%,#fff8fb_55%,#fff4f9_100%)]'}`}>
+        <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {simplifyMobileVisuals ? (
               templates

@@ -116,15 +116,9 @@ const LandingPage = () => {
     }
   ];
   return (
-    <Layout>
+    <Layout showParticles={false} showDecorations={false}>
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="hidden md:block absolute left-[-120px] top-24 h-72 w-72 rounded-full bg-[#ff6fa3]/20 blur-3xl" />
-          <div className="hidden md:block absolute right-[-140px] top-44 h-80 w-80 rounded-full bg-[#ffd67b]/18 blur-3xl" />
-          <div className="hidden md:block absolute bottom-14 left-1/2 h-52 w-[80%] -translate-x-1/2 rounded-full bg-[#f43f73]/10 blur-3xl" />
-          <div className="md:hidden absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_15%_12%,rgba(255,111,163,0.22),transparent_42%),radial-gradient(circle_at_82%_18%,rgba(255,214,123,0.2),transparent_44%),radial-gradient(circle_at_50%_86%,rgba(244,63,115,0.12),transparent_52%)]" />
-        </div>
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6">
         <motion.div
           initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
           animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -232,8 +226,8 @@ const LandingPage = () => {
           <p className="text-secondary text-lg">Each template is a unique interactive experience — perfect for any occasion</p>
         </div>
 
-        <div className="rounded-[36px] border border-[#f2dde6] bg-white/70 p-6 md:p-8 shadow-[0_20px_50px_rgba(244,63,115,0.08)]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
           {templates.map((template, i) => (
             <TemplateCard key={template.id} template={template} index={i} />
           ))}
